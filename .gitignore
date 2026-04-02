@@ -1,0 +1,56 @@
+# ── Dependencies ───────────────────────────────────────
+node_modules
+.pnpm-store
+
+# ── Build outputs ───────────────────────────────────────
+dist
+dist-ssr
+build
+
+# ── Environment variables ───────────────────────────────
+.env
+.env.*
+
+# ── Test & Coverage ─────────────────────────────────────
+coverage
+.nyc_output
+
+# ── TypeScript ──────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Vite / Rollup cache ─────────────────────────────────
+.vite
+.rollup.cache
+
+# ── Turbo ───────────────────────────────────────────────
+.turbo
+
+# ── Logs ────────────────────────────────────────────────
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── Editor ──────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── OS ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Misc ────────────────────────────────────────────────
+*.local
+
+
+buidlkorea
