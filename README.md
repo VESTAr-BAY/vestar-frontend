@@ -248,14 +248,18 @@ export const statusNetwork = {
 ### Color Tokens
 
 ```css
---violet: #7140ff; /* Primary Action */
---charcoal: #090a0b; /* Header / Footer BG */
---bg: #f7f8fa; /* Main Background */
---lavender: #f0edff; /* Selection / Hover */
---border: #e7e9ed; /* Card / Input Border */
---text: #090a0b; /* Primary Text */
---muted: #707070; /* Secondary Text */
---green: #22c55e; /* Success / Gasless badge */
+--color-bg: #FFFFFF;        /* Main Background */
+--color-banner: #09101C;    /* Banner / Strong Section BG */
+--color-primary: #7140FD;   /* Main Button */
+--color-primary-fg: #FFFFFF; /* Main Button Text */
+--color-lavender: #F8F5FF;  /* Light Purple Background */
+--color-lavender-text: #7140FD; /* Text on Light Purple BG */
+--color-point-1: #FCC3AB;   /* Point Color 1 */
+--color-point-2: #FBE1D7;   /* Point Color 2 */
+--color-border: #e7e9ed;    /* Card / Input Border */
+--color-text: #090a0b;      /* Primary Text */
+--color-muted: #707070;     /* Secondary Text */
+--color-green: #22c55e;     /* Success / Gasless badge */
 ```
 
 ### Typography
