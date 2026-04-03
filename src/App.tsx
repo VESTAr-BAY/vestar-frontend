@@ -1,7 +1,8 @@
-import "./App.css";
+import { RouterProvider } from "react-router";
+import { router } from "./routes";
 
 function App() {
-  return <>hi</>;
+  return <RouterProvider router={router} />;
 }
 
 export default App;
