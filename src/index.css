@@ -16,8 +16,13 @@
   --color-header-bg: #13141A;
   --color-header-float: #1C2033;
   --color-violet: #7140FF;
-  --font-sans: 'DM Sans', sans-serif;
+  --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: 'DM Mono', monospace;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
 }
 
 html,
@@ -26,7 +31,7 @@ body {
 }
 
 body {
-  font-family: var(--font-sans, 'DM Sans', sans-serif);
+  font-family: var(--font-sans);
   background: #E8E8E8;
   display: flex;
   justify-content: center;

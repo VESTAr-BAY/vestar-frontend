@@ -1,5 +1,5 @@
 import { useAccount, useConnect } from 'wagmi'
-import searchIcon from '../../assets/Vector.svg'
+import searchIcon from '../../assets/search_button.svg'
 import accountCircleIcon from '../../assets/account_circle.svg'
 import walletIcon from '../../assets/account_balance_wallet.svg'
 import type { ScrollState } from '../../hooks/useScrollDirection'
