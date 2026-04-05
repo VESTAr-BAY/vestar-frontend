@@ -1,7 +1,16 @@
 import { useCallback, useState } from 'react'
 import type { CandidateDraft, CreateStep, VoteCreateDraft } from '../../types/host'
 
-const EMOJI_COLORS = ['#F0EDFF', '#fef3c7', '#fce7f3', '#ede9fe', '#e0f2fe', '#dcfce7', '#fff1f2', '#e8f0ff']
+const EMOJI_COLORS = [
+  '#F0EDFF',
+  '#fef3c7',
+  '#fce7f3',
+  '#ede9fe',
+  '#e0f2fe',
+  '#dcfce7',
+  '#fff1f2',
+  '#e8f0ff',
+]
 
 let _counter = 3
 
@@ -29,10 +38,7 @@ function isStep1Valid(draft: VoteCreateDraft): boolean {
 }
 
 function isStep2Valid(draft: VoteCreateDraft): boolean {
-  return (
-    draft.candidates.length >= 2 &&
-    draft.candidates.every((c) => c.name.trim().length > 0)
-  )
+  return draft.candidates.length >= 2 && draft.candidates.every((c) => c.name.trim().length > 0)
 }
 
 function isStep3Valid(draft: VoteCreateDraft): boolean {
@@ -66,12 +72,12 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
 
   const isCurrentStepValid = validateStep(step, draft)
 
-  const updateField = useCallback(<K extends keyof VoteCreateDraft>(
-    key: K,
-    value: VoteCreateDraft[K],
-  ) => {
-    setDraft((prev) => ({ ...prev, [key]: value }))
-  }, [])
+  const updateField = useCallback(
+    <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => {
+      setDraft((prev) => ({ ...prev, [key]: value }))
+    },
+    [],
+  )
 
   const addCandidate = useCallback(() => {
     setDraft((prev) => {
@@ -98,9 +104,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     (id: string, field: keyof Omit<CandidateDraft, 'id'>, value: string) => {
       setDraft((prev) => ({
         ...prev,
-        candidates: prev.candidates.map((c) =>
-          c.id === id ? { ...c, [field]: value } : c,
-        ),
+        candidates: prev.candidates.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
       }))
     },
     [],

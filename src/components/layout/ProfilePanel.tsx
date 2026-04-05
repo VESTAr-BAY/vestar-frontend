@@ -44,14 +44,25 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
         {/* Panel header */}
         <div className="bg-[#13141A] px-5 pt-6 pb-5 flex-shrink-0">
           <div className="flex items-center justify-between mb-5">
-            <span className="text-white/50 text-[12px] font-mono tracking-[1px] uppercase">My Profile</span>
+            <span className="text-white/50 text-[12px] font-mono tracking-[1px] uppercase">
+              My Profile
+            </span>
             <button
               type="button"
               aria-label="닫기"
               onClick={onClose}
               className="w-7 h-7 flex items-center justify-center text-white/40 hover:text-white transition-colors"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M18 6 6 18M6 6l12 12" />
               </svg>
             </button>
@@ -59,7 +70,11 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
 
           <div className="flex items-center gap-3">
             <div className="w-[52px] h-[52px] rounded-full bg-[rgba(113,64,255,0.16)] border-2 border-[#7140FF] flex items-center justify-center flex-shrink-0">
-              <img src={accountCircleIcon} alt="" className="w-8 h-8 brightness-0 invert opacity-55" />
+              <img
+                src={accountCircleIcon}
+                alt=""
+                className="w-8 h-8 brightness-0 invert opacity-55"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-1">
@@ -67,7 +82,11 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
                   {isConnected && address ? truncateAddress(address) : '지갑 미연결'}
                 </span>
                 {isConnected && (
-                  <img src={verifiedIcon} alt="verified" className="w-4 h-4 flex-shrink-0 brightness-0 invert opacity-70" />
+                  <img
+                    src={verifiedIcon}
+                    alt="verified"
+                    className="w-4 h-4 flex-shrink-0 brightness-0 invert opacity-70"
+                  />
                 )}
               </div>
               <div className="flex items-center gap-1.5">
@@ -82,7 +101,9 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
         <div className="grid grid-cols-2 gap-[1px] bg-[#E7E9ED] border-b border-[#E7E9ED] flex-shrink-0">
           <div className="bg-white px-4 py-[14px]">
             <div className="text-[11px] text-[#707070] mb-1">Karma</div>
-            <div className="text-[18px] font-bold text-[#7140FF] font-mono">{karma.toLocaleString()}</div>
+            <div className="text-[18px] font-bold text-[#7140FF] font-mono">
+              {karma.toLocaleString()}
+            </div>
           </div>
           <div className="bg-white px-4 py-[14px]">
             <div className="text-[11px] text-[#707070] mb-1">투표 수</div>
@@ -117,7 +138,16 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
                 </span>
                 <span className="text-[14px] font-medium text-[#090A0B]">{item.label}</span>
                 <span className="ml-auto text-[#707070]">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="m9 18 6-6-6-6" />
                   </svg>
                 </span>

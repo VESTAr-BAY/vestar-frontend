@@ -6,7 +6,11 @@ interface InfiniteScrollSentinelProps {
   hasMore: boolean
 }
 
-export function InfiniteScrollSentinel({ onVisible, isLoading, hasMore }: InfiniteScrollSentinelProps) {
+export function InfiniteScrollSentinel({
+  onVisible,
+  isLoading,
+  hasMore,
+}: InfiniteScrollSentinelProps) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -30,9 +34,7 @@ export function InfiniteScrollSentinel({ onVisible, isLoading, hasMore }: Infini
       {isLoading && hasMore && (
         <div className="w-6 h-6 rounded-full border-2 border-[#E7E9ED] border-t-[#7140FF] animate-spin" />
       )}
-      {!hasMore && (
-        <p className="text-[12px] text-[#707070] font-mono">모두 불러왔어요 ✓</p>
-      )}
+      {!hasMore && <p className="text-[12px] text-[#707070] font-mono">모두 불러왔어요 ✓</p>}
     </div>
   )
 }

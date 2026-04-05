@@ -21,7 +21,16 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
             }`}
           >
             {n < current ? (
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             ) : (
@@ -29,7 +38,9 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
             )}
           </div>
           {n < total && (
-            <div className={`w-6 h-0.5 rounded-full ${n < current ? 'bg-[#7140FF]' : 'bg-white/20'}`} />
+            <div
+              className={`w-6 h-0.5 rounded-full ${n < current ? 'bg-[#7140FF]' : 'bg-white/20'}`}
+            />
           )}
         </div>
       ))}
@@ -69,7 +80,16 @@ export function VoteCreatePage() {
           onClick={() => (step === 1 ? navigate('/host') : prevStep())}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.08] hover:bg-white/[0.14] transition-colors flex-shrink-0"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
         </button>
@@ -110,7 +130,16 @@ export function VoteCreatePage() {
           ) : (
             <>
               다음 단계
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="m9 18 6-6-6-6" />
               </svg>
             </>

@@ -103,12 +103,8 @@ function SuccessPhase({
         </div>
       </div>
 
-      <h3 className="text-[18px] font-bold text-[#090A0B] text-center mb-1">
-        투표가 기록됐어요!
-      </h3>
-      <p className="text-[13px] text-[#707070] text-center mb-5">
-        투표가 안전하게 저장됐습니다
-      </p>
+      <h3 className="text-[18px] font-bold text-[#090A0B] text-center mb-1">투표가 기록됐어요!</h3>
+      <p className="text-[13px] text-[#707070] text-center mb-5">투표가 안전하게 저장됐습니다</p>
 
       {/* TX hash */}
       {txHash && (

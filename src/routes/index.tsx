@@ -1,30 +1,30 @@
-import { createBrowserRouter, Navigate } from "react-router";
-import { AppLayout } from "../components/layout/AppLayout";
-import { VoteDetailLayout } from "../components/layout/VoteDetailLayout";
-import { HostGuard } from "../guards/HostGuard";
-import { WalletGuard } from "../guards/WalletGuard";
-import { HostDashboardPage } from "../pages/host/HostDashboardPage";
-import { VoteCreatePage } from "../pages/host/VoteCreatePage";
-import { NotFoundPage } from "../pages/NotFoundPage";
-import { UnauthorizedPage } from "../pages/UnauthorizedPage";
-import { VoteDetailPage } from "../pages/vote/VoteDetailPage";
-import { VoteListPage } from "../pages/vote/VoteListPage";
-import { VoteResultPage } from "../pages/vote/VoteResultPage";
+import { createBrowserRouter, Navigate } from 'react-router'
+import { AppLayout } from '../components/layout/AppLayout'
+import { VoteDetailLayout } from '../components/layout/VoteDetailLayout'
+import { HostGuard } from '../guards/HostGuard'
+import { WalletGuard } from '../guards/WalletGuard'
+import { HostDashboardPage } from '../pages/host/HostDashboardPage'
+import { VoteCreatePage } from '../pages/host/VoteCreatePage'
+import { NotFoundPage } from '../pages/NotFoundPage'
+import { UnauthorizedPage } from '../pages/UnauthorizedPage'
+import { VoteDetailPage } from '../pages/vote/VoteDetailPage'
+import { VoteListPage } from '../pages/vote/VoteListPage'
+import { VoteResultPage } from '../pages/vote/VoteResultPage'
 
 export const router = createBrowserRouter([
   {
-    path: "/unauthorized",
+    path: '/unauthorized',
     element: <UnauthorizedPage />,
   },
   {
     element: <AppLayout />,
     children: [
       {
-        path: "/",
+        path: '/',
         element: <Navigate to="/vote" replace />,
       },
       {
-        path: "/vote",
+        path: '/vote',
         element: <VoteListPage />,
       },
       {
@@ -34,7 +34,7 @@ export const router = createBrowserRouter([
             element: <HostGuard />,
             children: [
               {
-                path: "/host",
+                path: '/host',
                 element: <HostDashboardPage />,
               },
             ],
@@ -47,11 +47,11 @@ export const router = createBrowserRouter([
     element: <VoteDetailLayout />,
     children: [
       {
-        path: "/vote/:id",
+        path: '/vote/:id',
         element: <VoteDetailPage />,
       },
       {
-        path: "/vote/:id/result",
+        path: '/vote/:id/result',
         element: <VoteResultPage />,
       },
     ],
@@ -64,7 +64,7 @@ export const router = createBrowserRouter([
         element: <HostGuard />,
         children: [
           {
-            path: "/host/create",
+            path: '/host/create',
             element: <VoteCreatePage />,
           },
         ],
@@ -72,7 +72,7 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: "*",
+    path: '*',
     element: <NotFoundPage />,
   },
-]);
+])

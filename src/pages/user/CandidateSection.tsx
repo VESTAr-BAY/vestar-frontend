@@ -17,7 +17,13 @@ interface CandidateItemProps {
   resultPublic: boolean
 }
 
-function CandidateItem({ candidate, selected, onToggle, isEnded, resultPublic }: CandidateItemProps) {
+function CandidateItem({
+  candidate,
+  selected,
+  onToggle,
+  isEnded,
+  resultPublic,
+}: CandidateItemProps) {
   return (
     <button
       type="button"

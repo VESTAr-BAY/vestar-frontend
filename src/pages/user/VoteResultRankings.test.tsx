@@ -4,9 +4,36 @@ import type { RankedCandidate } from '../../types/vote'
 import { VoteResultRankings } from './VoteResultRankings'
 
 const mockRanked: RankedCandidate[] = [
-  { id: '1', name: 'NewJeans', group: '어도어', emoji: '🍀', emojiColor: '#dcfce7', votes: 8934, percentage: 35.9, rank: 1 },
-  { id: '2', name: 'BTS', group: '빅히트 뮤직', emoji: '👑', emojiColor: '#fef3c7', votes: 6721, percentage: 27.0, rank: 2 },
-  { id: '3', name: 'aespa', group: 'SM 엔터테인먼트', emoji: '🌌', emojiColor: '#ede9fe', votes: 4203, percentage: 16.9, rank: 3 },
+  {
+    id: '1',
+    name: 'NewJeans',
+    group: '어도어',
+    emoji: '🍀',
+    emojiColor: '#dcfce7',
+    votes: 8934,
+    percentage: 35.9,
+    rank: 1,
+  },
+  {
+    id: '2',
+    name: 'BTS',
+    group: '빅히트 뮤직',
+    emoji: '👑',
+    emojiColor: '#fef3c7',
+    votes: 6721,
+    percentage: 27.0,
+    rank: 2,
+  },
+  {
+    id: '3',
+    name: 'aespa',
+    group: 'SM 엔터테인먼트',
+    emoji: '🌌',
+    emojiColor: '#ede9fe',
+    votes: 4203,
+    percentage: 16.9,
+    rank: 3,
+  },
 ]
 
 describe('VoteResultRankings', () => {

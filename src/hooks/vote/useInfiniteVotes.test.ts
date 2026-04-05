@@ -32,9 +32,13 @@ describe('useInfiniteVotes', () => {
 
   it('isLoadingMore becomes true during load, then false', async () => {
     const { result } = renderHook(() => useInfiniteVotes())
-    act(() => { result.current.loadMore() })
+    act(() => {
+      result.current.loadMore()
+    })
     expect(result.current.isLoadingMore).toBe(true)
-    await act(async () => { vi.advanceTimersByTime(600) })
+    await act(async () => {
+      vi.advanceTimersByTime(600)
+    })
     expect(result.current.isLoadingMore).toBe(false)
   })
 

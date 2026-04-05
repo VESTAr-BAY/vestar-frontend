@@ -22,7 +22,9 @@ function LoadingSkeleton() {
 export function VoteDetailPage() {
   const { id = '1' } = useParams()
   const { vote, isLoading } = useVoteDetail(id)
-  const { isSelected, toggle, canSubmit, selectedIds } = useCandidateSelection(vote?.maxChoices ?? 1)
+  const { isSelected, toggle, canSubmit, selectedIds } = useCandidateSelection(
+    vote?.maxChoices ?? 1,
+  )
   const { state, txHash, karmaEarned, submit, reset } = useVoteSubmit()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [hasVoted, setHasVoted] = useState(false)

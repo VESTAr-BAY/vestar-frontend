@@ -1,3 +1,3 @@
 export function LandingPage() {
-  return <div>LandingPage — TODO</div>;
+  return <div>LandingPage — TODO</div>
 }

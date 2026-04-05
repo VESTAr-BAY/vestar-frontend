@@ -12,7 +12,11 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
     const t1 = setTimeout(() => setVisible(true), 80)
     const t2 = setTimeout(() => setExiting(true), 1600)
     const t3 = setTimeout(onDone, 2000)
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
+    }
   }, [onDone])
 
   return (
@@ -24,14 +28,26 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
       >
         {/* Logo mark */}
         <div className="w-16 h-16 rounded-2xl bg-[#7140FF] flex items-center justify-center mb-5 shadow-[0_0_40px_rgba(113,64,255,0.4)]">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="9 11 12 14 22 4" />
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
           </svg>
         </div>
 
         {/* Brand */}
-        <div data-testid="splash-brand" className="text-[36px] font-bold text-white tracking-tight leading-none">
+        <div
+          data-testid="splash-brand"
+          className="text-[36px] font-bold text-white tracking-tight leading-none"
+        >
           VEST<span className="text-[#7140FF]">Ar</span>
         </div>
         <div className="text-[13px] text-white/40 mt-2 font-mono tracking-wider">
@@ -40,7 +56,9 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
       </div>
 
       {/* Loading dots */}
-      <div className={`absolute bottom-16 flex gap-1.5 transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+      <div
+        className={`absolute bottom-16 flex gap-1.5 transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+      >
         {[0, 1, 2].map((i) => (
           <div
             key={i}

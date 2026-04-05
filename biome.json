@@ -18,8 +18,8 @@
   },
   "javascript": {
     "formatter": {
-      "quoteStyle": "double",
-      "semicolons": "always"
+      "quoteStyle": "single",
+      "semicolons": "asNeeded"
     }
   },
   "files": {
@@ -30,7 +30,8 @@
       "!**/generated",
       "!**/*.d.ts",
       "!**/.turbo",
-      "!**/.claude"
+      "!**/.claude",
+      "!**/src/index.css"
     ]
   }
 }

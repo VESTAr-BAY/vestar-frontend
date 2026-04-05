@@ -48,12 +48,8 @@ export function VoteHero({ vote }: VoteHeroProps) {
       {/* Org row */}
       <div className="flex items-center gap-1 mb-2">
         <span className="text-[11px] text-white/40 font-mono">{vote.org}</span>
-        {vote.verified && (
-          <span className="text-[#a78bfa] text-[11px]">✦</span>
-        )}
-        {vote.verified && (
-          <img src={verifiedIcon} alt="verified" className="w-3 h-3 opacity-50" />
-        )}
+        {vote.verified && <span className="text-[#a78bfa] text-[11px]">✦</span>}
+        {vote.verified && <img src={verifiedIcon} alt="verified" className="w-3 h-3 opacity-50" />}
       </div>
 
       {/* Title */}

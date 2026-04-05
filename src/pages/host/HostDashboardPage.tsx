@@ -26,8 +26,22 @@ const BADGE_LABEL: Record<BadgeVariant, string> = {
 }
 
 const MOCK_HOST_VOTES: HostVoteCard[] = [
-  { id: '1', emoji: '🎤', title: '이번 주 1위는 누구?', badge: 'live', participantCount: 24891, endDate: '2025.04.03' },
-  { id: '7', emoji: '🏆', title: '지난 달 최고의 무대', badge: 'end', participantCount: 18204, endDate: '2025.03.27' },
+  {
+    id: '1',
+    emoji: '🎤',
+    title: '이번 주 1위는 누구?',
+    badge: 'live',
+    participantCount: 24891,
+    endDate: '2025.04.03',
+  },
+  {
+    id: '7',
+    emoji: '🏆',
+    title: '지난 달 최고의 무대',
+    badge: 'end',
+    participantCount: 18204,
+    endDate: '2025.03.27',
+  },
 ]
 
 function VoteCard({ vote, onNavigate }: { vote: HostVoteCard; onNavigate: (id: string) => void }) {
@@ -99,7 +113,16 @@ export function HostDashboardPage() {
           onClick={() => navigate('/host/create')}
           className="w-full bg-[#7140FF] text-white rounded-2xl py-4 text-[15px] font-bold hover:opacity-85 transition-opacity active:scale-[0.99] flex items-center justify-center gap-2"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M12 5v14M5 12h14" />
           </svg>
           새 투표 만들기

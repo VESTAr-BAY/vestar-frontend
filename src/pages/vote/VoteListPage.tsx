@@ -36,21 +36,32 @@ function HotVoteCard({ vote, onNavigate }: { vote: HotVote; onNavigate: (id: str
         style={{ background: vote.gradient }}
       >
         {vote.emoji}
-        <span className={`absolute top-2 right-2 text-[9px] font-bold font-mono px-2 py-[3px] rounded-[10px] tracking-[0.4px] uppercase ${BADGE_STYLES[vote.badge]}`}>
+        <span
+          className={`absolute top-2 right-2 text-[9px] font-bold font-mono px-2 py-[3px] rounded-[10px] tracking-[0.4px] uppercase ${BADGE_STYLES[vote.badge]}`}
+        >
           {BADGE_LABEL[vote.badge]}
         </span>
       </div>
       <div className="px-3 pt-3 pb-[14px]">
         <div className="text-[10px] text-[#707070] font-mono mb-[3px]">{vote.org}</div>
-        <div className="text-[13px] font-semibold text-[#090A0B] mb-2 leading-[1.3]">{vote.name}</div>
+        <div className="text-[13px] font-semibold text-[#090A0B] mb-2 leading-[1.3]">
+          {vote.name}
+        </div>
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-[#707070]">{vote.count} 참여</span>
           {vote.badge === 'end' ? (
-            <button type="button" className="bg-[#E7E9ED] text-[#707070] rounded-lg px-[11px] py-[5px] text-[11px] font-semibold cursor-default" disabled>
+            <button
+              type="button"
+              className="bg-[#E7E9ED] text-[#707070] rounded-lg px-[11px] py-[5px] text-[11px] font-semibold cursor-default"
+              disabled
+            >
               종료됨
             </button>
           ) : (
-            <button type="button" className="bg-[#7140FF] text-white rounded-lg px-[11px] py-[5px] text-[11px] font-semibold hover:opacity-85 transition-opacity">
+            <button
+              type="button"
+              className="bg-[#7140FF] text-white rounded-lg px-[11px] py-[5px] text-[11px] font-semibold hover:opacity-85 transition-opacity"
+            >
               투표하기
             </button>
           )}
@@ -67,24 +78,35 @@ function VoteItem({ item, onNavigate }: { item: VoteListItem; onNavigate: (id: s
       onClick={() => onNavigate(isEnded ? `${item.id}/result` : item.id)}
       className="bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px] cursor-pointer transition-[border-color,background] duration-150 hover:border-[rgba(113,64,255,0.25)] hover:bg-[#F0EDFF] active:scale-[0.99]"
     >
-      <div className="w-[52px] h-[52px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: item.emojiColor }}>
+      <div
+        className="w-[52px] h-[52px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+        style={{ background: item.emojiColor }}
+      >
         {item.emoji}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1 mb-1">
           <span className="text-[11px] text-[#707070] font-mono truncate">{item.org}</span>
-          {item.verified && <img src={verifiedIcon} alt="verified" className="w-3 h-3 flex-shrink-0 opacity-60" />}
+          {item.verified && (
+            <img src={verifiedIcon} alt="verified" className="w-3 h-3 flex-shrink-0 opacity-60" />
+          )}
         </div>
-        <div className="text-[15px] font-semibold text-[#090A0B] mb-1.5 truncate leading-[1.35]">{item.name}</div>
+        <div className="text-[15px] font-semibold text-[#090A0B] mb-1.5 truncate leading-[1.35]">
+          {item.name}
+        </div>
         <div className="text-[12px] text-[#707070]">
           <strong className="text-[#7140FF] font-mono">{item.count}명</strong> 참여 중
         </div>
       </div>
       <div className="flex flex-col items-end gap-2 flex-shrink-0">
-        <span className={`text-[9px] font-bold font-mono px-2 py-[3px] rounded-[10px] tracking-[0.4px] uppercase ${BADGE_STYLES[item.badge]}`}>
+        <span
+          className={`text-[9px] font-bold font-mono px-2 py-[3px] rounded-[10px] tracking-[0.4px] uppercase ${BADGE_STYLES[item.badge]}`}
+        >
           {BADGE_LABEL[item.badge]}
         </span>
-        <span className={`text-[11px] font-mono ${item.urgent ? 'text-[#dc2626] font-semibold' : 'text-[#707070]'}`}>
+        <span
+          className={`text-[11px] font-mono ${item.urgent ? 'text-[#dc2626] font-semibold' : 'text-[#707070]'}`}
+        >
           {item.deadline}
         </span>
         <img src={checkboxBlank} alt="" className="w-4 h-4 opacity-30" />
@@ -106,8 +128,12 @@ export function VoteListPage() {
       {/* Hero strip */}
       <div className="bg-[#13141A] px-5 pt-5 pb-6 relative overflow-hidden">
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7140FF] to-transparent" />
-        <div className="text-[10px] font-semibold text-[#7140FF] tracking-[1.2px] uppercase font-mono mb-1.5">Live Now</div>
-        <div className="text-[22px] font-semibold text-white leading-tight mb-1">지금 투표하세요 🗳️</div>
+        <div className="text-[10px] font-semibold text-[#7140FF] tracking-[1.2px] uppercase font-mono mb-1.5">
+          Live Now
+        </div>
+        <div className="text-[22px] font-semibold text-white leading-tight mb-1">
+          지금 투표하세요 🗳️
+        </div>
         <div className="text-[13px] text-white/40">K-pop 팬이라면 지금 바로 참여하세요</div>
       </div>
 
@@ -137,8 +163,7 @@ export function VoteListPage() {
       <div className="px-5 pb-1 flex gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {isLoading
           ? Array.from({ length: 4 }, (_, i) => <HotCardSkeleton key={i} />)
-          : hotVotes.map((v) => <HotVoteCard key={v.id} vote={v} onNavigate={handleNavigate} />)
-        }
+          : hotVotes.map((v) => <HotVoteCard key={v.id} vote={v} onNavigate={handleNavigate} />)}
       </div>
 
       {/* 진행 중인 투표 section */}
@@ -149,17 +174,12 @@ export function VoteListPage() {
       <div className="px-5 flex flex-col gap-[10px] pb-2">
         {isLoading
           ? Array.from({ length: 6 }, (_, i) => <VoteCardSkeleton key={i} />)
-          : items.map((item) => <VoteItem key={item.id} item={item} onNavigate={handleNavigate} />)
-        }
+          : items.map((item) => <VoteItem key={item.id} item={item} onNavigate={handleNavigate} />)}
       </div>
 
       {/* Infinite scroll sentinel */}
       {!isLoading && (
-        <InfiniteScrollSentinel
-          onVisible={loadMore}
-          isLoading={isLoadingMore}
-          hasMore={hasMore}
-        />
+        <InfiniteScrollSentinel onVisible={loadMore} isLoading={isLoadingMore} hasMore={hasMore} />
       )}
     </>
   )

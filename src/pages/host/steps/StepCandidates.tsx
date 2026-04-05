@@ -32,7 +32,15 @@ export function StepCandidates({ candidates, onAdd, onRemove, onUpdate }: StepCa
                   className="w-7 h-7 flex items-center justify-center rounded-full text-[#707070] hover:bg-[#FEF2F2] hover:text-[#dc2626] transition-colors"
                   aria-label="후보 삭제"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  >
                     <path d="M18 6 6 18M6 6l12 12" />
                   </svg>
                 </button>
@@ -87,7 +95,15 @@ export function StepCandidates({ candidates, onAdd, onRemove, onUpdate }: StepCa
           onClick={onAdd}
           className="mt-4 w-full py-3.5 border-2 border-dashed border-[#E7E9ED] rounded-2xl text-[14px] font-semibold text-[#7140FF] hover:border-[#7140FF] hover:bg-[#F0EDFF] transition-all flex items-center justify-center gap-2"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
             <path d="M12 5v14M5 12h14" />
           </svg>
           후보 추가

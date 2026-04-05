@@ -15,19 +15,25 @@ describe('useVoteList', () => {
 
   it('sets isLoading: false after delay', async () => {
     const { result } = renderHook(() => useVoteList())
-    await act(async () => { vi.advanceTimersByTime(700) })
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+    })
     expect(result.current.isLoading).toBe(false)
   })
 
   it('provides hotVotes after loading', async () => {
     const { result } = renderHook(() => useVoteList())
-    await act(async () => { vi.advanceTimersByTime(700) })
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+    })
     expect(result.current.hotVotes.length).toBeGreaterThan(0)
   })
 
   it('provides items after loading', async () => {
     const { result } = renderHook(() => useVoteList())
-    await act(async () => { vi.advanceTimersByTime(700) })
+    await act(async () => {
+      vi.advanceTimersByTime(700)
+    })
     expect(result.current.items.length).toBeGreaterThan(0)
   })
 })

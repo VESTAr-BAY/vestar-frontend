@@ -1,12 +1,12 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type ReactNode } from "react";
-import { WagmiProvider } from "wagmi";
-import { wagmiConfig } from "../config/wagmi";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { type ReactNode } from 'react'
+import { WagmiProvider } from 'wagmi'
+import { wagmiConfig } from '../config/wagmi'
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
 interface WalletProviderProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 export function WalletProvider({ children }: WalletProviderProps) {
@@ -14,5 +14,5 @@ export function WalletProvider({ children }: WalletProviderProps) {
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiProvider>
-  );
+  )
 }

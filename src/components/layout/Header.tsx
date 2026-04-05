@@ -13,7 +13,8 @@ interface HeaderProps {
 const STATE_CLASSES: Record<ScrollState, string> = {
   default: 'top-0 w-full max-w-[430px] h-14 bg-[#13141A] px-5',
   hidden: '-top-[66px] w-full max-w-[430px] h-14 bg-[#13141A] px-5',
-  floating: 'top-[10px] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-12 rounded-2xl bg-[#1C2033] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.35),0_2px_8px_rgba(0,0,0,0.25)] px-4',
+  floating:
+    'top-[10px] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-12 rounded-2xl bg-[#1C2033] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.35),0_2px_8px_rgba(0,0,0,0.25)] px-4',
 }
 
 function truncateAddress(address: string): string {
@@ -47,11 +48,7 @@ export function Header({ scrollState, onOpenPanel, onOpenSearch }: HeaderProps) 
         onClick={onOpenSearch}
         className="flex items-center justify-center w-8 h-8 flex-shrink-0"
       >
-        <img
-          src={searchIcon}
-          alt=""
-          className="w-[18px] h-[18px] brightness-0 invert"
-        />
+        <img src={searchIcon} alt="" className="w-[18px] h-[18px] brightness-0 invert" />
       </button>
 
       {isConnected && address ? (

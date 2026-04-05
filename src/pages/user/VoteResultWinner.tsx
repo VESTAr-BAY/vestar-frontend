@@ -63,7 +63,8 @@ export function VoteResultWinner({ result, winner }: VoteResultWinnerProps) {
 
       {/* Total votes */}
       <div className="mt-4 flex items-center justify-center gap-1.5 text-[12px] text-white/35 font-mono">
-        총 <span className="text-white/60 font-semibold">{result.totalVotes.toLocaleString()}</span>명 참여
+        총 <span className="text-white/60 font-semibold">{result.totalVotes.toLocaleString()}</span>
+        명 참여
       </div>
     </div>
   )

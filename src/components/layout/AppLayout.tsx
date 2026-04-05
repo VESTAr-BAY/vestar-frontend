@@ -28,15 +28,9 @@ export function AppLayout() {
 
       <FooterNav scrollState={scrollState} />
 
-      <ProfilePanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-      />
+      <ProfilePanel open={panelOpen} onClose={() => setPanelOpen(false)} />
 
-      <SearchOverlay
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-      />
+      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   )
 }

@@ -44,9 +44,7 @@ export function StepBasicInfo({ draft, onUpdate }: StepBasicInfoProps) {
 
       {/* Emoji */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">
-          아이콘
-        </label>
+        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">아이콘</label>
         <div className="grid grid-cols-6 gap-2">
           {EMOJI_OPTIONS.map((emoji) => (
             <button
@@ -67,9 +65,7 @@ export function StepBasicInfo({ draft, onUpdate }: StepBasicInfoProps) {
 
       {/* Category */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">
-          카테고리
-        </label>
+        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">카테고리</label>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((cat) => (
             <button

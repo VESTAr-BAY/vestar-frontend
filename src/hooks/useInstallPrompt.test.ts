@@ -74,6 +74,9 @@ describe('useInstallPrompt', () => {
   it('removes the event listener on unmount', () => {
     const { unmount } = renderHook(() => useInstallPrompt())
     unmount()
-    expect(window.removeEventListener).toHaveBeenCalledWith('beforeinstallprompt', expect.any(Function))
+    expect(window.removeEventListener).toHaveBeenCalledWith(
+      'beforeinstallprompt',
+      expect.any(Function),
+    )
   })
 })

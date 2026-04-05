@@ -21,9 +21,7 @@ export function useVoteSubmit(): VoteSubmitResult {
     await new Promise((resolve) => setTimeout(resolve, 1400))
     const hash =
       '0x' +
-      Array.from({ length: 40 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join(
-        '',
-      )
+      Array.from({ length: 40 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('')
     setTxHash(hash)
     setState('success')
   }, [])

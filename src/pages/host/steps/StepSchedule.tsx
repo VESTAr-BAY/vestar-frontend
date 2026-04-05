@@ -88,7 +88,9 @@ export function StepSchedule({ draft, onUpdate }: StepScheduleProps) {
             >
               <div
                 className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                  draft.resultReveal === value ? 'border-[#7140FF] bg-[#7140FF]' : 'border-[#E7E9ED]'
+                  draft.resultReveal === value
+                    ? 'border-[#7140FF] bg-[#7140FF]'
+                    : 'border-[#E7E9ED]'
                 }`}
               >
                 {draft.resultReveal === value && (
