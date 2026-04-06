@@ -66,7 +66,7 @@ function VoteCard({ vote, onNavigate }: { vote: HostVoteCard; onNavigate: (id: s
       </div>
       <button
         type="button"
-        onClick={() => onNavigate(isEnded ? `/vote/${vote.id}/result` : `/vote/${vote.id}`)}
+        onClick={() => onNavigate(isEnded ? `/vote/${vote.id}/result` : `/host/manage/${vote.id}`)}
         className="flex-shrink-0 text-[12px] font-semibold text-[#7140FF] bg-[#F0EDFF] px-3 py-1.5 rounded-lg hover:bg-[#E5DFFF] transition-colors"
       >
         {isEnded ? '결과 보기' : '관리'}

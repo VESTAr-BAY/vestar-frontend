@@ -6,15 +6,22 @@ const CATEGORIES = ['음악방송', '시상식', '팬투표', '콘셉트', '기�
 interface StepBasicInfoProps {
   draft: VoteCreateDraft
   onUpdate: <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => void
+  initialDraft?: VoteCreateDraft | null
 }
 
-export function StepBasicInfo({ draft, onUpdate }: StepBasicInfoProps) {
+export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoProps) {
+  const isTitleChanged = initialDraft && initialDraft.title !== draft.title
+  const isOrgChanged = initialDraft && initialDraft.org !== draft.org
+  const isEmojiChanged = initialDraft && initialDraft.emoji !== draft.emoji
+  const isCategoryChanged = initialDraft && initialDraft.category !== draft.category
+
   return (
     <div className="px-5 py-6 flex flex-col gap-6">
       {/* Title */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">
-          투표 제목 <span className="text-[#7140FF]">*</span>
+        <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#090A0B] mb-2">
+          <span>투표 제목 <span className="text-[#7140FF]">*</span></span>
+          {isTitleChanged && <span className="text-[10px] font-bold text-[#7140FF] bg-[#7140FF]/10 px-1.5 py-0.5 rounded-md">수정됨</span>}
         </label>
         <input
           type="text"
@@ -29,8 +36,9 @@ export function StepBasicInfo({ draft, onUpdate }: StepBasicInfoProps) {
 
       {/* Org */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">
-          주최 <span className="text-[#7140FF]">*</span>
+        <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#090A0B] mb-2">
+          <span>주최 <span className="text-[#7140FF]">*</span></span>
+          {isOrgChanged && <span className="text-[10px] font-bold text-[#7140FF] bg-[#7140FF]/10 px-1.5 py-0.5 rounded-md">수정됨</span>}
         </label>
         <input
           type="text"
@@ -44,7 +52,10 @@ export function StepBasicInfo({ draft, onUpdate }: StepBasicInfoProps) {
 
       {/* Emoji */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">아이콘</label>
+        <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#090A0B] mb-2">
+          <span>아이콘</span>
+          {isEmojiChanged && <span className="text-[10px] font-bold text-[#7140FF] bg-[#7140FF]/10 px-1.5 py-0.5 rounded-md">수정됨</span>}
+        </label>
         <div className="grid grid-cols-6 gap-2">
           {EMOJI_OPTIONS.map((emoji) => (
             <button
@@ -65,7 +76,10 @@ export function StepBasicInfo({ draft, onUpdate }: StepBasicInfoProps) {
 
       {/* Category */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">카테고리</label>
+        <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#090A0B] mb-2">
+          <span>카테고리</span>
+          {isCategoryChanged && <span className="text-[10px] font-bold text-[#7140FF] bg-[#7140FF]/10 px-1.5 py-0.5 rounded-md">수정됨</span>}
+        </label>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((cat) => (
             <button

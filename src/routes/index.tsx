@@ -5,6 +5,8 @@ import { HostGuard } from '../guards/HostGuard'
 import { WalletGuard } from '../guards/WalletGuard'
 import { HostDashboardPage } from '../pages/host/HostDashboardPage'
 import { VoteCreatePage } from '../pages/host/VoteCreatePage'
+import { VoteEditPage } from '../pages/host/VoteEditPage'
+import { VoteManagePage } from '../pages/host/VoteManagePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { UnauthorizedPage } from '../pages/UnauthorizedPage'
 import { VoteDetailPage } from '../pages/vote/VoteDetailPage'
@@ -54,6 +56,20 @@ export const router = createBrowserRouter([
         path: '/vote/:id/result',
         element: <VoteResultPage />,
       },
+      {
+        element: <WalletGuard />,
+        children: [
+          {
+            element: <HostGuard />,
+            children: [
+              {
+                path: '/host/manage/:id',
+                element: <VoteManagePage />,
+              },
+            ],
+          },
+        ],
+      },
     ],
   },
   // Host create — own full-screen layout, guarded
@@ -66,6 +82,10 @@ export const router = createBrowserRouter([
           {
             path: '/host/create',
             element: <VoteCreatePage />,
+          },
+          {
+            path: '/host/edit/:id',
+            element: <VoteEditPage />,
           },
         ],
       },
