@@ -9,12 +9,19 @@ export interface CandidateDraft {
   emojiColor: string
 }
 
+export interface SectionDraft {
+  id: string
+  name: string // "남자 그룹", "여자 그룹", etc.
+  candidates: CandidateDraft[]
+}
+
 export interface VoteCreateDraft {
   title: string
   org: string
   emoji: string
   category: string
   candidates: CandidateDraft[]
+  sections: SectionDraft[] // empty = flat mode (default)
   startDate: string
   endDate: string
   maxChoices: 1 | 2 | 3

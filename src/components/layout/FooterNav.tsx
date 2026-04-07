@@ -13,6 +13,7 @@ const NAV_ITEMS: NavItem[] = [
     path: '/vote',
     icon: (active) => (
       <svg
+        aria-hidden="true"
         width="22"
         height="22"
         viewBox="0 0 24 24"
@@ -29,9 +30,10 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     label: '마이',
-    path: '/profile',
+    path: '/mypage',
     icon: (active) => (
       <svg
+        aria-hidden="true"
         width="22"
         height="22"
         viewBox="0 0 24 24"

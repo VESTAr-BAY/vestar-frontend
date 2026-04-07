@@ -1,4 +1,5 @@
 import accountCircleIcon from '../../assets/account_circle.svg'
+import keyboardArrowLeft from '../../assets/keyboard_arrow_left.svg'
 import type { ScrollState } from '../../hooks/useScrollDirection'
 
 interface DetailHeaderProps {
@@ -35,22 +36,16 @@ export function DetailHeader({
         onClick={onBack}
         className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.08] hover:bg-white/[0.14] transition-colors flex-shrink-0"
       >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
+        <img src={keyboardArrowLeft} alt="" className="w-6 h-6 brightness-0 invert" />
       </button>
 
+      {/* Logo */}
+      <span className="font-mono text-base font-medium tracking-[1.5px] text-white uppercase flex-shrink-0">
+        VEST<span className="text-[#7140FF]">A</span>r
+      </span>
+
       {/* Title */}
-      <span className="flex-1 text-[15px] font-semibold text-white truncate">{title}</span>
+      <span className="flex-1 text-[13px] font-semibold text-white/60 truncate">{title}</span>
 
       {/* Share button (optional) */}
       {onShare && (
@@ -61,6 +56,7 @@ export function DetailHeader({
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.08] hover:bg-white/[0.14] transition-colors flex-shrink-0 text-white"
         >
           <svg
+            aria-hidden="true"
             width="16"
             height="16"
             viewBox="0 0 24 24"

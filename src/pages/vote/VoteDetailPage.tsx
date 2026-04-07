@@ -3,10 +3,11 @@ import { useParams } from 'react-router'
 import { BottomSheet } from '../../components/shared/BottomSheet'
 import { VoteDetailHeaderContext } from '../../components/layout/VoteDetailLayout'
 import { useCandidateSelection } from '../../hooks/user/useCandidateSelection'
+import { useSectionVoteSelection } from '../../hooks/user/useSectionVoteSelection'
 import { useVoteDetail } from '../../hooks/user/useVoteDetail'
 import { useVoteSubmit } from '../../hooks/user/useVoteSubmit'
 import { useToast } from '../../providers/ToastProvider'
-import { CandidateSection } from '../user/CandidateSection'
+import { CandidateSection, GroupedCandidateSection } from '../user/CandidateSection'
 import { VoteBottomSheetContent } from '../user/VoteBottomSheetContent'
 import { VoteHero } from '../user/VoteHero'
 import { VoteInfoSection } from '../user/VoteInfoSection'
@@ -22,17 +23,28 @@ function LoadingSkeleton() {
 export function VoteDetailPage() {
   const { id = '1' } = useParams()
   const { vote, isLoading } = useVoteDetail(id)
+
+  const isGrouped = (vote?.sections?.length ?? 0) > 0
+
+  // Flat vote selection (used when not grouped)
   const { isSelected, toggle, canSubmit, selectedIds } = useCandidateSelection(
     vote?.maxChoices ?? 1,
   )
+
+  // Grouped vote selection (used when sections exist)
+  const sectionSelection = useSectionVoteSelection(vote?.sections ?? [])
+
   const { state, txHash, karmaEarned, submit, reset } = useVoteSubmit()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [hasVoted, setHasVoted] = useState(false)
   const { setConfig } = useContext(VoteDetailHeaderContext)
   const { addToast } = useToast()
 
+  const { scrollState } = useContext(VoteDetailHeaderContext)
   const isEnded = vote?.badge === 'end'
   const selectedCandidate = vote?.candidates.find((c) => selectedIds.has(c.id)) ?? null
+
+  const activeCanSubmit = isGrouped ? sectionSelection.canSubmit : canSubmit
 
   useEffect(() => {
     if (!vote) return
@@ -49,19 +61,29 @@ export function VoteDetailPage() {
   useEffect(() => {
     if (state === 'success') {
       setHasVoted(true)
-      addToast({ type: 'success', message: `"${selectedCandidate?.name}"에 투표 완료! ⚡` })
+      if (isGrouped) {
+        addToast({
+          type: 'success',
+          message: `${sectionSelection.selectedCount}개 섹션 투표 완료! ⚡`,
+        })
+      } else {
+        addToast({ type: 'success', message: `"${selectedCandidate?.name}"에 투표 완료! ⚡` })
+      }
     }
-  }, [state, selectedCandidate, addToast])
+  }, [state, selectedCandidate, sectionSelection.selectedCount, isGrouped, addToast])
 
   const handleOpenSheet = useCallback(() => {
-    if (!canSubmit || hasVoted || isEnded) return
+    if (!activeCanSubmit || hasVoted || isEnded) return
     setSheetOpen(true)
-  }, [canSubmit, hasVoted, isEnded])
+  }, [activeCanSubmit, hasVoted, isEnded])
 
   const handleConfirm = useCallback(async () => {
     if (!vote) return
-    await submit(vote.id, Array.from(selectedIds))
-  }, [vote, selectedIds, submit])
+    const candidateIds = isGrouped
+      ? sectionSelection.selectedSections.map((s) => s.candidateId)
+      : Array.from(selectedIds)
+    await submit(vote.id, candidateIds)
+  }, [vote, isGrouped, sectionSelection.selectedSections, selectedIds, submit])
 
   const handleClose = useCallback(() => {
     if (state === 'loading') return
@@ -73,11 +95,18 @@ export function VoteDetailPage() {
 
   const sheetTitle = state === 'success' ? '투표 완료!' : '투표 확인'
 
+  // Action bar label
   const submitLabel = hasVoted
-    ? `✓ "${selectedCandidate?.name}" 에 투표 완료!`
-    : canSubmit
-      ? `"${selectedCandidate?.name}" 에 투표하기`
-      : '후보를 선택하세요'
+    ? isGrouped
+      ? `✓ ${sectionSelection.selectedCount}개 섹션 투표 완료!`
+      : `✓ "${selectedCandidate?.name}" 에 투표 완료!`
+    : isGrouped
+      ? activeCanSubmit
+        ? `${sectionSelection.selectedCount}개 섹션 선택 · ₩${sectionSelection.selectedCount * 100}`
+        : '섹션에서 후보를 선택하세요'
+      : activeCanSubmit
+        ? `"${selectedCandidate?.name}" 에 투표하기`
+        : '후보를 선택하세요'
 
   return (
     <>
@@ -86,17 +115,31 @@ export function VoteDetailPage() {
 
       <div className="h-2 bg-[#F7F8FA]" />
 
-      <CandidateSection
-        candidates={vote.candidates}
-        maxChoices={vote.maxChoices}
-        resultPublic={vote.resultPublic}
-        isSelected={isSelected}
-        onToggle={hasVoted || isEnded ? () => {} : toggle}
-        isEnded={isEnded || hasVoted}
-      />
+      {isGrouped ? (
+        <GroupedCandidateSection
+          sections={vote.sections!}
+          resultPublic={vote.resultPublic}
+          isSelected={sectionSelection.isSelected}
+          onToggle={hasVoted || isEnded ? () => {} : sectionSelection.toggle}
+          isEnded={isEnded || hasVoted}
+        />
+      ) : (
+        <CandidateSection
+          candidates={vote.candidates}
+          maxChoices={vote.maxChoices}
+          resultPublic={vote.resultPublic}
+          isSelected={isSelected}
+          onToggle={hasVoted || isEnded ? () => {} : toggle}
+          isEnded={isEnded || hasVoted}
+        />
+      )}
 
-      {/* Vote action bar */}
-      <div className="px-5 pt-4 pb-6 bg-[#F7F8FA]">
+      {/* Vote action bar — fixed at bottom, hides on scroll-down like header */}
+      <div
+        className={`fixed left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[90] px-5 pt-4 pb-6 bg-[#F7F8FA] border-t border-[#E7E9ED] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          scrollState === 'hidden' ? 'translate-y-full bottom-0' : 'translate-y-0 bottom-0'
+        }`}
+      >
         {hasVoted ? (
           <div className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-[rgba(34,197,94,0.12)] border border-[rgba(34,197,94,0.25)] text-[14px] font-semibold text-[#16a34a]">
             <svg
@@ -108,6 +151,7 @@ export function VoteDetailPage() {
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <path d="M20 6 9 17l-5-5" />
             </svg>
@@ -120,7 +164,7 @@ export function VoteDetailPage() {
         ) : (
           <button
             type="button"
-            disabled={!canSubmit}
+            disabled={!activeCanSubmit}
             onClick={handleOpenSheet}
             className="w-full bg-[#7140FF] text-white rounded-2xl py-4 text-[15px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:cursor-default hover:enabled:opacity-85 transition-opacity active:enabled:scale-[0.99]"
           >
@@ -133,7 +177,9 @@ export function VoteDetailPage() {
         <VoteBottomSheetContent
           state={state}
           vote={vote}
-          selectedCandidate={selectedCandidate}
+          selectedCandidate={isGrouped ? null : selectedCandidate}
+          selectedSections={isGrouped ? sectionSelection.selectedSections : undefined}
+          voteSections={isGrouped ? vote.sections : undefined}
           txHash={txHash}
           karmaEarned={karmaEarned}
           onConfirm={handleConfirm}

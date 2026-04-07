@@ -30,6 +30,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
               >
                 <path d="M20 6 9 17l-5-5" />
               </svg>
@@ -58,6 +59,13 @@ export function VoteCreatePage() {
     addCandidate,
     removeCandidate,
     updateCandidate,
+    addSection,
+    removeSection,
+    updateSectionName,
+    addCandidateToSection,
+    removeCandidateFromSection,
+    updateSectionCandidate,
+    clearSections,
     nextStep,
     prevStep,
     submit,
@@ -89,6 +97,7 @@ export function VoteCreatePage() {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
           >
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
@@ -107,9 +116,17 @@ export function VoteCreatePage() {
         {step === 2 && (
           <StepCandidates
             candidates={draft.candidates}
+            sections={draft.sections}
             onAdd={addCandidate}
             onRemove={removeCandidate}
             onUpdate={updateCandidate}
+            onAddSection={addSection}
+            onRemoveSection={removeSection}
+            onUpdateSectionName={updateSectionName}
+            onAddCandidateToSection={addCandidateToSection}
+            onRemoveCandidateFromSection={removeCandidateFromSection}
+            onUpdateSectionCandidate={updateSectionCandidate}
+            onClearSections={clearSections}
           />
         )}
         {step === 3 && <StepSchedule draft={draft} onUpdate={updateField} />}
@@ -139,6 +156,7 @@ export function VoteCreatePage() {
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
               >
                 <path d="m9 18 6-6-6-6" />
               </svg>

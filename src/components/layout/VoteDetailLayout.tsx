@@ -1,6 +1,7 @@
 import { createContext, useState } from 'react'
 import { Outlet, useNavigate } from 'react-router'
 import { useScrollDirection } from '../../hooks/useScrollDirection'
+import type { ScrollState } from '../../hooks/useScrollDirection'
 import { ProfilePanel } from './ProfilePanel'
 import { SearchOverlay } from './SearchOverlay'
 import { DetailHeader } from './DetailHeader'
@@ -12,7 +13,8 @@ export interface VoteDetailHeaderConfig {
 
 export const VoteDetailHeaderContext = createContext<{
   setConfig: (config: VoteDetailHeaderConfig) => void
-}>({ setConfig: () => {} })
+  scrollState: ScrollState
+}>({ setConfig: () => {}, scrollState: 'default' })
 
 export function VoteDetailLayout() {
   const [headerConfig, setHeaderConfig] = useState<VoteDetailHeaderConfig>({ title: '' })
@@ -26,7 +28,7 @@ export function VoteDetailLayout() {
   }
 
   return (
-    <VoteDetailHeaderContext value={{ setConfig: setHeaderConfig }}>
+    <VoteDetailHeaderContext value={{ setConfig: setHeaderConfig, scrollState }}>
       <div className="relative mx-auto h-screen w-full max-w-[430px] overflow-hidden bg-[#F7F8FA] shadow-[0_0_60px_rgba(0,0,0,0.12)]">
         <DetailHeader
           scrollState={scrollState}

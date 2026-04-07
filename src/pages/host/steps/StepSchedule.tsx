@@ -21,10 +21,11 @@ export function StepSchedule({ draft, onUpdate }: StepScheduleProps) {
     <div className="px-5 py-6 flex flex-col gap-6">
       {/* Start date */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+        <label htmlFor="vote-start-date" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
           시작 일시 <span className="text-[#7140FF]">*</span>
         </label>
         <input
+          id="vote-start-date"
           type="datetime-local"
           value={draft.startDate}
           onChange={(e) => onUpdate('startDate', e.target.value)}
@@ -34,10 +35,11 @@ export function StepSchedule({ draft, onUpdate }: StepScheduleProps) {
 
       {/* End date */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+        <label htmlFor="vote-end-date" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
           종료 일시 <span className="text-[#7140FF]">*</span>
         </label>
         <input
+          id="vote-end-date"
           type="datetime-local"
           value={draft.endDate}
           onChange={(e) => onUpdate('endDate', e.target.value)}
@@ -48,9 +50,9 @@ export function StepSchedule({ draft, onUpdate }: StepScheduleProps) {
 
       {/* Max choices */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+        <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">
           선택 가능 후보 수
-        </label>
+        </span>
         <div className="flex gap-2">
           {MAX_CHOICES_OPTIONS.map(({ value, label }) => (
             <button
@@ -71,9 +73,9 @@ export function StepSchedule({ draft, onUpdate }: StepScheduleProps) {
 
       {/* Result reveal */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+        <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">
           결과 공개 방식
-        </label>
+        </span>
         <div className="flex flex-col gap-2">
           {RESULT_REVEAL_OPTIONS.map(({ value, label, desc }) => (
             <button

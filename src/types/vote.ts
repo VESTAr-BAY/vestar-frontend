@@ -48,6 +48,13 @@ export interface Candidate {
   emojiColor: string
   votes?: number
   percentage?: number
+  votePreviewPct?: number
+}
+
+export interface VoteSection {
+  id: string
+  name: string
+  candidates: Candidate[]
 }
 
 export interface VoteDetailData {
@@ -61,11 +68,14 @@ export interface VoteDetailData {
   urgent: boolean
   startDate: string
   endDate: string
+  endDateISO: string
   resultReveal: string
   maxChoices: number
   participantCount: number
+  goalVotes: number
   voteFrequency: string
   voteLimit: string
   resultPublic: boolean
   candidates: Candidate[]
+  sections?: VoteSection[] // present = grouped vote mode
 }

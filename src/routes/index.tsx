@@ -7,6 +7,7 @@ import { HostDashboardPage } from '../pages/host/HostDashboardPage'
 import { VoteCreatePage } from '../pages/host/VoteCreatePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { UnauthorizedPage } from '../pages/UnauthorizedPage'
+import { MyPage } from '../pages/user/MyPage'
 import { VoteDetailPage } from '../pages/vote/VoteDetailPage'
 import { VoteListPage } from '../pages/vote/VoteListPage'
 import { VoteResultPage } from '../pages/vote/VoteResultPage'
@@ -26,6 +27,10 @@ export const router = createBrowserRouter([
       {
         path: '/vote',
         element: <VoteListPage />,
+      },
+      {
+        path: '/mypage',
+        element: <MyPage />,
       },
       {
         element: <WalletGuard />,

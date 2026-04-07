@@ -1,10 +1,15 @@
-import type { Candidate, VoteDetailData } from '../../types/vote'
+import type { Candidate, VoteDetailData, VoteSection } from '../../types/vote'
+import type { SectionSelection } from '../../hooks/user/useSectionVoteSelection'
 import type { SubmitState } from '../../hooks/user/useVoteSubmit'
 
 interface VoteBottomSheetContentProps {
   state: SubmitState
   vote: VoteDetailData
-  selectedCandidate: Candidate | null
+  // Flat mode
+  selectedCandidate?: Candidate | null
+  // Grouped mode
+  selectedSections?: SectionSelection[]
+  voteSections?: VoteSection[]
   txHash: string | null
   karmaEarned: number
   onConfirm: () => void
@@ -14,38 +19,93 @@ interface VoteBottomSheetContentProps {
 function ConfirmPhase({
   vote,
   selectedCandidate,
+  selectedSections,
+  voteSections,
   onConfirm,
 }: {
   vote: VoteDetailData
-  selectedCandidate: Candidate | null
+  selectedCandidate?: Candidate | null
+  selectedSections?: SectionSelection[]
+  voteSections?: VoteSection[]
   onConfirm: () => void
 }) {
+  const isGrouped = selectedSections && selectedSections.length > 0
+  const totalPrice = isGrouped ? selectedSections.length * 100 : 100
+
+  // Resolve candidate objects for grouped mode
+  const resolvedSections =
+    isGrouped && voteSections
+      ? selectedSections.map((sel) => {
+          const section = voteSections.find((s) => s.id === sel.sectionId)
+          const candidate = section?.candidates.find((c) => c.id === sel.candidateId)
+          return { ...sel, candidate }
+        })
+      : []
+
   return (
     <div>
-      {/* Selected candidate card */}
-      {selectedCandidate && (
-        <div className="flex items-center gap-3 bg-[#F0EDFF] rounded-xl p-3 mb-5">
-          <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-            style={{ backgroundColor: selectedCandidate.emojiColor }}
-          >
-            {selectedCandidate.emoji}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[15px] font-semibold text-[#090A0B] truncate">
-              {selectedCandidate.name}
+      {isGrouped ? (
+        // ── Grouped selections ──────────────────────────────────────────────
+        <div className="flex flex-col gap-2 mb-5">
+          {resolvedSections.map(({ sectionName, candidate }) => (
+            <div key={sectionName} className="bg-[#F7F8FA] rounded-xl p-3">
+              <div className="text-[11px] font-semibold text-[#7140FF] mb-2">{sectionName}</div>
+              {candidate && (
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                    style={{ backgroundColor: candidate.emojiColor }}
+                  >
+                    {candidate.emoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[14px] font-semibold text-[#090A0B] truncate">
+                      {candidate.name}
+                    </div>
+                    <div className="text-[12px] text-[#707070] truncate">{candidate.group}</div>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="text-[12px] text-[#707070] truncate">{selectedCandidate.group}</div>
-          </div>
+          ))}
         </div>
+      ) : (
+        // ── Flat single selection ───────────────────────────────────────────
+        selectedCandidate && (
+          <div className="flex items-center gap-3 bg-[#F0EDFF] rounded-xl p-3 mb-5">
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+              style={{ backgroundColor: selectedCandidate.emojiColor }}
+            >
+              {selectedCandidate.emoji}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[15px] font-semibold text-[#090A0B] truncate">
+                {selectedCandidate.name}
+              </div>
+              <div className="text-[12px] text-[#707070] truncate">{selectedCandidate.group}</div>
+            </div>
+          </div>
+        )
       )}
 
       {/* Price summary */}
       <div className="bg-[#F7F8FA] rounded-xl p-4 mb-5">
-        <div className="flex justify-between items-center">
-          <span className="text-[13px] text-[#707070]">투표권</span>
-          <span className="text-[13px] font-medium text-[#090A0B]">₩100</span>
-        </div>
+        {isGrouped ? (
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-[13px] text-[#707070]">
+              ₩100 × {selectedSections.length}개 섹션
+            </span>
+            <span className="text-[13px] font-bold text-[#090A0B]">
+              ₩{totalPrice.toLocaleString()}
+            </span>
+          </div>
+        ) : (
+          <div className="flex justify-between items-center">
+            <span className="text-[13px] text-[#707070]">투표권</span>
+            <span className="text-[13px] font-medium text-[#090A0B]">₩100</span>
+          </div>
+        )}
       </div>
 
       {/* Vote context */}
@@ -97,6 +157,7 @@ function SuccessPhase({
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
           >
             <path d="M20 6 9 17l-5-5" />
           </svg>
@@ -161,6 +222,8 @@ export function VoteBottomSheetContent({
   state,
   vote,
   selectedCandidate,
+  selectedSections,
+  voteSections,
   txHash,
   karmaEarned,
   onConfirm,
@@ -169,5 +232,13 @@ export function VoteBottomSheetContent({
   if (state === 'loading') return <LoadingPhase />
   if (state === 'success')
     return <SuccessPhase txHash={txHash} karmaEarned={karmaEarned} onClose={onClose} />
-  return <ConfirmPhase vote={vote} selectedCandidate={selectedCandidate} onConfirm={onConfirm} />
+  return (
+    <ConfirmPhase
+      vote={vote}
+      selectedCandidate={selectedCandidate}
+      selectedSections={selectedSections}
+      voteSections={voteSections}
+      onConfirm={onConfirm}
+    />
+  )
 }

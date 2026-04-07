@@ -29,6 +29,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
         {/* Logo mark */}
         <div className="w-16 h-16 rounded-2xl bg-[#7140FF] flex items-center justify-center mb-5 shadow-[0_0_40px_rgba(113,64,255,0.4)]">
           <svg
+            aria-hidden="true"
             width="32"
             height="32"
             viewBox="0 0 24 24"

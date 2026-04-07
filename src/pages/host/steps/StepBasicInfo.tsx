@@ -13,10 +13,11 @@ export function StepBasicInfo({ draft, onUpdate }: StepBasicInfoProps) {
     <div className="px-5 py-6 flex flex-col gap-6">
       {/* Title */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+        <label htmlFor="vote-title" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
           투표 제목 <span className="text-[#7140FF]">*</span>
         </label>
         <input
+          id="vote-title"
           type="text"
           value={draft.title}
           onChange={(e) => onUpdate('title', e.target.value)}
@@ -29,10 +30,11 @@ export function StepBasicInfo({ draft, onUpdate }: StepBasicInfoProps) {
 
       {/* Org */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+        <label htmlFor="vote-org" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
           주최 <span className="text-[#7140FF]">*</span>
         </label>
         <input
+          id="vote-org"
           type="text"
           value={draft.org}
           onChange={(e) => onUpdate('org', e.target.value)}
@@ -44,7 +46,7 @@ export function StepBasicInfo({ draft, onUpdate }: StepBasicInfoProps) {
 
       {/* Emoji */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">아이콘</label>
+        <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">아이콘</span>
         <div className="grid grid-cols-6 gap-2">
           {EMOJI_OPTIONS.map((emoji) => (
             <button
@@ -65,7 +67,7 @@ export function StepBasicInfo({ draft, onUpdate }: StepBasicInfoProps) {
 
       {/* Category */}
       <div>
-        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">카테고리</label>
+        <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">카테고리</span>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((cat) => (
             <button

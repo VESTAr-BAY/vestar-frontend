@@ -27,9 +27,10 @@ const FILTER_CHIPS = ['전체', '🎤 음악방송', '🏆 시상식', '💜 팬
 
 function HotVoteCard({ vote, onNavigate }: { vote: HotVote; onNavigate: (id: string) => void }) {
   return (
-    <div
+    <button
+      type="button"
       onClick={() => onNavigate(vote.id)}
-      className="flex-shrink-0 w-[200px] bg-white border border-[#E7E9ED] rounded-2xl overflow-hidden cursor-pointer transition-[transform,box-shadow,border-color] duration-[180ms] hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(113,64,255,0.10)] hover:border-[rgba(113,64,255,0.25)] active:scale-[0.98]"
+      className="flex-shrink-0 w-[200px] bg-white border border-[#E7E9ED] rounded-2xl overflow-hidden cursor-pointer transition-[transform,box-shadow,border-color] duration-[180ms] hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(113,64,255,0.10)] hover:border-[rgba(113,64,255,0.25)] active:scale-[0.98] text-left"
     >
       <div
         className="h-[100px] flex items-center justify-center text-4xl relative"
@@ -50,33 +51,27 @@ function HotVoteCard({ vote, onNavigate }: { vote: HotVote; onNavigate: (id: str
         <div className="flex items-center justify-between">
           <span className="text-[11px] text-[#707070]">{vote.count} 참여</span>
           {vote.badge === 'end' ? (
-            <button
-              type="button"
-              className="bg-[#E7E9ED] text-[#707070] rounded-lg px-[11px] py-[5px] text-[11px] font-semibold cursor-default"
-              disabled
-            >
+            <span className="bg-[#E7E9ED] text-[#707070] rounded-lg px-[11px] py-[5px] text-[11px] font-semibold">
               종료됨
-            </button>
+            </span>
           ) : (
-            <button
-              type="button"
-              className="bg-[#7140FF] text-white rounded-lg px-[11px] py-[5px] text-[11px] font-semibold hover:opacity-85 transition-opacity"
-            >
+            <span className="bg-[#7140FF] text-white rounded-lg px-[11px] py-[5px] text-[11px] font-semibold">
               투표하기
-            </button>
+            </span>
           )}
         </div>
       </div>
-    </div>
+    </button>
   )
 }
 
 function VoteItem({ item, onNavigate }: { item: VoteListItem; onNavigate: (id: string) => void }) {
   const isEnded = item.badge === 'end'
   return (
-    <div
+    <button
+      type="button"
       onClick={() => onNavigate(isEnded ? `${item.id}/result` : item.id)}
-      className="bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px] cursor-pointer transition-[border-color,background] duration-150 hover:border-[rgba(113,64,255,0.25)] hover:bg-[#F0EDFF] active:scale-[0.99]"
+      className="w-full bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px] cursor-pointer transition-[border-color,background] duration-150 hover:border-[rgba(113,64,255,0.25)] hover:bg-[#F0EDFF] active:scale-[0.99] text-left"
     >
       <div
         className="w-[52px] h-[52px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
@@ -111,7 +106,7 @@ function VoteItem({ item, onNavigate }: { item: VoteListItem; onNavigate: (id: s
         </span>
         <img src={checkboxBlank} alt="" className="w-4 h-4 opacity-30" />
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -162,7 +157,10 @@ export function VoteListPage() {
       </div>
       <div className="px-5 pb-1 flex gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {isLoading
-          ? Array.from({ length: 4 }, (_, i) => <HotCardSkeleton key={i} />)
+          ? Array.from({ length: 4 }, (_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders have no stable id
+              <HotCardSkeleton key={i} />
+            ))
           : hotVotes.map((v) => <HotVoteCard key={v.id} vote={v} onNavigate={handleNavigate} />)}
       </div>
 
@@ -173,7 +171,10 @@ export function VoteListPage() {
       </div>
       <div className="px-5 flex flex-col gap-[10px] pb-2">
         {isLoading
-          ? Array.from({ length: 6 }, (_, i) => <VoteCardSkeleton key={i} />)
+          ? Array.from({ length: 6 }, (_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders have no stable id
+              <VoteCardSkeleton key={i} />
+            ))
           : items.map((item) => <VoteItem key={item.id} item={item} onNavigate={handleNavigate} />)}
       </div>
 

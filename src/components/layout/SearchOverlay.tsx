@@ -34,6 +34,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         className="flex items-center justify-center w-8 h-8 text-white/60 hover:text-white transition-colors flex-shrink-0"
       >
         <svg
+          aria-hidden="true"
           width="20"
           height="20"
           viewBox="0 0 24 24"
@@ -64,6 +65,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           className="flex items-center justify-center w-7 h-7 text-white/40 hover:text-white/70 transition-colors flex-shrink-0"
         >
           <svg
+            aria-hidden="true"
             width="18"
             height="18"
             viewBox="0 0 24 24"

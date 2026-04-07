@@ -31,7 +31,12 @@ export function ProfileButton() {
       {open && (
         <>
           {/* backdrop */}
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <button
+            type="button"
+            aria-label="닫기"
+            className="fixed inset-0 z-10"
+            onClick={() => setOpen(false)}
+          />
           {/* dropdown */}
           <div className="absolute right-0 z-20 mt-2 w-48 rounded-xl border border-[#e7e9ed] bg-white py-1 shadow-lg">
             <div className="border-b border-[#e7e9ed] px-4 py-2">

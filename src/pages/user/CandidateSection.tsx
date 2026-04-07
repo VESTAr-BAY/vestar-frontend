@@ -1,4 +1,4 @@
-import type { Candidate } from '../../types/vote'
+import type { Candidate, VoteSection } from '../../types/vote'
 
 interface CandidateSectionProps {
   candidates: Candidate[]
@@ -119,6 +119,7 @@ export function CandidateSection({
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
+            aria-hidden="true"
           >
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -126,6 +127,66 @@ export function CandidateSection({
           <span>결과는 투표 종료 후 공개됩니다</span>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Grouped variant ──────────────────────────────────────────────────────────
+
+interface GroupedCandidateSectionProps {
+  sections: VoteSection[]
+  resultPublic: boolean
+  isSelected: (sectionId: string, candidateId: string) => boolean
+  onToggle: (sectionId: string, candidateId: string) => void
+  isEnded: boolean
+}
+
+const SECTION_COLORS = ['#F0EDFF', '#E8FFF0', '#FFF5E8', '#E8F0FF', '#FEF9EC', '#F0FFF4']
+
+export function GroupedCandidateSection({
+  sections,
+  resultPublic,
+  isSelected,
+  onToggle,
+  isEnded,
+}: GroupedCandidateSectionProps) {
+  return (
+    <div className="mx-5 mt-5 flex flex-col gap-6">
+      {sections.map((section, idx) => {
+        const accentBg = SECTION_COLORS[idx % SECTION_COLORS.length]
+        return (
+          <div key={section.id}>
+            {/* Section header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-[13px] font-bold px-3 py-1 rounded-full"
+                  style={{ background: accentBg, color: '#090A0B' }}
+                >
+                  {section.name}
+                </span>
+              </div>
+              <span className="text-[11px] bg-[#F0EDFF] text-[#7140FF] px-2.5 py-1 rounded-full font-medium">
+                ₩100
+              </span>
+            </div>
+
+            {/* Candidates */}
+            <div className="flex flex-col gap-2">
+              {section.candidates.map((candidate) => (
+                <CandidateItem
+                  key={candidate.id}
+                  candidate={candidate}
+                  selected={isSelected(section.id, candidate.id)}
+                  onToggle={(candidateId) => onToggle(section.id, candidateId)}
+                  isEnded={isEnded}
+                  resultPublic={resultPublic}
+                />
+              ))}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

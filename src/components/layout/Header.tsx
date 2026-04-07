@@ -1,4 +1,6 @@
+import { useLocation, useNavigate } from 'react-router'
 import { useAccount, useConnect } from 'wagmi'
+import keyboardArrowLeft from '../../assets/keyboard_arrow_left.svg'
 import searchIcon from '../../assets/search_button.svg'
 import accountCircleIcon from '../../assets/account_circle.svg'
 import walletIcon from '../../assets/account_balance_wallet.svg'
@@ -24,6 +26,12 @@ function truncateAddress(address: string): string {
 export function Header({ scrollState, onOpenPanel, onOpenSearch }: HeaderProps) {
   const { isConnected, address } = useAccount()
   const { connect, connectors, isPending } = useConnect()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+
+  const isHome = pathname === '/vote'
+  const showBack = !isHome
+  const showLogo = isHome || pathname === '/mypage'
 
   const handleConnect = () => {
     const injectedConnector = connectors.find((c) => c.id === 'injected') ?? connectors[0]
@@ -36,9 +44,22 @@ export function Header({ scrollState, onOpenPanel, onOpenSearch }: HeaderProps) 
     <header
       className={`fixed left-1/2 -translate-x-1/2 z-[100] flex items-center gap-[10px] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${STATE_CLASSES[scrollState]}`}
     >
-      <span className="font-mono text-base font-medium tracking-[1.5px] text-white uppercase flex-shrink-0">
-        VEST<span className="text-[#7140FF]">A</span>r
-      </span>
+      {showBack && (
+        <button
+          type="button"
+          aria-label="뒤로가기"
+          onClick={() => navigate(-1)}
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.08] hover:bg-white/[0.14] transition-colors flex-shrink-0"
+        >
+          <img src={keyboardArrowLeft} alt="" className="w-6 h-6 brightness-0 invert" />
+        </button>
+      )}
+
+      {showLogo && (
+        <span className="font-mono text-base font-medium tracking-[1.5px] text-white uppercase flex-shrink-0">
+          VEST<span className="text-[#7140FF]">A</span>r
+        </span>
+      )}
 
       <div className="flex-1" />
 

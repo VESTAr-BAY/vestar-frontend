@@ -9,17 +9,19 @@ interface BottomSheetProps {
 
 export function BottomSheet({ open, onClose, title, children }: BottomSheetProps) {
   return (
-    <div
-      className={`absolute inset-0 z-[200] transition-[background] duration-[280ms] ${
-        open ? 'bg-[rgba(9,10,11,0.65)] pointer-events-auto' : 'bg-transparent pointer-events-none'
-      }`}
-      onClick={onClose}
-    >
-      <div
-        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl transition-transform duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
-          open ? 'translate-y-0' : 'translate-y-full'
+    <>
+      <button
+        type="button"
+        aria-label="닫기"
+        className={`absolute inset-0 z-[200] transition-[background] duration-[280ms] ${
+          open ? 'bg-[rgba(9,10,11,0.65)] pointer-events-auto' : 'bg-transparent pointer-events-none'
         }`}
-        onClick={(e) => e.stopPropagation()}
+        onClick={onClose}
+      />
+      <div
+        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[201] transition-transform duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          open ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none'
+        }`}
       >
         {/* Handle bar */}
         <div className="flex justify-center pt-3 pb-1">
@@ -36,6 +38,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F7F8FA] transition-colors text-[#707070]"
           >
             <svg
+              aria-hidden="true"
               width="18"
               height="18"
               viewBox="0 0 24 24"
@@ -52,6 +55,6 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         {/* Body */}
         <div className="px-5 pb-8 overflow-y-auto max-h-[80vh]">{children}</div>
       </div>
-    </div>
+    </>
   )
 }
