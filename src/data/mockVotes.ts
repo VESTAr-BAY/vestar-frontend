@@ -7,7 +7,7 @@ export const HOT_VOTES: HotVote[] = [
     gradient: 'linear-gradient(135deg,#1a1035,#2d1b6e)',
     org: 'Show! Music Core',
     name: '이번 주 1위는 누구?',
-    count: '24,891명',
+    count: '24,891',
     badge: 'live',
   },
   {
@@ -16,7 +16,7 @@ export const HOT_VOTES: HotVote[] = [
     gradient: 'linear-gradient(135deg,#0a1a35,#1a2d6e)',
     org: 'Mnet × MAMA Awards',
     name: '2026 MAMA 대상',
-    count: '142,308명',
+    count: '142,308',
     badge: 'live',
   },
   {
@@ -25,7 +25,7 @@ export const HOT_VOTES: HotVote[] = [
     gradient: 'linear-gradient(135deg,#1a0a35,#3d1a6e)',
     org: 'ARMY 팬카페 공식',
     name: 'BTS 컴백 콘셉트 투표',
-    count: '8,204명',
+    count: '8,204',
     badge: 'new',
   },
   {
@@ -34,7 +34,7 @@ export const HOT_VOTES: HotVote[] = [
     gradient: 'linear-gradient(135deg,#1a1a1a,#2a2a2a)',
     org: 'Melon Music Awards',
     name: '올해의 앨범 최종 투표',
-    count: '420,100명',
+    count: '420,100',
     badge: 'end',
   },
 ]

@@ -1,0 +1,9 @@
+<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="subtle-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#EBFBFA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F2E9FB;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#subtle-gradient)" />
+</svg>

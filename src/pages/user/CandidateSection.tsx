@@ -1,3 +1,5 @@
+import { CandidateAvatar } from '../../components/shared/CandidateAvatar'
+import { useLanguage } from '../../providers/LanguageProvider'
 import type { Candidate, VoteSection } from '../../types/vote'
 
 interface CandidateSectionProps {
@@ -7,6 +9,8 @@ interface CandidateSectionProps {
   isSelected: (id: string) => boolean
   onToggle: (id: string) => void
   isEnded: boolean
+  /** IDs of candidates the current user voted for — shows "My Pick" badge */
+  votedCandidateIds?: Set<string>
 }
 
 interface CandidateItemProps {
@@ -15,6 +19,8 @@ interface CandidateItemProps {
   onToggle: (id: string) => void
   isEnded: boolean
   resultPublic: boolean
+  isMyChoice?: boolean
+  myPickLabel: string
 }
 
 function CandidateItem({
@@ -23,6 +29,8 @@ function CandidateItem({
   onToggle,
   isEnded,
   resultPublic,
+  isMyChoice = false,
+  myPickLabel,
 }: CandidateItemProps) {
   return (
     <button
@@ -30,32 +38,41 @@ function CandidateItem({
       disabled={isEnded}
       onClick={() => onToggle(candidate.id)}
       className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 relative overflow-hidden transition-all duration-150 text-left ${
-        selected
-          ? 'bg-[#F0EDFF] border-[#7140FF]'
-          : 'bg-white border-[#E7E9ED] hover:border-[rgba(113,64,255,0.3)] hover:bg-[#F7F6FF]'
-      } ${isEnded ? 'opacity-60 cursor-default' : 'cursor-pointer active:scale-[0.99]'}`}
+        isMyChoice
+          ? 'bg-[rgba(34,197,94,0.06)] border-[rgba(34,197,94,0.45)]'
+          : selected
+            ? 'bg-[#F0EDFF] border-[#7140FF]'
+            : 'bg-white border-[#E7E9ED] hover:border-[rgba(113,64,255,0.3)] hover:bg-[#F7F6FF]'
+      } ${isEnded && !isMyChoice ? 'opacity-50 cursor-default' : isEnded ? 'cursor-default' : 'cursor-pointer active:scale-[0.99]'}`}
     >
-      {/* Left violet bar when selected */}
-      {selected && (
+      {/* Left accent bar */}
+      {isMyChoice && (
+        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#16a34a] rounded-l-xl" />
+      )}
+      {!isMyChoice && selected && (
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#7140FF] rounded-l-xl" />
       )}
 
-      {/* Radio circle */}
+      {/* Radio / check circle */}
       <div
         className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-          selected ? 'border-[#7140FF] bg-[#7140FF]' : 'border-[#E7E9ED] bg-white'
+          isMyChoice
+            ? 'border-[#16a34a] bg-[#16a34a]'
+            : selected
+              ? 'border-[#7140FF] bg-[#7140FF]'
+              : 'border-[#E7E9ED] bg-white'
         }`}
       >
-        {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+        {(selected || isMyChoice) && <div className="w-2 h-2 rounded-full bg-white" />}
       </div>
 
-      {/* Emoji box */}
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-        style={{ backgroundColor: candidate.emojiColor }}
-      >
-        {candidate.emoji}
-      </div>
+      {/* Avatar */}
+      <CandidateAvatar
+        imageUrl={candidate.imageUrl}
+        emoji={candidate.emoji}
+        emojiColor={candidate.emojiColor}
+        size="md"
+      />
 
       {/* Name + group */}
       <div className="flex-1 min-w-0">
@@ -63,9 +80,13 @@ function CandidateItem({
         <div className="text-[12px] text-[#707070] truncate">{candidate.group}</div>
       </div>
 
-      {/* Votes */}
+      {/* Right side: "My Pick" badge OR vote count */}
       <div className="flex-shrink-0 text-right">
-        {resultPublic && candidate.votes !== undefined ? (
+        {isMyChoice ? (
+          <span className="text-[11px] font-bold text-[#16a34a] bg-[rgba(34,197,94,0.12)] px-2 py-1 rounded-full">
+            {myPickLabel}
+          </span>
+        ) : resultPublic && candidate.votes !== undefined ? (
           <span className="text-[13px] font-mono text-[#707070]">
             {candidate.votes.toLocaleString()}
           </span>
@@ -84,14 +105,16 @@ export function CandidateSection({
   isSelected,
   onToggle,
   isEnded,
+  votedCandidateIds,
 }: CandidateSectionProps) {
+  const { t, lang } = useLanguage()
   return (
     <div className="mx-5 mt-5">
       {/* Section header */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[15px] font-semibold text-[#090A0B]">후보 선택</span>
+        <span className="text-[15px] font-semibold text-[#090A0B]">{t('cs_candidates')}</span>
         <span className="text-[11px] bg-[#F0EDFF] text-[#7140FF] px-2.5 py-1 rounded-full font-medium">
-          {maxChoices}명 선택
+          {lang === 'ko' ? `${maxChoices}명 선택` : `Pick ${maxChoices}`}
         </span>
       </div>
 
@@ -105,12 +128,14 @@ export function CandidateSection({
             onToggle={onToggle}
             isEnded={isEnded}
             resultPublic={resultPublic}
+            isMyChoice={votedCandidateIds?.has(candidate.id) ?? false}
+            myPickLabel={t('cs_my_pick')}
           />
         ))}
       </div>
 
       {/* Result hidden message */}
-      {!resultPublic && (
+      {!resultPublic && !votedCandidateIds && (
         <div className="mt-3 flex items-center gap-2 text-[12px] text-[#707070] bg-white border border-[#E7E9ED] rounded-xl px-3 py-2.5">
           <svg
             width="14"
@@ -124,7 +149,7 @@ export function CandidateSection({
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-          <span>결과는 투표 종료 후 공개됩니다</span>
+          <span>{t('cs_results_hidden')}</span>
         </div>
       )}
     </div>
@@ -139,6 +164,7 @@ interface GroupedCandidateSectionProps {
   isSelected: (sectionId: string, candidateId: string) => boolean
   onToggle: (sectionId: string, candidateId: string) => void
   isEnded: boolean
+  votedCandidateIds?: Set<string>
 }
 
 const SECTION_COLORS = ['#F0EDFF', '#E8FFF0', '#FFF5E8', '#E8F0FF', '#FEF9EC', '#F0FFF4']
@@ -149,7 +175,9 @@ export function GroupedCandidateSection({
   isSelected,
   onToggle,
   isEnded,
+  votedCandidateIds,
 }: GroupedCandidateSectionProps) {
+  const { t } = useLanguage()
   return (
     <div className="mx-5 mt-5 flex flex-col gap-6">
       {sections.map((section, idx) => {
@@ -181,6 +209,8 @@ export function GroupedCandidateSection({
                   onToggle={(candidateId) => onToggle(section.id, candidateId)}
                   isEnded={isEnded}
                   resultPublic={resultPublic}
+                  isMyChoice={votedCandidateIds?.has(candidate.id) ?? false}
+                  myPickLabel={t('cs_my_pick')}
                 />
               ))}
             </div>

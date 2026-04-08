@@ -12,7 +12,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
     <>
       <button
         type="button"
-        aria-label="닫기"
+        aria-label="Close"
         className={`absolute inset-0 z-[200] transition-[background] duration-[280ms] ${
           open ? 'bg-[rgba(9,10,11,0.65)] pointer-events-auto' : 'bg-transparent pointer-events-none'
         }`}
@@ -33,7 +33,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
           <span className="text-[17px] font-semibold text-[#090A0B]">{title}</span>
           <button
             type="button"
-            aria-label="닫기"
+            aria-label="Close"
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#F7F8FA] transition-colors text-[#707070]"
           >

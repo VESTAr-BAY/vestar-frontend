@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useLanguage } from '../../providers/LanguageProvider'
 
 interface InfiniteScrollSentinelProps {
   onVisible: () => void
@@ -12,6 +13,7 @@ export function InfiniteScrollSentinel({
   hasMore,
 }: InfiniteScrollSentinelProps) {
   const ref = useRef<HTMLDivElement>(null)
+  const { t } = useLanguage()
 
   useEffect(() => {
     const el = ref.current
@@ -34,7 +36,7 @@ export function InfiniteScrollSentinel({
       {isLoading && hasMore && (
         <div className="w-6 h-6 rounded-full border-2 border-[#E7E9ED] border-t-[#7140FF] animate-spin" />
       )}
-      {!hasMore && <p className="text-[12px] text-[#707070] font-mono">모두 불러왔어요 ✓</p>}
+      {!hasMore && <p className="text-[12px] text-[#707070] font-mono">{t('is_all_caught_up')}</p>}
     </div>
   )
 }

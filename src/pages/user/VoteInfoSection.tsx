@@ -1,3 +1,4 @@
+import { useLanguage } from '../../providers/LanguageProvider'
 import type { VoteDetailData } from '../../types/vote'
 
 interface VoteInfoSectionProps {
@@ -22,12 +23,13 @@ function InfoRow({ label, children, last = false }: InfoRowProps) {
 }
 
 export function VoteInfoSection({ vote }: VoteInfoSectionProps) {
+  const { t } = useLanguage()
   return (
     <div className="mx-5 mt-5 bg-white rounded-2xl border border-[#E7E9ED] px-4 overflow-hidden">
-      <InfoRow label="주최">{vote.org}</InfoRow>
-      <InfoRow label="시작">{vote.startDate}</InfoRow>
-      <InfoRow label="종료">{vote.endDate}</InfoRow>
-      <InfoRow label="결과 공개" last>
+      <InfoRow label={t('vi_host')}>{vote.org}</InfoRow>
+      <InfoRow label={t('vi_start')}>{vote.startDate}</InfoRow>
+      <InfoRow label={t('vi_end')}>{vote.endDate}</InfoRow>
+      <InfoRow label={t('vi_results')} last>
         <span className="text-[#7140FF]">{vote.resultReveal}</span>
       </InfoRow>
     </div>

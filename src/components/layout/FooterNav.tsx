@@ -1,23 +1,24 @@
-import { useLocation, useNavigate } from 'react-router'
-import type { ScrollState } from '../../hooks/useScrollDirection'
+import { useLocation, useNavigate } from "react-router";
+import { useLanguage } from "../../providers/LanguageProvider";
+import type { ScrollState } from "../../hooks/useScrollDirection";
 
 interface NavItem {
-  label: string
-  path: string
-  icon: (active: boolean) => React.ReactNode
+  labelKey: "nav_home" | "nav_my";
+  path: string;
+  icon: (active: boolean) => React.ReactNode;
 }
 
 const NAV_ITEMS: NavItem[] = [
   {
-    label: '홈',
-    path: '/vote',
+    labelKey: "nav_home",
+    path: "/vote",
     icon: (active) => (
       <svg
         aria-hidden="true"
         width="22"
         height="22"
         viewBox="0 0 24 24"
-        fill={active ? 'currentColor' : 'none'}
+        fill={active ? "currentColor" : "none"}
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
@@ -29,15 +30,15 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    label: '마이',
-    path: '/mypage',
+    labelKey: "nav_my",
+    path: "/mypage",
     icon: (active) => (
       <svg
         aria-hidden="true"
         width="22"
         height="22"
         viewBox="0 0 24 24"
-        fill={active ? 'currentColor' : 'none'}
+        fill={active ? "currentColor" : "none"}
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
@@ -48,22 +49,25 @@ const NAV_ITEMS: NavItem[] = [
       </svg>
     ),
   },
-]
+];
 
 const STATE_CLASSES: Record<ScrollState, string> = {
-  default: 'bottom-0 w-full max-w-[430px] h-16 bg-[#13141A] border-t border-white/[0.07]',
-  hidden: '-bottom-[74px] w-full max-w-[430px] h-16 bg-[#13141A] border-t border-white/[0.07]',
+  default:
+    "bottom-0 w-full max-w-[430px] h-16 bg-[#13141A] border-t border-white/[0.07]",
+  hidden:
+    "-bottom-[74px] w-full max-w-[430px] h-16 bg-[#13141A] border-t border-white/[0.07]",
   floating:
-    'bottom-[10px] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-[52px] rounded-2xl bg-[#1C2033] border border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.35),0_-2px_8px_rgba(0,0,0,0.25)]',
-}
+    "bottom-[10px] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-[52px] rounded-2xl bg-[#1C2033] border border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.35),0_-2px_8px_rgba(0,0,0,0.25)]",
+};
 
 interface FooterNavProps {
-  scrollState: ScrollState
+  scrollState: ScrollState;
 }
 
 export function FooterNav({ scrollState }: FooterNavProps) {
-  const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { t } = useLanguage();
 
   return (
     <nav
@@ -71,19 +75,22 @@ export function FooterNav({ scrollState }: FooterNavProps) {
     >
       {NAV_ITEMS.map((item) => {
         const active =
-          pathname === item.path || (item.path === '/vote' && pathname.startsWith('/vote'))
+          pathname === item.path ||
+          (item.path === "/vote" && pathname.startsWith("/vote"));
         return (
           <button
-            key={item.label}
+            key={item.labelKey}
             type="button"
             onClick={() => navigate(item.path)}
-            className={`flex-1 h-full flex flex-col items-center justify-center gap-1 bg-transparent border-none cursor-pointer transition-colors ${active ? 'text-[#7140FF]' : 'text-white/30'}`}
+            className={`flex-1 h-full flex flex-col items-center justify-center gap-1 bg-transparent border-none cursor-pointer transition-colors ${active ? "text-[#7140FF]" : scrollState === "hidden" ? "text-white/30" : "text-[#13141A]/30"}`}
           >
             {item.icon(active)}
-            <span className="text-[10px] font-medium tracking-[-0.1px]">{item.label}</span>
+            <span className="text-[10px] font-medium tracking-[-0.1px]">
+              {t(item.labelKey)}
+            </span>
           </button>
-        )
+        );
       })}
     </nav>
-  )
+  );
 }

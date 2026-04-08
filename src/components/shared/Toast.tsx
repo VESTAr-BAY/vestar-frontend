@@ -35,7 +35,7 @@ export function Toast({ id, type, message, onRemove }: ToastProps) {
       <span className="text-[14px] font-medium text-[#090A0B] flex-1">{message}</span>
       <button
         type="button"
-        aria-label="닫기"
+        aria-label="Close"
         onClick={() => onRemove(id)}
         className="text-[#707070] hover:text-[#090A0B] transition-colors text-[18px] leading-none flex-shrink-0"
       >

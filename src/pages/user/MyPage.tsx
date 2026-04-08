@@ -1,6 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router'
 import { useAccount } from 'wagmi'
 import keyboardArrowLeft from '../../assets/keyboard_arrow_left.svg'
+import { useLanguage } from '../../providers/LanguageProvider'
 import { useMyKarma } from '../../hooks/user/useMyKarma'
 import { useMyVotes } from '../../hooks/user/useMyVotes'
 import type { BadgeVariant, KarmaEventType, KarmaEvent, MyVoteItem } from '../../types/user'
@@ -9,18 +10,25 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
+function getKarmaTier(karma: number): { label: string; emoji: string; color: string } {
+  if (karma >= 100000000) return { label: 'Legendary',      emoji: '👑', color: '#F59E0B' }
+  if (karma >= 5000000)   return { label: 'S-Tier',         emoji: '💎', color: '#22d3ee' }
+  if (karma >= 500000)    return { label: 'High-Throughput',emoji: '🚀', color: '#06b6d4' }
+  if (karma >= 100000)    return { label: 'Pro User',       emoji: '💫', color: '#818cf8' }
+  if (karma >= 20000)     return { label: 'Power User',     emoji: '🔥', color: '#f97316' }
+  if (karma >= 5000)      return { label: 'Regular',        emoji: '⭐', color: '#eab308' }
+  if (karma >= 500)       return { label: 'Active',         emoji: '🟣', color: '#7140FF' }
+  if (karma >= 50)        return { label: 'Basic',          emoji: '🔵', color: '#3b82f6' }
+  if (karma >= 2)         return { label: 'Newbie',         emoji: '🌱', color: '#22c55e' }
+  if (karma >= 1)         return { label: 'Entry',          emoji: '⚡', color: '#9CA3AF' }
+  return                         { label: '—',              emoji: '·',  color: '#707070' }
+}
+
 const BADGE_STYLES: Record<BadgeVariant, string> = {
   live: 'bg-[rgba(34,197,94,0.12)] text-[#16a34a]',
   hot: 'bg-[rgba(239,68,68,0.10)] text-[#dc2626]',
   new: 'bg-[rgba(113,64,255,0.09)] text-[#7140FF]',
   end: 'bg-black/5 text-[#707070]',
-}
-
-const BADGE_LABEL: Record<BadgeVariant, string> = {
-  live: '● LIVE',
-  hot: '🔥 HOT',
-  new: 'NEW',
-  end: '종료',
 }
 
 const KARMA_TYPE_STYLES: Record<KarmaEventType, { bg: string; text: string }> = {
@@ -31,11 +39,19 @@ const KARMA_TYPE_STYLES: Record<KarmaEventType, { bg: string; text: string }> = 
 }
 
 function VoteHistoryList({ votes }: { votes: MyVoteItem[] }) {
+  const { t, lang } = useLanguage()
+  const badgeLabel: Record<BadgeVariant, string> = {
+    live: '● LIVE',
+    hot: '🔥 HOT',
+    new: 'NEW',
+    end: lang === 'ko' ? '종료' : 'END',
+  }
+
   if (votes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <span className="text-5xl">🗳️</span>
-        <p className="text-[14px] text-[#707070]">아직 참여한 투표가 없어요</p>
+        <p className="text-[14px] text-[#707070]">{t('mp_no_votes')}</p>
       </div>
     )
   }
@@ -59,7 +75,7 @@ function VoteHistoryList({ votes }: { votes: MyVoteItem[] }) {
               {item.title}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[12px] text-[#707070]">선택: {item.choice}</span>
+              <span className="text-[12px] text-[#707070]">{t('mp_voted_label')} {item.choice}</span>
               <span className="text-[#E7E9ED]">·</span>
               <span className="text-[12px] text-[#707070]">{item.date}</span>
             </div>
@@ -68,7 +84,7 @@ function VoteHistoryList({ votes }: { votes: MyVoteItem[] }) {
             <span
               className={`text-[9px] font-bold font-mono px-2 py-[3px] rounded-[10px] tracking-[0.4px] uppercase ${BADGE_STYLES[item.badge]}`}
             >
-              {BADGE_LABEL[item.badge]}
+              {badgeLabel[item.badge]}
             </span>
             <span className="text-[12px] font-semibold text-[#7140FF] font-mono">
               +{item.karmaEarned} ⚡
@@ -81,11 +97,13 @@ function VoteHistoryList({ votes }: { votes: MyVoteItem[] }) {
 }
 
 function KarmaHistoryList({ events, total }: { events: KarmaEvent[]; total: number }) {
+  const { t } = useLanguage()
+
   if (events.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <span className="text-5xl">⚡</span>
-        <p className="text-[14px] text-[#707070]">아직 획득한 Karma가 없어요</p>
+        <p className="text-[14px] text-[#707070]">{t('mp_no_karma')}</p>
       </div>
     )
   }
@@ -95,7 +113,7 @@ function KarmaHistoryList({ events, total }: { events: KarmaEvent[]; total: numb
       {/* Total summary */}
       <div className="bg-white border border-[#E7E9ED] rounded-2xl px-4 py-4 mb-4 flex items-center justify-between">
         <div>
-          <div className="text-[11px] text-[#707070] mb-1">총 보유 Karma</div>
+          <div className="text-[11px] text-[#707070] mb-1">{t('mp_total_karma_stat')}</div>
           <div className="text-[24px] font-bold text-[#7140FF] font-mono">
             {total.toLocaleString()} ⚡
           </div>
@@ -143,32 +161,39 @@ export function MyPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = searchParams.get('tab') === 'karma' ? 'karma' : 'votes'
+  const { t } = useLanguage()
 
   const { votes } = useMyVotes()
   const { events, total } = useMyKarma()
+  const tier = getKarmaTier(total)
 
   return (
-    <div className="bg-[#F7F8FA] min-h-screen pb-24">
+    <div className="min-h-screen pb-24">
       {/* Header strip */}
-      <div className="bg-[#13141A] px-5 pt-6 pb-5 relative overflow-hidden">
+      <div className="h-60 relative px-5 pb-6 pt-[calc(56px+20px)] -mt-14 bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] overflow-hidden">
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7140FF] to-transparent" />
         <button
           type="button"
           onClick={() => navigate('/vote')}
-          className="flex items-center gap-1 mb-3 text-white/50 hover:text-white transition-colors"
+          className="flex items-center gap-1 mb-3 text-[#13141A]/50 hover:text-[#13141A] transition-colors"
         >
-          <img src={keyboardArrowLeft} alt="" className="w-5 h-5 brightness-0 invert opacity-50" />
-          <span className="text-[12px] font-mono tracking-[0.5px]">홈으로</span>
+          <img src={keyboardArrowLeft} alt="" className="w-5 h-5 brightness-0 opacity-50" />
+          <span className="text-[12px] font-mono tracking-[0.5px]">{t('mp_back')}</span>
         </button>
         <div className="text-[10px] font-semibold text-[#7140FF] tracking-[1.2px] uppercase font-mono mb-1.5">
           My Page
         </div>
-        <div className="text-[20px] font-semibold text-white leading-tight truncate">
-          {isConnected && address ? truncateAddress(address) : '지갑 미연결'}
+        <div className="text-[20px] font-semibold text-[#090A0B] leading-tight truncate">
+          {isConnected && address ? truncateAddress(address) : t('pp_not_connected')}
         </div>
-        <div className="text-[13px] text-white/40 mt-[2px]">
-          총 Karma{' '}
-          <span className="text-[#7140FF] font-mono font-semibold">{total.toLocaleString()}</span>
+        <div className="flex items-center gap-2 mt-[4px]">
+          <span className="text-[18px]">{tier.emoji}</span>
+          <span className="text-[15px] font-bold font-mono" style={{ color: tier.color }}>
+            {tier.label}
+          </span>
+          <span className="text-[12px] text-[#13141A]/40 font-mono">
+            {total.toLocaleString()} ⚡
+          </span>
         </div>
       </div>
 
@@ -183,7 +208,7 @@ export function MyPage() {
               : 'text-[#707070] border-b-2 border-transparent'
           }`}
         >
-          투표 내역
+          {t('mp_tab_votes')}
         </button>
         <button
           type="button"
@@ -194,16 +219,18 @@ export function MyPage() {
               : 'text-[#707070] border-b-2 border-transparent'
           }`}
         >
-          Karma 내역
+          {t('mp_tab_karma')}
         </button>
       </div>
 
       {/* Tab content */}
-      {tab === 'votes' ? (
-        <VoteHistoryList votes={votes} />
-      ) : (
-        <KarmaHistoryList events={events} total={total} />
-      )}
+      <div className="bg-[#ffffff] min-h-screen">
+        {tab === 'votes' ? (
+          <VoteHistoryList votes={votes} />
+        ) : (
+          <KarmaHistoryList events={events} total={total} />
+        )}
+      </div>
     </div>
   )
 }

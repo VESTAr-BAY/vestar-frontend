@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router'
 import { useAccount, useDisconnect } from 'wagmi'
 import accountCircleIcon from '../../assets/account_circle.svg'
 import verifiedIcon from '../../assets/verified.svg'
+import { useLanguage } from '../../providers/LanguageProvider'
 
 interface ProfilePanelProps {
   open: boolean
@@ -9,33 +10,42 @@ interface ProfilePanelProps {
 }
 
 type MenuItem =
-  | { kind: 'internal'; label: string; icon: string; bg: string; to: string }
-  | { kind: 'external'; label: string; icon: string; bg: string; href: string }
+  | { kind: 'internal'; labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking'; icon: string; bg: string; to: string }
+  | { kind: 'external'; labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking'; icon: string; bg: string; href: string }
 
 const MENU_ITEMS: MenuItem[] = [
-  { kind: 'internal', label: '내 투표 내역', icon: '🗳️', bg: '#F0EDFF', to: '/mypage?tab=votes' },
-  { kind: 'internal', label: 'Karma 내역', icon: '⚡', bg: '#E8FFF0', to: '/mypage?tab=karma' },
-  {
-    kind: 'external',
-    label: 'STT 스테이킹',
-    icon: '🪙',
-    bg: '#FFF5E8',
-    href: 'https://hub.status.network/stake',
-  },
+  { kind: 'internal', labelKey: 'pp_my_votes',      icon: '🗳️', bg: '#F0EDFF', to: '/mypage?tab=votes' },
+  { kind: 'internal', labelKey: 'pp_karma_history', icon: '⚡', bg: '#E8FFF0', to: '/mypage?tab=karma' },
+  { kind: 'external', labelKey: 'pp_stt_staking',   icon: '🪙', bg: '#FFF5E8', href: 'https://hub.status.network/stake' },
 ]
 
 function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
+function getKarmaTier(karma: number): { label: string; emoji: string; color: string } {
+  if (karma >= 100000000) return { label: 'Legendary',      emoji: '👑', color: '#F59E0B' }
+  if (karma >= 5000000)   return { label: 'S-Tier',         emoji: '💎', color: '#22d3ee' }
+  if (karma >= 500000)    return { label: 'High-Throughput',emoji: '🚀', color: '#06b6d4' }
+  if (karma >= 100000)    return { label: 'Pro User',       emoji: '💫', color: '#818cf8' }
+  if (karma >= 20000)     return { label: 'Power User',     emoji: '🔥', color: '#f97316' }
+  if (karma >= 5000)      return { label: 'Regular',        emoji: '⭐', color: '#eab308' }
+  if (karma >= 500)       return { label: 'Active',         emoji: '🟣', color: '#7140FF' }
+  if (karma >= 50)        return { label: 'Basic',          emoji: '🔵', color: '#3b82f6' }
+  if (karma >= 2)         return { label: 'Newbie',         emoji: '🌱', color: '#22c55e' }
+  if (karma >= 1)         return { label: 'Entry',          emoji: '⚡', color: '#9CA3AF' }
+  return                         { label: '—',              emoji: '·',  color: '#707070' }
+}
+
 export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   const { address, isConnected } = useAccount()
   const { disconnect } = useDisconnect()
   const navigate = useNavigate()
+  const { t, lang, toggleLang } = useLanguage()
 
   const karma = isConnected ? 2480 : 0
   const votes = isConnected ? 14 : 0
-  const rank = isConnected ? 127 : null
+  const tier = getKarmaTier(karma)
 
   const handleDisconnect = () => {
     disconnect()
@@ -46,7 +56,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
     <>
       <button
         type="button"
-        aria-label="닫기"
+        aria-label={t('btn_close')}
         className={`absolute inset-0 z-[200] transition-[background] duration-[280ms] ease-in-out ${open ? 'bg-[rgba(9,10,11,0.55)] pointer-events-auto' : 'bg-transparent pointer-events-none'}`}
         onClick={onClose}
       />
@@ -61,7 +71,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
             </span>
             <button
               type="button"
-              aria-label="닫기"
+              aria-label={t('btn_close')}
               onClick={onClose}
               className="w-7 h-7 flex items-center justify-center text-white/40 hover:text-white transition-colors"
             >
@@ -92,7 +102,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="text-white text-[14px] font-mono truncate">
-                  {isConnected && address ? truncateAddress(address) : '지갑 미연결'}
+                  {isConnected && address ? truncateAddress(address) : t('pp_not_connected')}
                 </span>
                 {isConnected && (
                   <img
@@ -110,23 +120,20 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
           </div>
         </div>
 
-        {/* Stats grid — 3 columns */}
-        <div className="grid grid-cols-3 gap-[1px] bg-[#E7E9ED] border-b border-[#E7E9ED] flex-shrink-0">
-          <div className="bg-white px-3 py-[14px]">
-            <div className="text-[11px] text-[#707070] mb-1">Karma</div>
-            <div className="text-[17px] font-bold text-[#7140FF] font-mono">
-              {karma.toLocaleString()}
+        {/* Stats grid */}
+        <div className="grid grid-cols-2 gap-[1px] bg-[#E7E9ED] border-b border-[#E7E9ED] flex-shrink-0">
+          <div className="bg-white px-4 py-[14px]">
+            <div className="text-[11px] text-[#707070] mb-1">{t('pp_tier_stat')}</div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[17px]">{isConnected ? tier.emoji : '⚡'}</span>
+              <span className="text-[15px] font-bold font-mono" style={{ color: isConnected ? tier.color : '#707070' }}>
+                {isConnected ? tier.label : '—'}
+              </span>
             </div>
           </div>
-          <div className="bg-white px-3 py-[14px]">
-            <div className="text-[11px] text-[#707070] mb-1">투표 수</div>
+          <div className="bg-white px-4 py-[14px]">
+            <div className="text-[11px] text-[#707070] mb-1">{t('pp_votes_stat')}</div>
             <div className="text-[17px] font-bold text-[#090A0B] font-mono">{votes}</div>
-          </div>
-          <div className="bg-white px-3 py-[14px]">
-            <div className="text-[11px] text-[#707070] mb-1">랭킹</div>
-            <div className="text-[17px] font-bold text-[#7140FF] font-mono">
-              {rank !== null ? `#${rank}` : '—'}
-            </div>
           </div>
         </div>
 
@@ -142,7 +149,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
                   >
                     {item.icon}
                   </span>
-                  <span className="text-[14px] font-medium text-[#090A0B]">{item.label}</span>
+                  <span className="text-[14px] font-medium text-[#090A0B]">{t(item.labelKey)}</span>
                   <span className="ml-auto text-[#707070]">
                     {item.kind === 'external' ? (
                       <svg
@@ -182,7 +189,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
               if (item.kind === 'external') {
                 return (
                   <a
-                    key={item.label}
+                    key={item.labelKey}
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -195,7 +202,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
 
               return (
                 <button
-                  key={item.label}
+                  key={item.labelKey}
                   type="button"
                   onClick={() => {
                     navigate(item.to)
@@ -210,6 +217,25 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
 
             <div className="h-px bg-[#E7E9ED] my-2" />
 
+            {/* Language toggle */}
+            <div className="flex items-center gap-3 px-3 py-3">
+              <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#E8F0FF]">
+                🌐
+              </span>
+              <span className="text-[14px] font-medium text-[#090A0B] flex-1">{t('pp_language')}</span>
+              <button
+                type="button"
+                onClick={toggleLang}
+                className="flex items-center gap-px bg-[#F7F8FA] border border-[#E7E9ED] rounded-full px-[10px] py-[5px] hover:border-[#7140FF] transition-colors"
+              >
+                <span className={`text-[11px] font-mono font-bold transition-colors ${lang === 'en' ? 'text-[#7140FF]' : 'text-[#C0C4CC]'}`}>EN</span>
+                <span className="text-[#C0C4CC] text-[9px] mx-[3px]">|</span>
+                <span className={`text-[11px] font-mono font-bold transition-colors ${lang === 'ko' ? 'text-[#7140FF]' : 'text-[#C0C4CC]'}`}>KO</span>
+              </button>
+            </div>
+
+            <div className="h-px bg-[#E7E9ED] my-2" />
+
             <button
               type="button"
               onClick={handleDisconnect}
@@ -219,7 +245,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
               <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[rgba(220,38,38,0.10)]">
                 🔌
               </span>
-              <span className="text-[14px] font-medium text-[#dc2626]">지갑 연결 해제</span>
+              <span className="text-[14px] font-medium text-[#dc2626]">{t('pp_disconnect')}</span>
             </button>
           </div>
         </div>

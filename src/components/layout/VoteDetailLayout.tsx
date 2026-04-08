@@ -29,7 +29,7 @@ export function VoteDetailLayout() {
 
   return (
     <VoteDetailHeaderContext value={{ setConfig: setHeaderConfig, scrollState }}>
-      <div className="relative mx-auto h-screen w-full max-w-[430px] overflow-hidden bg-[#F7F8FA] shadow-[0_0_60px_rgba(0,0,0,0.12)]">
+      <div className="relative mx-auto h-screen w-full max-w-[430px] overflow-hidden bg-[#ffffff] shadow-[0_0_60px_rgba(0,0,0,0.12)]">
         <DetailHeader
           scrollState={scrollState}
           title={headerConfig.title}
@@ -40,7 +40,7 @@ export function VoteDetailLayout() {
         />
 
         <main
-          className="h-screen overflow-y-auto pt-14 pb-20 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="h-screen overflow-y-auto pt-14 pb-28 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           onScroll={onScroll}
         >
           <Outlet />

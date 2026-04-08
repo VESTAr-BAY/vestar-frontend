@@ -8,6 +8,7 @@ export interface HotVote {
   name: string
   count: string
   badge: BadgeVariant
+  imageUrl?: string
 }
 
 export interface VoteListItem {
@@ -21,6 +22,7 @@ export interface VoteListItem {
   deadline: string
   urgent: boolean
   verified?: boolean
+  imageUrl?: string
 }
 
 export interface RankedCandidate extends Candidate {
@@ -49,6 +51,8 @@ export interface Candidate {
   votes?: number
   percentage?: number
   votePreviewPct?: number
+  /** Optional photo/image URL. Supports ipfs:// and https:// */
+  imageUrl?: string
 }
 
 export interface VoteSection {
@@ -78,4 +82,8 @@ export interface VoteDetailData {
   resultPublic: boolean
   candidates: Candidate[]
   sections?: VoteSection[] // present = grouped vote mode
+  /** On-chain election contract address. When present, real contract calls are used. */
+  electionAddress?: `0x${string}`
+  /** Optional banner image for the vote hero. Supports ipfs:// and https:// */
+  imageUrl?: string
 }

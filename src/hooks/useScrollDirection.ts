@@ -15,7 +15,8 @@ export function useScrollDirection(threshold = 4) {
       requestAnimationFrame(() => {
         const currentY = el.scrollTop
         const diff = currentY - lastScrollY.current
-        if (currentY < 10) {
+        const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 4
+        if (atBottom || currentY < 10) {
           setScrollState('default')
         } else if (diff > threshold) {
           setScrollState('hidden')
