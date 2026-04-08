@@ -49,6 +49,11 @@ export const vestarElectionFactoryAbi = [
             "internalType": "bytes32"
           },
           {
+            "name": "seriesId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
             "name": "visibilityMode",
             "type": "uint8",
             "internalType": "enum VESTArTypes.VisibilityMode"
@@ -183,6 +188,44 @@ export const vestarElectionFactoryAbi = [
         "name": "electionAddress",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSeriesElectionAddresses",
+    "inputs": [
+      {
+        "name": "seriesId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "electionAddresses",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSeriesElectionIds",
+    "inputs": [
+      {
+        "name": "seriesId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "electionIds",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
       }
     ],
     "stateMutability": "view"
@@ -339,6 +382,25 @@ export const vestarElectionFactoryAbi = [
   },
   {
     "type": "function",
+    "name": "totalElectionsInSeries",
+    "inputs": [
+      {
+        "name": "seriesId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "transferOwnership",
     "inputs": [
       {
@@ -362,21 +424,27 @@ export const vestarElectionFactoryAbi = [
     "name": "ElectionCreated",
     "inputs": [
       {
+        "name": "seriesId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
         "name": "electionId",
         "type": "bytes32",
         "indexed": true,
         "internalType": "bytes32"
       },
       {
-        "name": "electionAddress",
+        "name": "organizer",
         "type": "address",
         "indexed": true,
         "internalType": "address"
       },
       {
-        "name": "organizer",
+        "name": "electionAddress",
         "type": "address",
-        "indexed": true,
+        "indexed": false,
         "internalType": "address"
       },
       {

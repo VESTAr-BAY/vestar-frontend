@@ -119,22 +119,23 @@ export const vestarElectionAbi = [
   },
   {
     "type": "function",
-    "name": "candidateGroupOf",
-    "inputs": [
-      {
-        "name": "candidateHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "name": "cancelElection",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "claimRefund",
+    "inputs": [],
     "outputs": [
       {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "refundAmount",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
-    "stateMutability": "view"
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -203,6 +204,13 @@ export const vestarElectionAbi = [
   },
   {
     "type": "function",
+    "name": "enableRefunds",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "factory",
     "inputs": [],
     "outputs": [
@@ -256,6 +264,36 @@ export const vestarElectionAbi = [
   },
   {
     "type": "function",
+    "name": "getCancellationSummary",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct VESTArTypes.CancellationSummary",
+        "components": [
+          {
+            "name": "cancelledBy",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "cancelledAt",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "previousState",
+            "type": "uint8",
+            "internalType": "enum VESTArTypes.ElectionState"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getElectionConfig",
     "inputs": [],
     "outputs": [
@@ -266,6 +304,11 @@ export const vestarElectionAbi = [
         "components": [
           {
             "name": "electionId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "seriesId",
             "type": "bytes32",
             "internalType": "bytes32"
           },
@@ -371,37 +414,41 @@ export const vestarElectionAbi = [
   },
   {
     "type": "function",
-    "name": "getGroupDefinition",
-    "inputs": [
-      {
-        "name": "groupKeyHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
+    "name": "getRefundSummary",
+    "inputs": [],
     "outputs": [
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct VESTArTypes.GroupDefinition",
+        "internalType": "struct VESTArTypes.RefundSummary",
         "components": [
           {
-            "name": "groupKeyHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
+            "name": "paymentToken",
+            "type": "address",
+            "internalType": "address"
           },
           {
-            "name": "metadataHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
+            "name": "totalRefundableAmount",
+            "type": "uint256",
+            "internalType": "uint256"
           },
           {
-            "name": "metadataURI",
-            "type": "string",
-            "internalType": "string"
+            "name": "totalRefundedAmount",
+            "type": "uint256",
+            "internalType": "uint256"
           },
           {
-            "name": "enabled",
+            "name": "refundsEnabledAt",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "refundsEnabledBy",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "refundsEnabled",
             "type": "bool",
             "internalType": "bool"
           }
@@ -506,6 +553,11 @@ export const vestarElectionAbi = [
         "components": [
           {
             "name": "electionId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "seriesId",
             "type": "bytes32",
             "internalType": "bytes32"
           },
@@ -947,6 +999,38 @@ export const vestarElectionAbi = [
   },
   {
     "type": "function",
+    "name": "refundableAmountOf",
+    "inputs": [
+      {
+        "name": "voter",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "refundsEnabled",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "remainingBallots",
     "inputs": [
       {
@@ -1010,6 +1094,19 @@ export const vestarElectionAbi = [
   },
   {
     "type": "function",
+    "name": "seriesId",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "setCandidateAllowlist",
     "inputs": [
       {
@@ -1021,66 +1118,6 @@ export const vestarElectionAbi = [
         "name": "allowed",
         "type": "bool",
         "internalType": "bool"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setCandidateGroups",
-    "inputs": [
-      {
-        "name": "bindings",
-        "type": "tuple[]",
-        "internalType": "struct VESTArTypes.CandidateGroupBinding[]",
-        "components": [
-          {
-            "name": "candidateHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "groupKeyHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          }
-        ]
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setGroupDefinitions",
-    "inputs": [
-      {
-        "name": "groupDefinitions",
-        "type": "tuple[]",
-        "internalType": "struct VESTArTypes.GroupDefinition[]",
-        "components": [
-          {
-            "name": "groupKeyHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "metadataHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "metadataURI",
-            "type": "string",
-            "internalType": "string"
-          },
-          {
-            "name": "enabled",
-            "type": "bool",
-            "internalType": "bool"
-          }
-        ]
       }
     ],
     "outputs": [],
@@ -1217,6 +1254,29 @@ export const vestarElectionAbi = [
   },
   {
     "type": "function",
+    "name": "updateElectionMetadata",
+    "inputs": [
+      {
+        "name": "newTitleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "newCandidateManifestHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "newCandidateManifestURI",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "visibilityMode",
     "inputs": [],
     "outputs": [
@@ -1255,7 +1315,7 @@ export const vestarElectionAbi = [
   },
   {
     "type": "event",
-    "name": "CandidateGroupUpdated",
+    "name": "ElectionCancelled",
     "inputs": [
       {
         "name": "electionId",
@@ -1264,16 +1324,22 @@ export const vestarElectionAbi = [
         "internalType": "bytes32"
       },
       {
-        "name": "candidateHash",
-        "type": "bytes32",
+        "name": "cancelledBy",
+        "type": "address",
         "indexed": true,
-        "internalType": "bytes32"
+        "internalType": "address"
       },
       {
-        "name": "groupKeyHash",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
+        "name": "previousState",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum VESTArTypes.ElectionState"
+      },
+      {
+        "name": "cancelledAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
       }
     ],
     "anonymous": false
@@ -1282,6 +1348,12 @@ export const vestarElectionAbi = [
     "type": "event",
     "name": "ElectionInitialized",
     "inputs": [
+      {
+        "name": "seriesId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
       {
         "name": "electionId",
         "type": "bytes32",
@@ -1317,6 +1389,37 @@ export const vestarElectionAbi = [
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ElectionMetadataUpdated",
+    "inputs": [
+      {
+        "name": "electionId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "titleHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "candidateManifestHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "candidateManifestURI",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
       }
     ],
     "anonymous": false
@@ -1379,43 +1482,6 @@ export const vestarElectionAbi = [
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "GroupDefinitionUpdated",
-    "inputs": [
-      {
-        "name": "electionId",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "groupKeyHash",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "metadataHash",
-        "type": "bytes32",
-        "indexed": false,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "metadataURI",
-        "type": "string",
-        "indexed": false,
-        "internalType": "string"
-      },
-      {
-        "name": "enabled",
-        "type": "bool",
-        "indexed": false,
-        "internalType": "bool"
       }
     ],
     "anonymous": false
@@ -1516,6 +1582,56 @@ export const vestarElectionAbi = [
         "type": "bytes",
         "indexed": false,
         "internalType": "bytes"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RefundClaimed",
+    "inputs": [
+      {
+        "name": "electionId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "voter",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "refundAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RefundsEnabled",
+    "inputs": [
+      {
+        "name": "electionId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "enabledBy",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "totalRefundableAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false

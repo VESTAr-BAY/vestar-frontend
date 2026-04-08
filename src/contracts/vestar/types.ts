@@ -107,6 +107,21 @@ export interface SettlementSummary {
   settled: boolean;
 }
 
+export interface CancellationSummary {
+  cancelledBy: Address;
+  cancelledAt: bigint;
+  previousState: VestarElectionState;
+}
+
+export interface RefundSummary {
+  paymentToken: Address;
+  totalRefundableAmount: bigint;
+  totalRefundedAmount: bigint;
+  refundsEnabledAt: bigint;
+  refundsEnabledBy: Address;
+  refundsEnabled: boolean;
+}
+
 export interface GroupDefinitionInput {
   groupKeyHash: Hex;
   metadataHash: Hex;
@@ -137,7 +152,9 @@ export interface ElectionSnapshot {
   visibilityMode: VestarVisibilityMode;
   paymentMode: VestarPaymentMode;
   resultSummary: ResultSummary;
+  cancellationSummary: CancellationSummary;
   settlementSummary: SettlementSummary;
+  refundSummary: RefundSummary;
 }
 
 export interface ElectionVoterSnapshot {

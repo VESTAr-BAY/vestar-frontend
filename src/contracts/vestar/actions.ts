@@ -20,6 +20,7 @@ import {
   vestarStatusTestnet,
 } from "./generated";
 import type {
+  CancellationSummary,
   CandidateGroupBindingInput,
   ElectionConfig,
   ElectionConfigInput,
@@ -29,6 +30,7 @@ import type {
   GroupDefinitionInput,
   OrganizerProfile,
   OrganizerSnapshot,
+  RefundSummary,
   ResultSummary,
   ResultSummaryInput,
   SettlementSummary,
@@ -326,6 +328,44 @@ export async function getElectionSettlementSummary(
   });
 }
 
+export async function getElectionCancellationSummary(
+  electionAddress: Address,
+): Promise<CancellationSummary> {
+  return readVestarContract<CancellationSummary>({
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: "getCancellationSummary",
+  });
+}
+
+export async function getElectionRefundSummary(electionAddress: Address): Promise<RefundSummary> {
+  return readVestarContract<RefundSummary>({
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: "getRefundSummary",
+  });
+}
+
+export async function getElectionRefundsEnabled(electionAddress: Address): Promise<boolean> {
+  return readVestarContract<boolean>({
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: "refundsEnabled",
+  });
+}
+
+export async function getElectionRefundableAmount(
+  electionAddress: Address,
+  voter: Address,
+): Promise<bigint> {
+  return readVestarContract<bigint>({
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: "refundableAmountOf",
+    args: [voter],
+  });
+}
+
 export async function getElectionRemainingBallots(
   electionAddress: Address,
   voter: Address,
@@ -401,14 +441,25 @@ export async function getCandidateGroup(
 }
 
 export async function getElectionSnapshot(electionAddress: Address): Promise<ElectionSnapshot> {
-  const [config, state, visibilityMode, paymentMode, resultSummary, settlementSummary] =
+  const [
+    config,
+    state,
+    visibilityMode,
+    paymentMode,
+    resultSummary,
+    cancellationSummary,
+    settlementSummary,
+    refundSummary,
+  ] =
     await Promise.all([
       getElectionConfig(electionAddress),
       getElectionState(electionAddress),
       getElectionVisibilityMode(electionAddress),
       getElectionPaymentMode(electionAddress),
       getElectionResultSummary(electionAddress),
+      getElectionCancellationSummary(electionAddress),
       getElectionSettlementSummary(electionAddress),
+      getElectionRefundSummary(electionAddress),
     ]);
 
   return {
@@ -418,7 +469,9 @@ export async function getElectionSnapshot(electionAddress: Address): Promise<Ele
     visibilityMode,
     paymentMode,
     resultSummary,
+    cancellationSummary,
     settlementSummary,
+    refundSummary,
   };
 }
 
@@ -484,7 +537,7 @@ export async function closeElection(
   });
 }
 
-export async function cancelElectionBeforeStart(
+export async function cancelElection(
   walletClient: WalletClient,
   electionAddress: Address,
 ): Promise<Hash> {
@@ -492,8 +545,15 @@ export async function cancelElectionBeforeStart(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "cancelBeforeStart",
+    functionName: "cancelElection",
   });
+}
+
+export async function cancelElectionBeforeStart(
+  walletClient: WalletClient,
+  electionAddress: Address,
+): Promise<Hash> {
+  return cancelElection(walletClient, electionAddress);
 }
 
 export async function settleElectionRevenue(
@@ -505,6 +565,30 @@ export async function settleElectionRevenue(
     abi: vestarElectionAbi,
     address: electionAddress,
     functionName: "settleRevenue",
+  });
+}
+
+export async function enableElectionRefunds(
+  walletClient: WalletClient,
+  electionAddress: Address,
+): Promise<Hash> {
+  return writeVestarContract({
+    walletClient,
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: "enableRefunds",
+  });
+}
+
+export async function claimElectionRefund(
+  walletClient: WalletClient,
+  electionAddress: Address,
+): Promise<Hash> {
+  return writeVestarContract({
+    walletClient,
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: "claimRefund",
   });
 }
 
