@@ -44,11 +44,6 @@ export const vestarElectionFactoryAbi = [
         "internalType": "struct VESTArTypes.ElectionConfig",
         "components": [
           {
-            "name": "electionId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
             "name": "seriesId",
             "type": "bytes32",
             "internalType": "bytes32"
@@ -149,6 +144,11 @@ export const vestarElectionFactoryAbi = [
             "internalType": "uint16"
           }
         ]
+      },
+      {
+        "name": "initialCandidateHashes",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
       }
     ],
     "outputs": [

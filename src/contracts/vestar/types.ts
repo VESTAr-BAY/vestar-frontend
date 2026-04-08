@@ -54,7 +54,7 @@ export interface OrganizerProfile {
 }
 
 export interface ElectionConfigInput {
-  electionId: Hex;
+  seriesId: Hex;
   visibilityMode: VestarVisibilityMode;
   titleHash: Hex;
   candidateManifestHash: Hex;

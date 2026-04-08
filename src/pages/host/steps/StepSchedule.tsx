@@ -27,7 +27,10 @@ export function StepSchedule({ draft, onUpdate }: StepScheduleProps) {
     }
   }, [draft.maxChoices]);
 
-  const maxAllowed = Math.max(1, draft.candidates.length - 1);
+  const totalCandidateCount = draft.sections.length > 0
+    ? draft.sections.reduce((count, section) => count + section.candidates.length, 0)
+    : draft.candidates.length
+  const maxAllowed = Math.max(1, totalCandidateCount - 1);
 
   return (
     <div className="px-5 py-6 flex flex-col gap-6">

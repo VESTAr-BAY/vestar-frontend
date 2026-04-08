@@ -132,6 +132,20 @@ export function StepPolicy({ draft, onUpdate }: StepPolicyProps) {
           </div>
         </div>
       )}
+
+      <div className="bg-[#F7F8FA] p-4 rounded-xl border border-[#E7E9ED]">
+        <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+          최소 카르마 티어
+        </label>
+        <input
+          type="number"
+          min="0"
+          max="255"
+          value={draft.minKarmaTier}
+          onChange={(e) => onUpdate('minKarmaTier', Number(e.target.value))}
+          className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
+        />
+      </div>
     </div>
   )
 }

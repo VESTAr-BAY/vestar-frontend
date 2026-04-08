@@ -249,13 +249,14 @@ export async function getOrganizerSnapshot(organizerAddress: Address): Promise<O
 export async function createElection(
   walletClient: WalletClient,
   config: ElectionConfigInput,
+  initialCandidateHashes: Hex[],
 ): Promise<Hash> {
   return writeVestarContract({
     walletClient,
     abi: vestarElectionFactoryAbi,
     address: vestarContractAddresses.electionFactory,
     functionName: "createElection",
-    args: [config],
+    args: [config, initialCandidateHashes],
   });
 }
 

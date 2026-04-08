@@ -10,17 +10,16 @@ interface StepBasicInfoProps {
 }
 
 export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoProps) {
-  const isTitleChanged = initialDraft && initialDraft.title !== draft.title
-  const isGroupChanged = initialDraft && initialDraft.group !== draft.group
   const isBannerChanged = initialDraft && initialDraft.bannerImage !== draft.bannerImage
-  const isCategoryChanged = initialDraft && initialDraft.category !== draft.category
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const url = URL.createObjectURL(e.target.files[0])
+      const file = e.target.files[0]
+      const url = URL.createObjectURL(file)
       onUpdate('bannerImage', url)
+      onUpdate('bannerImageFile', file)
     }
   }
 

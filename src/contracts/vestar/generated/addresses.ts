@@ -4,19 +4,19 @@ export const vestarStatusTestnet = {
   "chainName": "Status Network Testnet",
   "chainId": 1660990954,
   "rpcUrl": "https://public.sepolia.rpc.status.network",
-  "OrganizerRegistry": "0x6b6F30c54F0a382328409941A8eB824D02EFCD8f",
-  "KarmaRegistry": "0x9880c7Ff7Be22A1B2e469E594157eE6C14604472",
-  "ElectionImplementation": "0x93ec16287D1da13b4af58f3F0B9D717cae8b4A8A",
-  "VESTArElectionFactory": "0xE9e5AE2892542fd736b5391f0a722C641DC1fEDe",
-  "MockUSDT": "0x3a91A1b0bF95eE4e3F4e2F3F2A386995D884ee1d"
+  "OrganizerRegistry": "0x31891950a0B5b289fFdA7478DeaE3CED0FB4c4D5",
+  "KarmaRegistry": "0x09F78697C55C318eABb532f65c03b5E4a5222429",
+  "ElectionImplementation": "0x2604Fe2ae34D4292FE50418303C18aA5bD32Ba83",
+  "VESTArElectionFactory": "0x4173b26b14748fe6342b2c444334095ecB7f0854",
+  "MockUSDT": "0x0cf5032E38C729744953dC44EB0F0e3cC6F21855"
 } as const;
 
 export const vestarContractAddresses = {
-  "organizerRegistry": "0x6b6F30c54F0a382328409941A8eB824D02EFCD8f",
-  "karmaRegistry": "0x9880c7Ff7Be22A1B2e469E594157eE6C14604472",
-  "electionImplementation": "0x93ec16287D1da13b4af58f3F0B9D717cae8b4A8A",
-  "electionFactory": "0xE9e5AE2892542fd736b5391f0a722C641DC1fEDe",
-  "mockUsdt": "0x3a91A1b0bF95eE4e3F4e2F3F2A386995D884ee1d"
+  "organizerRegistry": "0x31891950a0B5b289fFdA7478DeaE3CED0FB4c4D5",
+  "karmaRegistry": "0x09F78697C55C318eABb532f65c03b5E4a5222429",
+  "electionImplementation": "0x2604Fe2ae34D4292FE50418303C18aA5bD32Ba83",
+  "electionFactory": "0x4173b26b14748fe6342b2c444334095ecB7f0854",
+  "mockUsdt": "0x0cf5032E38C729744953dC44EB0F0e3cC6F21855"
 } as const;
 
 export type VestarContractAddressBook = typeof vestarContractAddresses;

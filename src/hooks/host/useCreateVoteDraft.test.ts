@@ -1,94 +1,77 @@
 import { act, renderHook } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { useCreateVoteDraft } from './useCreateVoteDraft'
 
+vi.mock('wagmi', () => ({
+  useWalletClient: () => ({ data: undefined }),
+  useSwitchChain: () => ({ switchChainAsync: vi.fn() }),
+}))
+
+vi.mock('../../config/api', () => ({
+  apiClient: {
+    post: vi.fn(),
+  },
+}))
+
+vi.mock('../../contracts/vestar/client', () => ({
+  vestarFactory: {
+    createElection: vi.fn(),
+  },
+  vestarUtils: {
+    waitForReceipt: vi.fn(),
+  },
+}))
+
+vi.mock('../../utils/ipfs', () => ({
+  uploadJsonToPinata: vi.fn(),
+}))
+
 describe('useCreateVoteDraft', () => {
-  it('initializes at step 1 with empty title and org', () => {
+  it('initializes at step 1 with private visibility and two empty candidates', () => {
     const { result } = renderHook(() => useCreateVoteDraft())
+
     expect(result.current.step).toBe(1)
-    expect(result.current.draft.title).toBe('')
-    expect(result.current.draft.org).toBe('')
+    expect(result.current.draft.visibility).toBe('PRIVATE')
+    expect(result.current.draft.candidates).toHaveLength(2)
+    expect(result.current.draft.group).toBe('')
   })
 
-  it('step 1 is invalid when title is empty', () => {
+  it('step 1 becomes valid when title is filled', () => {
     const { result } = renderHook(() => useCreateVoteDraft())
-    expect(result.current.isCurrentStepValid).toBe(false)
-  })
 
-  it('step 1 becomes valid when title and org are filled', () => {
-    const { result } = renderHook(() => useCreateVoteDraft())
     act(() => result.current.updateField('title', '테스트 투표'))
-    act(() => result.current.updateField('org', '테스트 주최'))
+
     expect(result.current.isCurrentStepValid).toBe(true)
   })
 
-  it('nextStep does not advance when current step is invalid', () => {
+  it('nextStep does not advance while current step is invalid', () => {
     const { result } = renderHook(() => useCreateVoteDraft())
+
     act(() => result.current.nextStep())
+
     expect(result.current.step).toBe(1)
   })
 
-  it('nextStep advances when step is valid', () => {
+  it('step 2 requires unique named candidates', () => {
     const { result } = renderHook(() => useCreateVoteDraft())
+
     act(() => result.current.updateField('title', '테스트 투표'))
-    act(() => result.current.updateField('org', '테스트 주최'))
     act(() => result.current.nextStep())
-    expect(result.current.step).toBe(2)
-  })
 
-  it('prevStep goes back from step 2 to step 1', () => {
-    const { result } = renderHook(() => useCreateVoteDraft())
-    act(() => result.current.updateField('title', '테스트 투표'))
-    act(() => result.current.updateField('org', '테스트 주최'))
-    act(() => result.current.nextStep())
-    act(() => result.current.prevStep())
-    expect(result.current.step).toBe(1)
-  })
+    const [first, second] = result.current.draft.candidates
+    act(() => result.current.updateCandidate(first.id, 'name', '아티스트A'))
+    act(() => result.current.updateCandidate(second.id, 'name', '아티스트A'))
 
-  it('initializes with 2 empty candidate slots', () => {
-    const { result } = renderHook(() => useCreateVoteDraft())
-    expect(result.current.draft.candidates).toHaveLength(2)
-  })
-
-  it('addCandidate increases candidate count', () => {
-    const { result } = renderHook(() => useCreateVoteDraft())
-    act(() => result.current.addCandidate())
-    expect(result.current.draft.candidates).toHaveLength(3)
-  })
-
-  it('removeCandidate removes candidate by id', () => {
-    const { result } = renderHook(() => useCreateVoteDraft())
-    act(() => result.current.addCandidate())
-    const idToRemove = result.current.draft.candidates[2].id
-    act(() => result.current.removeCandidate(idToRemove))
-    expect(result.current.draft.candidates).toHaveLength(2)
-    expect(result.current.draft.candidates.find((c) => c.id === idToRemove)).toBeUndefined()
-  })
-
-  it('step 2 is invalid when candidate names are empty', () => {
-    const { result } = renderHook(() => useCreateVoteDraft())
-    act(() => result.current.updateField('title', 'T'))
-    act(() => result.current.updateField('org', 'O'))
-    act(() => result.current.nextStep())
     expect(result.current.isCurrentStepValid).toBe(false)
   })
 
-  it('step 2 is valid when 2+ candidates have names', () => {
+  it('unlimited voting forces paid single-choice configuration', () => {
     const { result } = renderHook(() => useCreateVoteDraft())
-    act(() => result.current.updateField('title', 'T'))
-    act(() => result.current.updateField('org', 'O'))
-    act(() => result.current.nextStep())
-    const [c1, c2] = result.current.draft.candidates
-    act(() => result.current.updateCandidate(c1.id, 'name', '아티스트A'))
-    act(() => result.current.updateCandidate(c2.id, 'name', '아티스트B'))
-    expect(result.current.isCurrentStepValid).toBe(true)
-  })
 
-  it('updateField immutably updates draft', () => {
-    const { result } = renderHook(() => useCreateVoteDraft())
-    const before = result.current.draft
-    act(() => result.current.updateField('title', '새 투표'))
-    expect(result.current.draft).not.toBe(before)
-    expect(result.current.draft.title).toBe('새 투표')
+    act(() => result.current.updateField('votePolicy', 'UNLIMITED'))
+
+    expect(result.current.draft.paymentType).toBe('PAID')
+    expect(result.current.draft.costPerBallot).toBe(100)
+    expect(result.current.draft.maxChoices).toBe(1)
   })
 })

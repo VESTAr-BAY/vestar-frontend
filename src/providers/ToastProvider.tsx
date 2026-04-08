@@ -7,6 +7,7 @@ interface ToastItem {
   id: string
   type: ToastType
   message: string
+  autoClose?: boolean
 }
 
 interface ToastContextValue {
@@ -28,7 +29,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const addToast = useCallback((toast: Omit<ToastItem, 'id'>) => {
     const id = String(_idCounter++)
-    setToasts((prev) => [...prev, { ...toast, id }])
+    setToasts((prev) => [
+      ...prev,
+      {
+        ...toast,
+        id,
+        autoClose: toast.autoClose ?? true,
+      },
+    ])
   }, [])
 
   const removeToast = useCallback((id: string) => {

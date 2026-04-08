@@ -1,6 +1,7 @@
 import { http, createConfig } from 'wagmi'
 import { mainnet, sepolia } from 'wagmi/chains'
 import { injected, walletConnect } from 'wagmi/connectors'
+import { vestarStatusTestnetChain } from '../contracts/vestar/chain'
 
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID as string | undefined
 
@@ -9,9 +10,10 @@ if (!projectId) {
 }
 
 export const wagmiConfig = createConfig({
-  chains: [mainnet, sepolia],
+  chains: [vestarStatusTestnetChain, mainnet, sepolia],
   connectors: projectId ? [injected(), walletConnect({ projectId })] : [injected()],
   transports: {
+    [vestarStatusTestnetChain.id]: http(vestarStatusTestnetChain.rpcUrls.default.http[0]),
     [mainnet.id]: http(),
     [sepolia.id]: http(),
   },

@@ -1,5 +1,4 @@
 import type { CandidateDraft, SectionDraft, VoteCreateDraft } from '../../../types/host'
-import { useRef } from 'react'
 
 const MAX_CANDIDATES = 10
 
@@ -8,7 +7,11 @@ interface StepCandidatesProps {
   sections: VoteCreateDraft['sections']
   onAdd: () => void
   onRemove: (id: string) => void
-  onUpdate: (id: string, field: keyof Omit<CandidateDraft, 'id'>, value: string) => void
+  onUpdate: (
+    id: string,
+    field: keyof Omit<CandidateDraft, 'id'>,
+    value: CandidateDraft[keyof Omit<CandidateDraft, 'id'>],
+  ) => void
   onAddSection: () => void
   onRemoveSection: (sectionId: string) => void
   onUpdateSectionName: (sectionId: string, name: string) => void
@@ -18,7 +21,7 @@ interface StepCandidatesProps {
     sectionId: string,
     candidateId: string,
     field: keyof Omit<CandidateDraft, 'id'>,
-    value: string,
+    value: CandidateDraft[keyof Omit<CandidateDraft, 'id'>],
   ) => void
   onClearSections: () => void
   initialCandidates?: VoteCreateDraft['candidates']
@@ -37,7 +40,7 @@ function CandidateCard({
   index: number
   canRemove: boolean
   onRemove: () => void
-  onUpdate: (field: keyof Omit<CandidateDraft, 'id'>, value: string) => void
+  onUpdate: (field: keyof Omit<CandidateDraft, 'id'>, value: CandidateDraft[keyof Omit<CandidateDraft, 'id'>]) => void
   isEditMode: boolean
   initialCandidates?: VoteCreateDraft['candidates']
 }) {
@@ -116,8 +119,10 @@ function CandidateCard({
           accept="image/*" 
           onChange={(e) => {
             if (e.target.files && e.target.files[0]) {
-              const url = URL.createObjectURL(e.target.files[0])
+              const file = e.target.files[0]
+              const url = URL.createObjectURL(file)
               onUpdate('image', url)
+              onUpdate('imageFile', file)
             }
           }} 
           className="hidden" 
@@ -149,7 +154,7 @@ function SectionCard({
   onUpdateCandidate: (
     candidateId: string,
     field: keyof Omit<CandidateDraft, 'id'>,
-    value: string,
+    value: CandidateDraft[keyof Omit<CandidateDraft, 'id'>],
   ) => void
   isEditMode: boolean
   initialCandidates?: VoteCreateDraft['candidates']

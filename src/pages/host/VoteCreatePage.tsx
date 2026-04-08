@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router'
 import { useCreateVoteDraft } from '../../hooks/host/useCreateVoteDraft'
+import { useToast } from '../../providers/ToastProvider'
 import { StepBasicInfo } from './steps/StepBasicInfo'
 import { StepCandidates } from './steps/StepCandidates'
 import { StepSchedule } from './steps/StepSchedule'
@@ -52,10 +53,12 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 
 export function VoteCreatePage() {
   const navigate = useNavigate()
+  const { addToast } = useToast()
   const {
     draft,
     step,
     isCurrentStepValid,
+    debugInfo,
     updateField,
     addCandidate,
     removeCandidate,
@@ -75,8 +78,24 @@ export function VoteCreatePage() {
 
   const handleSubmit = async () => {
     if (!isCurrentStepValid) return
-    await submit()
-    navigate('/host')
+
+    try {
+      const result = await submit()
+      const successMessage =
+        result.elections.length > 1
+          ? `${result.elections.length}개의 투표가 같은 시리즈로 생성되었습니다.`
+          : `투표가 생성되었습니다. election: ${result.electionAddress.slice(0, 6)}...${result.electionAddress.slice(-4)}`
+      addToast({
+        type: 'success',
+        message: successMessage,
+      })
+      navigate('/host')
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : '투표 생성에 실패했습니다.',
+      })
+    }
   }
 
   return (
@@ -131,7 +150,22 @@ export function VoteCreatePage() {
           />
         )}
         {step === 3 && <StepSchedule draft={draft} onUpdate={updateField} />}
-        {step === 4 && <StepPolicy draft={draft} onUpdate={updateField} />}
+        {step === 4 && (
+          <>
+            <StepPolicy draft={draft} onUpdate={updateField} />
+            {/* DEBUG: temporary on-screen diagnostics for create reverts. Remove after create flow is stable. */}
+            {debugInfo && (
+              <section className="mx-5 mb-6 rounded-2xl border border-[#E7E9ED] bg-white p-4">
+                <div className="mb-2 text-[12px] font-bold text-[#7140FF] font-mono">
+                  DEBUG CREATE CHECK
+                </div>
+                <pre className="whitespace-pre-wrap break-all text-[12px] leading-5 text-[#090A0B] select-text">
+{JSON.stringify(debugInfo, null, 2)}
+                </pre>
+              </section>
+            )}
+          </>
+        )}
       </main>
 
       {/* Bottom action bar */}

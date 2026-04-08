@@ -13,6 +13,7 @@ function makeBlankCandidate(): CandidateDraft {
     id: makeId(),
     name: '',
     image: '',
+    imageFile: null,
   }
 }
 
@@ -20,7 +21,9 @@ const INITIAL_DRAFT: VoteCreateDraft = {
   title: '',
   group: '',
   bannerImage: '',
+  bannerImageFile: null,
   category: '음악방송',
+  visibility: 'PRIVATE',
   candidates: [],
   sections: [],
   startDate: '',
@@ -33,6 +36,7 @@ const INITIAL_DRAFT: VoteCreateDraft = {
   resetIntervalUnit: 'days',
   paymentType: 'FREE',
   costPerBallot: 0,
+  minKarmaTier: 0,
 }
 
 function isStep1Valid(draft: VoteCreateDraft): boolean {
@@ -70,11 +74,14 @@ export function useEditVoteDraft(id: string) {
         title: vote.title,
         group: vote.org || '',
         bannerImage: '', // Mock doesn't have it
+        bannerImageFile: null,
         category: '음악방송',
+        visibility: 'PRIVATE',
         candidates: vote.candidates.map(c => ({
           id: c.id,
           name: c.name,
           image: '',
+          imageFile: null,
         })),
         sections: [],
         startDate: vote.startDate || '',
@@ -87,6 +94,7 @@ export function useEditVoteDraft(id: string) {
         resetIntervalUnit: 'days',
         paymentType: 'FREE',
         costPerBallot: 0,
+        minKarmaTier: 0,
       }
       setInitialDraft(init)
       setDraft(init)
@@ -118,7 +126,11 @@ export function useEditVoteDraft(id: string) {
   }, [])
 
   const updateCandidate = useCallback(
-    (id: string, field: keyof Omit<CandidateDraft, 'id'>, value: string) => {
+    (
+      id: string,
+      field: keyof Omit<CandidateDraft, 'id'>,
+      value: CandidateDraft[keyof Omit<CandidateDraft, 'id'>],
+    ) => {
       setDraft((prev) => ({
         ...prev,
         candidates: prev.candidates.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
@@ -179,7 +191,7 @@ export function useEditVoteDraft(id: string) {
       sectionId: string,
       candidateId: string,
       field: keyof Omit<CandidateDraft, 'id'>,
-      value: string,
+      value: CandidateDraft[keyof Omit<CandidateDraft, 'id'>],
     ) => {
       setDraft((prev) => ({
         ...prev,
