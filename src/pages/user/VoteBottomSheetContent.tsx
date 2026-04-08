@@ -49,7 +49,9 @@ function SuccessPhase({
         </div>
       </div>
 
-      <h3 className="text-[18px] font-bold text-[#090A0B] text-center mb-1">{t('bs_success_title')}</h3>
+      <h3 className="text-[18px] font-bold text-[#090A0B] text-center mb-1">
+        {t('bs_success_title')}
+      </h3>
       <p className="text-[13px] text-[#707070] text-center mb-5">{t('bs_success_sub')}</p>
 
       {/* TX hash */}

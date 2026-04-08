@@ -9,8 +9,8 @@ import {
   type TransactionReceipt,
   toHex,
   type WalletClient,
-} from "viem";
-import { vestarStatusTestnetChain } from "./chain";
+} from 'viem'
+import { vestarStatusTestnetChain } from './chain'
 import {
   vestarContractAddresses,
   vestarElectionAbi,
@@ -18,7 +18,7 @@ import {
   vestarKarmaRegistryAbi,
   vestarOrganizerRegistryAbi,
   vestarStatusTestnet,
-} from "./generated";
+} from './generated'
 import type {
   CancellationSummary,
   CandidateGroupBindingInput,
@@ -39,17 +39,17 @@ import type {
   VestarOrganizerCreationStatus,
   VestarPaymentMode,
   VestarVisibilityMode,
-} from "./types";
+} from './types'
 
 interface ReadContractOptions {
-  abi: Abi;
-  address: Address;
-  functionName: string;
-  args?: readonly unknown[];
+  abi: Abi
+  address: Address
+  functionName: string
+  args?: readonly unknown[]
 }
 
 interface WriteContractOptions extends ReadContractOptions {
-  walletClient: WalletClient;
+  walletClient: WalletClient
 }
 
 /**
@@ -58,17 +58,17 @@ interface WriteContractOptions extends ReadContractOptions {
 export const vestarPublicClient = createPublicClient({
   chain: vestarStatusTestnetChain,
   transport: http(vestarStatusTestnet.rpcUrl),
-});
+})
 
 export function isVestarStatusTestnetChain(chainId?: number): boolean {
-  return chainId === vestarStatusTestnetChain.id;
+  return chainId === vestarStatusTestnetChain.id
 }
 
 /**
  * Use for candidate keys, group keys, display labels, etc. whenever the contract expects bytes32 hashes.
  */
 export function hashVestarText(value: string): Hex {
-  return keccak256(toHex(value));
+  return keccak256(toHex(value))
 }
 
 /**
@@ -76,18 +76,18 @@ export function hashVestarText(value: string): Hex {
  */
 export function toVestarUnixTime(value: TimestampInput = Date.now()): bigint {
   if (value instanceof Date) {
-    return BigInt(Math.floor(value.getTime() / 1000));
+    return BigInt(Math.floor(value.getTime() / 1000))
   }
 
-  if (typeof value === "bigint") {
-    return value;
+  if (typeof value === 'bigint') {
+    return value
   }
 
-  return BigInt(Math.floor(value));
+  return BigInt(Math.floor(value))
 }
 
 export async function waitForVestarTransactionReceipt(hash: Hash): Promise<TransactionReceipt> {
-  return vestarPublicClient.waitForTransactionReceipt({ hash });
+  return vestarPublicClient.waitForTransactionReceipt({ hash })
 }
 
 async function readVestarContract<TResult>({
@@ -101,23 +101,23 @@ async function readVestarContract<TResult>({
     address,
     functionName: functionName as never,
     args: (args ?? []) as never,
-  }) as Promise<TResult>;
+  }) as Promise<TResult>
 }
 
 function getWalletAccount(walletClient: WalletClient) {
   if (!walletClient.account) {
     throw new Error(
       "walletClient.account is missing. Pass the result of wagmi's useWalletClient() or a connected viem WalletClient.",
-    );
+    )
   }
 
   if (walletClient.chain && walletClient.chain.id !== vestarStatusTestnetChain.id) {
     throw new Error(
       `VESTAr contracts are deployed on Status Network Testnet (${vestarStatusTestnetChain.id}).`,
-    );
+    )
   }
 
-  return walletClient.account;
+  return walletClient.account
 }
 
 async function writeVestarContract({
@@ -127,7 +127,7 @@ async function writeVestarContract({
   functionName,
   args,
 }: WriteContractOptions): Promise<Hash> {
-  const account = getWalletAccount(walletClient);
+  const account = getWalletAccount(walletClient)
   const { request } = await vestarPublicClient.simulateContract({
     abi,
     account,
@@ -135,18 +135,18 @@ async function writeVestarContract({
     chain: vestarStatusTestnetChain,
     functionName: functionName as never,
     args: (args ?? []) as never,
-  });
+  })
 
-  return walletClient.writeContract(request);
+  return walletClient.writeContract(request)
 }
 
 export async function getOrganizerProfile(organizerAddress: Address): Promise<OrganizerProfile> {
   return readVestarContract<OrganizerProfile>({
     abi: vestarOrganizerRegistryAbi,
     address: vestarContractAddresses.organizerRegistry,
-    functionName: "getOrganizerProfile",
+    functionName: 'getOrganizerProfile',
     args: [organizerAddress],
-  });
+  })
 }
 
 export async function getOrganizerCreationStatus(
@@ -156,9 +156,9 @@ export async function getOrganizerCreationStatus(
   return readVestarContract<VestarOrganizerCreationStatus>({
     abi: vestarOrganizerRegistryAbi,
     address: vestarContractAddresses.organizerRegistry,
-    functionName: "getOrganizerCreationStatus",
+    functionName: 'getOrganizerCreationStatus',
     args: [organizerAddress, karmaTier],
-  });
+  })
 }
 
 export async function canCreateElection(
@@ -168,61 +168,61 @@ export async function canCreateElection(
   return readVestarContract<boolean>({
     abi: vestarOrganizerRegistryAbi,
     address: vestarContractAddresses.organizerRegistry,
-    functionName: "canCreateElection",
+    functionName: 'canCreateElection',
     args: [organizerAddress, karmaTier],
-  });
+  })
 }
 
 export async function isOrganizerVerified(organizerAddress: Address): Promise<boolean> {
   return readVestarContract<boolean>({
     abi: vestarOrganizerRegistryAbi,
     address: vestarContractAddresses.organizerRegistry,
-    functionName: "isVerified",
+    functionName: 'isVerified',
     args: [organizerAddress],
-  });
+  })
 }
 
 export async function upsertOrganizerProfile(
   walletClient: WalletClient,
   params: {
-    displayNameHash: Hex;
-    brandMetadataURI: string;
+    displayNameHash: Hex
+    brandMetadataURI: string
   },
 ): Promise<Hash> {
   return writeVestarContract({
     walletClient,
     abi: vestarOrganizerRegistryAbi,
     address: vestarContractAddresses.organizerRegistry,
-    functionName: "upsertOrganizerProfile",
+    functionName: 'upsertOrganizerProfile',
     args: [params.displayNameHash, params.brandMetadataURI],
-  });
+  })
 }
 
 export async function getKarmaTier(account: Address): Promise<number> {
   return readVestarContract<number>({
     abi: vestarKarmaRegistryAbi,
     address: vestarContractAddresses.karmaRegistry,
-    functionName: "tierIdOf",
+    functionName: 'tierIdOf',
     args: [account],
-  });
+  })
 }
 
 export async function getKarmaBalance(account: Address): Promise<bigint> {
   return readVestarContract<bigint>({
     abi: vestarKarmaRegistryAbi,
     address: vestarContractAddresses.karmaRegistry,
-    functionName: "karmaBalanceOf",
+    functionName: 'karmaBalanceOf',
     args: [account],
-  });
+  })
 }
 
 export async function isKarmaEligible(account: Address, minTier: number): Promise<boolean> {
   return readVestarContract<boolean>({
     abi: vestarKarmaRegistryAbi,
     address: vestarContractAddresses.karmaRegistry,
-    functionName: "isEligible",
+    functionName: 'isEligible',
     args: [account, minTier],
-  });
+  })
 }
 
 export async function getOrganizerSnapshot(organizerAddress: Address): Promise<OrganizerSnapshot> {
@@ -230,11 +230,11 @@ export async function getOrganizerSnapshot(organizerAddress: Address): Promise<O
     getOrganizerProfile(organizerAddress),
     getKarmaTier(organizerAddress),
     getKarmaBalance(organizerAddress),
-  ]);
+  ])
   const [creationStatus, canCreateElectionFlag] = await Promise.all([
     getOrganizerCreationStatus(organizerAddress, karmaTier),
     canCreateElection(organizerAddress, karmaTier),
-  ]);
+  ])
 
   return {
     organizerAddress,
@@ -243,7 +243,7 @@ export async function getOrganizerSnapshot(organizerAddress: Address): Promise<O
     karmaBalance,
     creationStatus,
     canCreateElection: canCreateElectionFlag,
-  };
+  }
 }
 
 export async function createElection(
@@ -254,50 +254,50 @@ export async function createElection(
     walletClient,
     abi: vestarElectionFactoryAbi,
     address: vestarContractAddresses.electionFactory,
-    functionName: "createElection",
+    functionName: 'createElection',
     args: [input.config, input.initialCandidateHashes],
-  });
+  })
 }
 
 export async function getElectionAddress(electionId: Hex): Promise<Address> {
   return readVestarContract<Address>({
     abi: vestarElectionFactoryAbi,
     address: vestarContractAddresses.electionFactory,
-    functionName: "getElection",
+    functionName: 'getElection',
     args: [electionId],
-  });
+  })
 }
 
 export async function getElectionId(electionAddress: Address): Promise<Hex> {
   return readVestarContract<Hex>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "electionId",
-  });
+    functionName: 'electionId',
+  })
 }
 
 export async function getFactoryElectionCount(): Promise<bigint> {
   return readVestarContract<bigint>({
     abi: vestarElectionFactoryAbi,
     address: vestarContractAddresses.electionFactory,
-    functionName: "totalElections",
-  });
+    functionName: 'totalElections',
+  })
 }
 
 export async function getElectionConfig(electionAddress: Address): Promise<ElectionConfig> {
   return readVestarContract<ElectionConfig>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "getElectionConfig",
-  });
+    functionName: 'getElectionConfig',
+  })
 }
 
 export async function getElectionState(electionAddress: Address): Promise<VestarElectionState> {
   return readVestarContract<VestarElectionState>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "state",
-  });
+    functionName: 'state',
+  })
 }
 
 export async function getElectionVisibilityMode(
@@ -306,24 +306,24 @@ export async function getElectionVisibilityMode(
   return readVestarContract<VestarVisibilityMode>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "visibilityMode",
-  });
+    functionName: 'visibilityMode',
+  })
 }
 
 export async function getElectionPaymentMode(electionAddress: Address): Promise<VestarPaymentMode> {
   return readVestarContract<VestarPaymentMode>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "paymentMode",
-  });
+    functionName: 'paymentMode',
+  })
 }
 
 export async function getElectionResultSummary(electionAddress: Address): Promise<ResultSummary> {
   return readVestarContract<ResultSummary>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "getResultSummary",
-  });
+    functionName: 'getResultSummary',
+  })
 }
 
 export async function getElectionSettlementSummary(
@@ -332,8 +332,8 @@ export async function getElectionSettlementSummary(
   return readVestarContract<SettlementSummary>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "getSettlementSummary",
-  });
+    functionName: 'getSettlementSummary',
+  })
 }
 
 export async function getElectionCancellationSummary(
@@ -342,24 +342,24 @@ export async function getElectionCancellationSummary(
   return readVestarContract<CancellationSummary>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "getCancellationSummary",
-  });
+    functionName: 'getCancellationSummary',
+  })
 }
 
 export async function getElectionRefundSummary(electionAddress: Address): Promise<RefundSummary> {
   return readVestarContract<RefundSummary>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "getRefundSummary",
-  });
+    functionName: 'getRefundSummary',
+  })
 }
 
 export async function getElectionRefundsEnabled(electionAddress: Address): Promise<boolean> {
   return readVestarContract<boolean>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "refundsEnabled",
-  });
+    functionName: 'refundsEnabled',
+  })
 }
 
 export async function getElectionRefundableAmount(
@@ -369,9 +369,9 @@ export async function getElectionRefundableAmount(
   return readVestarContract<bigint>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "refundableAmountOf",
+    functionName: 'refundableAmountOf',
     args: [voter],
-  });
+  })
 }
 
 export async function getElectionRemainingBallots(
@@ -382,9 +382,9 @@ export async function getElectionRemainingBallots(
   return readVestarContract<number>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "remainingBallots",
+    functionName: 'remainingBallots',
     args: [voter, toVestarUnixTime(timestamp)],
-  });
+  })
 }
 
 export async function canAccountSubmitBallot(
@@ -395,9 +395,9 @@ export async function canAccountSubmitBallot(
   return readVestarContract<boolean>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "canSubmitBallot",
+    functionName: 'canSubmitBallot',
     args: [voter, toVestarUnixTime(timestamp)],
-  });
+  })
 }
 
 export async function quoteElectionPayment(
@@ -407,9 +407,9 @@ export async function quoteElectionPayment(
   return readVestarContract<bigint>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "quotePayment",
+    functionName: 'quotePayment',
     args: [ballotCount],
-  });
+  })
 }
 
 export async function getTotalVotesForCandidate(
@@ -419,9 +419,9 @@ export async function getTotalVotesForCandidate(
   return readVestarContract<bigint>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "totalVotesForCandidate",
+    functionName: 'totalVotesForCandidate',
     args: [candidateKey],
-  });
+  })
 }
 
 export async function getGroupDefinition(
@@ -431,9 +431,9 @@ export async function getGroupDefinition(
   return readVestarContract<GroupDefinition>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "getGroupDefinition",
+    functionName: 'getGroupDefinition',
     args: [groupKeyHash],
-  });
+  })
 }
 
 export async function getCandidateGroup(
@@ -443,9 +443,9 @@ export async function getCandidateGroup(
   return readVestarContract<Hex>({
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "candidateGroupOf",
+    functionName: 'candidateGroupOf',
     args: [candidateHash],
-  });
+  })
 }
 
 export async function getElectionSnapshot(electionAddress: Address): Promise<ElectionSnapshot> {
@@ -459,18 +459,17 @@ export async function getElectionSnapshot(electionAddress: Address): Promise<Ele
     cancellationSummary,
     settlementSummary,
     refundSummary,
-  ] =
-    await Promise.all([
-      getElectionId(electionAddress),
-      getElectionConfig(electionAddress),
-      getElectionState(electionAddress),
-      getElectionVisibilityMode(electionAddress),
-      getElectionPaymentMode(electionAddress),
-      getElectionResultSummary(electionAddress),
-      getElectionCancellationSummary(electionAddress),
-      getElectionSettlementSummary(electionAddress),
-      getElectionRefundSummary(electionAddress),
-    ]);
+  ] = await Promise.all([
+    getElectionId(electionAddress),
+    getElectionConfig(electionAddress),
+    getElectionState(electionAddress),
+    getElectionVisibilityMode(electionAddress),
+    getElectionPaymentMode(electionAddress),
+    getElectionResultSummary(electionAddress),
+    getElectionCancellationSummary(electionAddress),
+    getElectionSettlementSummary(electionAddress),
+    getElectionRefundSummary(electionAddress),
+  ])
 
   return {
     address: electionAddress,
@@ -483,7 +482,7 @@ export async function getElectionSnapshot(electionAddress: Address): Promise<Ele
     cancellationSummary,
     settlementSummary,
     refundSummary,
-  };
+  }
 }
 
 export async function getElectionVoterSnapshot(
@@ -491,18 +490,18 @@ export async function getElectionVoterSnapshot(
   voter: Address,
   timestamp: TimestampInput = Date.now(),
 ): Promise<ElectionVoterSnapshot> {
-  const resolvedTimestamp = toVestarUnixTime(timestamp);
+  const resolvedTimestamp = toVestarUnixTime(timestamp)
   const [canSubmitBallot, remainingBallots] = await Promise.all([
     canAccountSubmitBallot(electionAddress, voter, resolvedTimestamp),
     getElectionRemainingBallots(electionAddress, voter, resolvedTimestamp),
-  ]);
+  ])
 
   return {
     voter,
     timestamp: resolvedTimestamp,
     canSubmitBallot,
     remainingBallots,
-  };
+  }
 }
 
 /**
@@ -517,9 +516,9 @@ export async function submitOpenVote(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "submitOpenVote",
+    functionName: 'submitOpenVote',
     args: [candidateKeys],
-  });
+  })
 }
 
 export async function submitEncryptedVote(
@@ -531,9 +530,9 @@ export async function submitEncryptedVote(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "submitEncryptedVote",
+    functionName: 'submitEncryptedVote',
     args: [encryptedBallot],
-  });
+  })
 }
 
 export async function closeElection(
@@ -544,8 +543,8 @@ export async function closeElection(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "closeElection",
-  });
+    functionName: 'closeElection',
+  })
 }
 
 export async function cancelElection(
@@ -556,15 +555,15 @@ export async function cancelElection(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "cancelElection",
-  });
+    functionName: 'cancelElection',
+  })
 }
 
 export async function cancelElectionBeforeStart(
   walletClient: WalletClient,
   electionAddress: Address,
 ): Promise<Hash> {
-  return cancelElection(walletClient, electionAddress);
+  return cancelElection(walletClient, electionAddress)
 }
 
 export async function settleElectionRevenue(
@@ -575,8 +574,8 @@ export async function settleElectionRevenue(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "settleRevenue",
-  });
+    functionName: 'settleRevenue',
+  })
 }
 
 export async function enableElectionRefunds(
@@ -587,8 +586,8 @@ export async function enableElectionRefunds(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "enableRefunds",
-  });
+    functionName: 'enableRefunds',
+  })
 }
 
 export async function claimElectionRefund(
@@ -599,8 +598,8 @@ export async function claimElectionRefund(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "claimRefund",
-  });
+    functionName: 'claimRefund',
+  })
 }
 
 export async function finalizeElectionResults(
@@ -612,9 +611,9 @@ export async function finalizeElectionResults(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "finalizeResults",
+    functionName: 'finalizeResults',
     args: [resultSummary],
-  });
+  })
 }
 
 export async function setCandidateAllowlist(
@@ -627,9 +626,9 @@ export async function setCandidateAllowlist(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "setCandidateAllowlist",
+    functionName: 'setCandidateAllowlist',
     args: [candidateHashes, allowed],
-  });
+  })
 }
 
 export async function setGroupDefinitions(
@@ -641,9 +640,9 @@ export async function setGroupDefinitions(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "setGroupDefinitions",
+    functionName: 'setGroupDefinitions',
     args: [groupDefinitions],
-  });
+  })
 }
 
 export async function setCandidateGroups(
@@ -655,9 +654,9 @@ export async function setCandidateGroups(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "setCandidateGroups",
+    functionName: 'setCandidateGroups',
     args: [bindings],
-  });
+  })
 }
 
 export async function setRevealManager(
@@ -670,9 +669,9 @@ export async function setRevealManager(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "setRevealManager",
+    functionName: 'setRevealManager',
     args: [manager, allowed],
-  });
+  })
 }
 
 export async function revealElectionPrivateKey(
@@ -684,7 +683,7 @@ export async function revealElectionPrivateKey(
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
-    functionName: "revealPrivateKey",
+    functionName: 'revealPrivateKey',
     args: [privateKeyData],
-  });
+  })
 }

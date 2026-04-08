@@ -21,7 +21,10 @@ export function StepSchedule({ draft, onUpdate }: StepScheduleProps) {
     <div className="px-5 py-6 flex flex-col gap-6">
       {/* Start date */}
       <div>
-        <label htmlFor="vote-start-date" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+        <label
+          htmlFor="vote-start-date"
+          className="block text-[13px] font-semibold text-[#090A0B] mb-2"
+        >
           시작 일시 <span className="text-[#7140FF]">*</span>
         </label>
         <input
@@ -35,7 +38,10 @@ export function StepSchedule({ draft, onUpdate }: StepScheduleProps) {
 
       {/* End date */}
       <div>
-        <label htmlFor="vote-end-date" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+        <label
+          htmlFor="vote-end-date"
+          className="block text-[13px] font-semibold text-[#090A0B] mb-2"
+        >
           종료 일시 <span className="text-[#7140FF]">*</span>
         </label>
         <input
@@ -73,9 +79,7 @@ export function StepSchedule({ draft, onUpdate }: StepScheduleProps) {
 
       {/* Result reveal */}
       <div>
-        <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">
-          결과 공개 방식
-        </span>
+        <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">결과 공개 방식</span>
         <div className="flex flex-col gap-2">
           {RESULT_REVEAL_OPTIONS.map(({ value, label, desc }) => (
             <button

@@ -63,7 +63,9 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
   return (
     <div
       className={`absolute inset-0 z-[300] bg-white flex flex-col transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-        open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-8 pointer-events-none'
+        open
+          ? 'opacity-100 translate-y-0 pointer-events-auto'
+          : 'opacity-0 translate-y-8 pointer-events-none'
       }`}
     >
       {/* ── Top search bar ─────────────────────────────────────────────── */}
@@ -177,7 +179,9 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                   {item.emoji}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[14px] font-semibold text-[#090A0B] truncate">{item.name}</div>
+                  <div className="text-[14px] font-semibold text-[#090A0B] truncate">
+                    {item.name}
+                  </div>
                   <div className="text-[11px] text-[#707070] font-mono truncate">{item.org}</div>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
@@ -194,7 +198,9 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center px-8">
             <div className="text-5xl mb-4">🔍</div>
-            <div className="text-[16px] font-bold text-[#090A0B] mb-2">{t('search_no_results')}</div>
+            <div className="text-[16px] font-bold text-[#090A0B] mb-2">
+              {t('search_no_results')}
+            </div>
             <div className="text-[13px] text-[#707070]">{t('search_no_results_sub')}</div>
           </div>
         )}

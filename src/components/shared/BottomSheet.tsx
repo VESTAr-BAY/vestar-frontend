@@ -14,7 +14,9 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         type="button"
         aria-label="Close"
         className={`absolute inset-0 z-[200] transition-[background] duration-[280ms] ${
-          open ? 'bg-[rgba(9,10,11,0.65)] pointer-events-auto' : 'bg-transparent pointer-events-none'
+          open
+            ? 'bg-[rgba(9,10,11,0.65)] pointer-events-auto'
+            : 'bg-transparent pointer-events-none'
         }`}
         onClick={onClose}
       />

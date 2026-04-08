@@ -14,9 +14,7 @@ export function NotFoundPage() {
       <h1 className="text-[22px] font-semibold text-[#090A0B] mb-2 leading-tight">
         {t('nf_title')}
       </h1>
-      <p className="text-[13px] text-[#707070] mb-8">
-        {t('nf_sub')}
-      </p>
+      <p className="text-[13px] text-[#707070] mb-8">{t('nf_sub')}</p>
       <button
         type="button"
         onClick={() => navigate('/vote')}

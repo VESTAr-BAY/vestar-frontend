@@ -10,31 +10,65 @@ interface ProfilePanelProps {
 }
 
 type MenuItem =
-  | { kind: 'internal'; labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking'; icon: string; bg: string; to: string }
-  | { kind: 'external'; labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking'; icon: string; bg: string; href: string }
+  | {
+      kind: 'internal'
+      labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking'
+      icon: string
+      bg: string
+      to: string
+    }
+  | {
+      kind: 'external'
+      labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking'
+      icon: string
+      bg: string
+      href: string
+    }
 
 const MENU_ITEMS: MenuItem[] = [
-  { kind: 'internal', labelKey: 'pp_my_votes',      icon: '🗳️', bg: '#F0EDFF', to: '/mypage?tab=votes' },
-  { kind: 'internal', labelKey: 'pp_karma_history', icon: '⚡', bg: '#E8FFF0', to: '/mypage?tab=karma' },
-  { kind: 'external', labelKey: 'pp_stt_staking',   icon: '🪙', bg: '#FFF5E8', href: 'https://hub.status.network/stake' },
+  {
+    kind: 'internal',
+    labelKey: 'pp_my_votes',
+    icon: '🗳️',
+    bg: '#F0EDFF',
+    to: '/mypage?tab=votes',
+  },
+  {
+    kind: 'internal',
+    labelKey: 'pp_karma_history',
+    icon: '⚡',
+    bg: '#E8FFF0',
+    to: '/mypage?tab=karma',
+  },
+  {
+    kind: 'external',
+    labelKey: 'pp_stt_staking',
+    icon: '🪙',
+    bg: '#FFF5E8',
+    href: 'https://hub.status.network/stake',
+  },
 ]
 
 function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
-function getKarmaTier(karma: number): { label: string; emoji: string; color: string } {
-  if (karma >= 100000000) return { label: 'Legendary',      emoji: '👑', color: '#F59E0B' }
-  if (karma >= 5000000)   return { label: 'S-Tier',         emoji: '💎', color: '#22d3ee' }
-  if (karma >= 500000)    return { label: 'High-Throughput',emoji: '🚀', color: '#06b6d4' }
-  if (karma >= 100000)    return { label: 'Pro User',       emoji: '💫', color: '#818cf8' }
-  if (karma >= 20000)     return { label: 'Power User',     emoji: '🔥', color: '#f97316' }
-  if (karma >= 5000)      return { label: 'Regular',        emoji: '⭐', color: '#eab308' }
-  if (karma >= 500)       return { label: 'Active',         emoji: '🟣', color: '#7140FF' }
-  if (karma >= 50)        return { label: 'Basic',          emoji: '🔵', color: '#3b82f6' }
-  if (karma >= 2)         return { label: 'Newbie',         emoji: '🌱', color: '#22c55e' }
-  if (karma >= 1)         return { label: 'Entry',          emoji: '⚡', color: '#9CA3AF' }
-  return                         { label: '—',              emoji: '·',  color: '#707070' }
+function getKarmaTier(karma: number): {
+  label: string
+  emoji: string
+  color: string
+} {
+  if (karma >= 100000000) return { label: 'Legendary', emoji: '👑', color: '#F59E0B' }
+  if (karma >= 5000000) return { label: 'S-Tier', emoji: '💎', color: '#22d3ee' }
+  if (karma >= 500000) return { label: 'High-Throughput', emoji: '🚀', color: '#06b6d4' }
+  if (karma >= 100000) return { label: 'Pro User', emoji: '💫', color: '#818cf8' }
+  if (karma >= 20000) return { label: 'Power User', emoji: '🔥', color: '#f97316' }
+  if (karma >= 5000) return { label: 'Regular', emoji: '⭐', color: '#eab308' }
+  if (karma >= 500) return { label: 'Active', emoji: '🟣', color: '#7140FF' }
+  if (karma >= 50) return { label: 'Basic', emoji: '🔵', color: '#3b82f6' }
+  if (karma >= 2) return { label: 'Newbie', emoji: '🌱', color: '#22c55e' }
+  if (karma >= 1) return { label: 'Entry', emoji: '⚡', color: '#9CA3AF' }
+  return { label: '—', emoji: '·', color: '#707070' }
 }
 
 export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
@@ -54,6 +88,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
 
   return (
     <>
+      {/*여기 부분에 나오는 KARMA HISTORY는 일단 없애기. 또한, MYPAGE에서 나오는 KARMA HISTORY도 없애기*/}
       <button
         type="button"
         aria-label={t('btn_close')}
@@ -126,7 +161,10 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
             <div className="text-[11px] text-[#707070] mb-1">{t('pp_tier_stat')}</div>
             <div className="flex items-center gap-1.5">
               <span className="text-[17px]">{isConnected ? tier.emoji : '⚡'}</span>
-              <span className="text-[15px] font-bold font-mono" style={{ color: isConnected ? tier.color : '#707070' }}>
+              <span
+                className="text-[15px] font-bold font-mono"
+                style={{ color: isConnected ? tier.color : '#707070' }}
+              >
                 {isConnected ? tier.label : '—'}
               </span>
             </div>
@@ -222,15 +260,25 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
               <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#E8F0FF]">
                 🌐
               </span>
-              <span className="text-[14px] font-medium text-[#090A0B] flex-1">{t('pp_language')}</span>
+              <span className="text-[14px] font-medium text-[#090A0B] flex-1">
+                {t('pp_language')}
+              </span>
               <button
                 type="button"
                 onClick={toggleLang}
                 className="flex items-center gap-px bg-[#F7F8FA] border border-[#E7E9ED] rounded-full px-[10px] py-[5px] hover:border-[#7140FF] transition-colors"
               >
-                <span className={`text-[11px] font-mono font-bold transition-colors ${lang === 'en' ? 'text-[#7140FF]' : 'text-[#C0C4CC]'}`}>EN</span>
+                <span
+                  className={`text-[11px] font-mono font-bold transition-colors ${lang === 'en' ? 'text-[#7140FF]' : 'text-[#C0C4CC]'}`}
+                >
+                  EN
+                </span>
                 <span className="text-[#C0C4CC] text-[9px] mx-[3px]">|</span>
-                <span className={`text-[11px] font-mono font-bold transition-colors ${lang === 'ko' ? 'text-[#7140FF]' : 'text-[#C0C4CC]'}`}>KO</span>
+                <span
+                  className={`text-[11px] font-mono font-bold transition-colors ${lang === 'ko' ? 'text-[#7140FF]' : 'text-[#C0C4CC]'}`}
+                >
+                  KO
+                </span>
               </button>
             </div>
 

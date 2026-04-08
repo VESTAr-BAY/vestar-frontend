@@ -66,7 +66,8 @@ export function VoteResultRankings({ rankedCandidates }: VoteResultRankingsProps
                   {candidate.percentage.toFixed(1)}%
                 </div>
                 <div className="text-[11px] font-mono text-[#707070]">
-                  {candidate.votes.toLocaleString()}{lang === 'en' ? ' votes' : '표'}
+                  {candidate.votes.toLocaleString()}
+                  {lang === 'en' ? ' votes' : '표'}
                 </div>
               </div>
             </div>

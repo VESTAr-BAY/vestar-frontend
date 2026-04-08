@@ -30,6 +30,7 @@ export function VoteDetailLayout() {
   return (
     <VoteDetailHeaderContext value={{ setConfig: setHeaderConfig, scrollState }}>
       <div className="relative mx-auto h-screen w-full max-w-[430px] overflow-hidden bg-[#ffffff] shadow-[0_0_60px_rgba(0,0,0,0.12)]">
+        {/*main페이지의 header의 색상과 형태를 그대로 공유하여 format을 일관성 있게 UI꾸리기*/}
         <DetailHeader
           scrollState={scrollState}
           title={headerConfig.title}

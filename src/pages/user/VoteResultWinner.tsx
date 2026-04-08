@@ -19,7 +19,9 @@ export function VoteResultWinner({ result, winner }: VoteResultWinnerProps) {
         <span className="text-[10px] font-bold font-mono px-2.5 py-1 rounded-[10px] tracking-[0.4px] uppercase bg-[rgba(245,158,11,0.15)] text-[#F59E0B] border border-[rgba(245,158,11,0.25)]">
           {t('vr_results')}
         </span>
-        <span className="text-[12px] font-mono text-white/40">{result.endDate} {t('vr_ended')}</span>
+        <span className="text-[12px] font-mono text-white/40">
+          {result.endDate} {t('vr_ended')}
+        </span>
       </div>
 
       {/* Vote title + org */}
@@ -67,8 +69,8 @@ export function VoteResultWinner({ result, winner }: VoteResultWinnerProps) {
 
       {/* Total votes */}
       <div className="mt-4 flex items-center justify-center gap-1.5 text-[12px] text-white/35 font-mono">
-        <span className="text-white/60 font-semibold">{result.totalVotes.toLocaleString()}</span>
-        {' '}{lang === 'en' ? 'total votes' : '명 참여'}
+        <span className="text-white/60 font-semibold">{result.totalVotes.toLocaleString()}</span>{' '}
+        {lang === 'en' ? 'total votes' : '명 참여'}
       </div>
     </div>
   )

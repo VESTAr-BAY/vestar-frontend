@@ -2,7 +2,7 @@ import { apiFetch } from './client'
 import type { ApiElectionDetail, ApiElectionListResponse } from './types'
 
 export interface FetchElectionListParams {
-  state?: string        // filter by onchain_state
+  state?: string // filter by onchain_state
   page?: number
   pageSize?: number
 }

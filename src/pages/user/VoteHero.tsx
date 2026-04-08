@@ -11,8 +11,8 @@ const BADGE_STYLES: Record<BadgeVariant, string> = {
 }
 
 const BADGE_LABEL: Record<BadgeVariant, string> = {
-  live: '● LIVE',
-  hot: '🔥 HOT',
+  live: 'LIVE',
+  hot: 'HOT',
   new: 'NEW',
   end: 'END',
 }
@@ -25,12 +25,14 @@ export function VoteHero({ vote }: VoteHeroProps) {
   const { t } = useLanguage()
 
   return (
-    <div className="bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] px-5 pb-7 pt-[calc(56px+24px)] -mt-14 relative overflow-hidden">
+    <div className="h-80 bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] px-5 pb-7 pt-[calc(56px+24px)] -mt-14 relative overflow-hidden">
+      {/*남은 시간을 제목의 오른쪽 부분으로 빼서 조금 더 시간을 명확하게 보여줄 수 있도록 설정하기*/}
       {/* Bottom accent line */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7140FF] to-transparent" />
 
       {/* Top row: badge + deadline */}
       <div className="flex items-center gap-2 mb-4">
+        {/*verification badge는 좀 더 큰 크기로 작성돼야 함-> 사람들이 가시적으로 인식할 수 있을 정도로*/}
         <span
           className={`text-[10px] font-bold font-mono px-2 py-[3px] rounded-[10px] tracking-[0.4px] uppercase ${BADGE_STYLES[vote.badge]}`}
         >
@@ -46,11 +48,7 @@ export function VoteHero({ vote }: VoteHeroProps) {
       {/* Banner image (shown when available) */}
       {vote.imageUrl && (
         <div className="mb-4 rounded-2xl overflow-hidden h-[140px] -mx-5 px-0">
-          <img
-            src={resolveIpfsUrl(vote.imageUrl)}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          <img src={resolveIpfsUrl(vote.imageUrl)} alt="" className="w-full h-full object-cover" />
         </div>
       )}
 
@@ -70,6 +68,7 @@ export function VoteHero({ vote }: VoteHeroProps) {
       <h1 className="text-[22px] font-bold text-[#090A0B] leading-tight mb-4">{vote.title}</h1>
 
       {/* Meta row */}
+      {/*여기에서 적용되는 참여자 수 등의 모든 내용은 CONTRACT 내용에 따라 달라짐*/}
       <div className="flex items-center gap-0 text-[12px] text-[#707070] flex-wrap mb-3">
         <span className="font-mono font-semibold text-[#090A0B]">
           {vote.participantCount.toLocaleString()} {t('vh_participants')}
@@ -79,7 +78,6 @@ export function VoteHero({ vote }: VoteHeroProps) {
         <span className="mx-2">·</span>
         <span>{vote.voteLimit}</span>
       </div>
-
     </div>
   )
 }

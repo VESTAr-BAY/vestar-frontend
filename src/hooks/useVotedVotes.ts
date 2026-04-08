@@ -13,7 +13,9 @@ function readVotedIds(): Set<string> {
 }
 
 function writeVotedIds(ids: Set<string>): void {
-  try { localStorage.setItem(VOTED_IDS_KEY, JSON.stringify([...ids])) } catch {}
+  try {
+    localStorage.setItem(VOTED_IDS_KEY, JSON.stringify([...ids]))
+  } catch {}
 }
 
 function readSelections(): Record<string, string[]> {
@@ -26,7 +28,9 @@ function readSelections(): Record<string, string[]> {
 }
 
 function writeSelections(map: Record<string, string[]>): void {
-  try { localStorage.setItem(VOTED_SELECTIONS_KEY, JSON.stringify(map)) } catch {}
+  try {
+    localStorage.setItem(VOTED_SELECTIONS_KEY, JSON.stringify(map))
+  } catch {}
 }
 
 /**
@@ -49,10 +53,7 @@ export function useVotedVotes() {
     writeSelections(selections)
   }, [])
 
-  const isVoted = useCallback(
-    (voteId: string) => votedIds.has(voteId),
-    [votedIds],
-  )
+  const isVoted = useCallback((voteId: string) => votedIds.has(voteId), [votedIds])
 
   /** Returns the candidate IDs the user voted for in a given vote (empty array if not voted). */
   const getVotedCandidates = useCallback((voteId: string): string[] => {

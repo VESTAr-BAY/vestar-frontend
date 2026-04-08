@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { Outlet } from "react-router";
-import { useScrollDirection } from "../../hooks/useScrollDirection";
-import { FooterNav } from "./FooterNav";
-import { Header } from "./Header";
-import { ProfilePanel } from "./ProfilePanel";
-import { SearchOverlay } from "./SearchOverlay";
+import { useState } from 'react'
+import { Outlet } from 'react-router'
+import { useScrollDirection } from '../../hooks/useScrollDirection'
+import { FooterNav } from './FooterNav'
+import { Header } from './Header'
+import { ProfilePanel } from './ProfilePanel'
+import { SearchOverlay } from './SearchOverlay'
 
 export function AppLayout() {
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const { scrollState, onScroll } = useScrollDirection();
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const { scrollState, onScroll } = useScrollDirection()
 
   return (
     <div className="relative mx-auto h-screen w-full max-w-[430px] overflow-hidden bg-[#ffffff] shadow-[0_0_60px_rgba(0,0,0,0.12)]">
@@ -32,5 +32,5 @@ export function AppLayout() {
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
-  );
+  )
 }

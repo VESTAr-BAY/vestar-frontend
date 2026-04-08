@@ -24,9 +24,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const t = useCallback((key: StringKey) => getStr(key, lang), [lang])
 
   return (
-    <LanguageContext.Provider value={{ lang, toggleLang, t }}>
-      {children}
-    </LanguageContext.Provider>
+    <LanguageContext.Provider value={{ lang, toggleLang, t }}>{children}</LanguageContext.Provider>
   )
 }
 

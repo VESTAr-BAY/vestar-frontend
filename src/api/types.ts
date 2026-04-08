@@ -30,10 +30,7 @@ export type ApiVisibilityMode = 'OPEN' | 'PRIVATE'
 export type ApiPaymentMode = 'FREE' | 'PAID'
 
 /** Mirrors onchain_elections.ballot_policy */
-export type ApiBallotPolicy =
-  | 'ONE_PER_ELECTION'
-  | 'ONE_PER_INTERVAL'
-  | 'UNLIMITED_PAID'
+export type ApiBallotPolicy = 'ONE_PER_ELECTION' | 'ONE_PER_INTERVAL' | 'UNLIMITED_PAID'
 
 // ── Core election ─────────────────────────────────────────────────────────────
 

@@ -33,15 +33,11 @@ function filterToApiState(filter: VoteFilter): string | undefined {
 /** Client-side sort for filters that need it */
 function sortElections(elections: ApiElection[], filter: VoteFilter): ApiElection[] {
   if (filter === 'popular') {
-    return [...elections].sort(
-      (a, b) => (b.total_submissions ?? 0) - (a.total_submissions ?? 0),
-    )
+    return [...elections].sort((a, b) => (b.total_submissions ?? 0) - (a.total_submissions ?? 0))
   }
   // 'hot' = ACTIVE sorted by submissions desc (most popular active)
   if (filter === 'hot') {
-    return [...elections].sort(
-      (a, b) => (b.total_submissions ?? 0) - (a.total_submissions ?? 0),
-    )
+    return [...elections].sort((a, b) => (b.total_submissions ?? 0) - (a.total_submissions ?? 0))
   }
   return elections
 }

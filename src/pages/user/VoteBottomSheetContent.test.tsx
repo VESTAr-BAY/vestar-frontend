@@ -4,37 +4,20 @@ import { VoteBottomSheetContent } from './VoteBottomSheetContent'
 
 describe('VoteBottomSheetContent — LoadingPhase (idle or loading)', () => {
   it('shows a loading spinner area when idle', () => {
-    render(
-      <VoteBottomSheetContent
-        state="idle"
-        txHash={null}
-        karmaEarned={20}
-        onClose={vi.fn()}
-      />,
-    )
+    render(<VoteBottomSheetContent state="idle" txHash={null} karmaEarned={20} onClose={vi.fn()} />)
     expect(screen.getByText('Processing your vote…')).toBeInTheDocument()
   })
 
   it('shows a loading spinner area when loading', () => {
     render(
-      <VoteBottomSheetContent
-        state="loading"
-        txHash={null}
-        karmaEarned={20}
-        onClose={vi.fn()}
-      />,
+      <VoteBottomSheetContent state="loading" txHash={null} karmaEarned={20} onClose={vi.fn()} />,
     )
     expect(screen.getByText('Processing your vote…')).toBeInTheDocument()
   })
 
   it('does NOT show success content while loading', () => {
     render(
-      <VoteBottomSheetContent
-        state="loading"
-        txHash={null}
-        karmaEarned={20}
-        onClose={vi.fn()}
-      />,
+      <VoteBottomSheetContent state="loading" txHash={null} karmaEarned={20} onClose={vi.fn()} />,
     )
     expect(screen.queryByText('Vote recorded!')).not.toBeInTheDocument()
   })
@@ -79,12 +62,7 @@ describe('VoteBottomSheetContent — SuccessPhase', () => {
 
   it('does NOT render a tx hash section when txHash is null', () => {
     render(
-      <VoteBottomSheetContent
-        state="success"
-        txHash={null}
-        karmaEarned={20}
-        onClose={vi.fn()}
-      />,
+      <VoteBottomSheetContent state="success" txHash={null} karmaEarned={20} onClose={vi.fn()} />,
     )
     expect(screen.queryByText('Receipt')).not.toBeInTheDocument()
   })

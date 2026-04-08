@@ -10,10 +10,10 @@ interface CandidateAvatarProps {
 }
 
 const SIZE_MAP = {
-  sm:  { box: 'w-9 h-9 text-sm',   radius: 'rounded-xl' },
-  md:  { box: 'w-11 h-11 text-xl', radius: 'rounded-xl' },
-  lg:  { box: 'w-16 h-16 text-2xl',radius: 'rounded-2xl' },
-  xl:  { box: 'w-[72px] h-[72px] text-[36px]', radius: 'rounded-2xl' },
+  sm: { box: 'w-9 h-9 text-sm', radius: 'rounded-xl' },
+  md: { box: 'w-11 h-11 text-xl', radius: 'rounded-xl' },
+  lg: { box: 'w-16 h-16 text-2xl', radius: 'rounded-2xl' },
+  xl: { box: 'w-[72px] h-[72px] text-[36px]', radius: 'rounded-2xl' },
 }
 
 export function CandidateAvatar({
@@ -29,13 +29,7 @@ export function CandidateAvatar({
   const base = `${box} ${radius} flex-shrink-0 ${ringClass} ${className}`
 
   if (imageUrl) {
-    return (
-      <img
-        src={resolveIpfsUrl(imageUrl)}
-        alt={emoji}
-        className={`${base} object-cover`}
-      />
-    )
+    return <img src={resolveIpfsUrl(imageUrl)} alt={emoji} className={`${base} object-cover`} />
   }
 
   return (

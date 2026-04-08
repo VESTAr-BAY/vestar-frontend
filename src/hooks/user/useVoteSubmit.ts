@@ -1,10 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useWalletClient, useSwitchChain } from 'wagmi'
 import type { Address } from 'viem'
-import {
-  submitOpenVote,
-  waitForVestarTransactionReceipt,
-} from '../../contracts/vestar/actions'
+import { submitOpenVote, waitForVestarTransactionReceipt } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 
 export type SubmitState = 'idle' | 'loading' | 'success'
