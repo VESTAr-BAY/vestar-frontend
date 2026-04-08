@@ -36,6 +36,50 @@ export const vestarElectionFactoryAbi = [
   },
   {
     "type": "function",
+    "name": "computeElectionId",
+    "inputs": [
+      {
+        "name": "organizer",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "seriesId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "titleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "startAt",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "endAt",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "organizerNonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "electionId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "createElection",
     "inputs": [
       {
@@ -43,11 +87,6 @@ export const vestarElectionFactoryAbi = [
         "type": "tuple",
         "internalType": "struct VESTArTypes.ElectionConfig",
         "components": [
-          {
-            "name": "electionId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
           {
             "name": "seriesId",
             "type": "bytes32",
@@ -245,6 +284,25 @@ export const vestarElectionFactoryAbi = [
   },
   {
     "type": "function",
+    "name": "nextElectionNonce",
+    "inputs": [
+      {
+        "name": "organizer",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "organizerRegistry",
     "inputs": [],
     "outputs": [
@@ -324,6 +382,45 @@ export const vestarElectionFactoryAbi = [
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewNextElectionId",
+    "inputs": [
+      {
+        "name": "organizer",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "seriesId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "titleHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "startAt",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "endAt",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "electionId",
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
     "stateMutability": "view"

@@ -303,11 +303,6 @@ export const vestarElectionAbi = [
         "internalType": "struct VESTArTypes.ElectionConfig",
         "components": [
           {
-            "name": "electionId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
             "name": "seriesId",
             "type": "bytes32",
             "internalType": "bytes32"
@@ -547,15 +542,15 @@ export const vestarElectionAbi = [
     "name": "initialize",
     "inputs": [
       {
+        "name": "electionId_",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
         "name": "config",
         "type": "tuple",
         "internalType": "struct VESTArTypes.ElectionConfig",
         "components": [
-          {
-            "name": "electionId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
           {
             "name": "seriesId",
             "type": "bytes32",

@@ -12,6 +12,7 @@ import {
   getElectionAddress,
   getElectionCancellationSummary,
   getElectionConfig,
+  getElectionId,
   getElectionPaymentMode,
   getElectionRemainingBallots,
   getElectionRefundableAmount,
@@ -87,6 +88,7 @@ export const vestarFactory = {
 } as const
 
 export const vestarElection = {
+  getElectionId,
   getConfig: getElectionConfig,
   getState: getElectionState,
   getVisibilityMode: getElectionVisibilityMode,

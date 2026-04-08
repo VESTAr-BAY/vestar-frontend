@@ -54,7 +54,6 @@ export interface OrganizerProfile {
 }
 
 export interface ElectionConfigInput {
-  electionId: Hex;
   visibilityMode: VestarVisibilityMode;
   titleHash: Hex;
   candidateManifestHash: Hex;
@@ -147,6 +146,7 @@ export interface OrganizerSnapshot {
 
 export interface ElectionSnapshot {
   address: Address;
+  electionId: Hex;
   config: ElectionConfig;
   state: VestarElectionState;
   visibilityMode: VestarVisibilityMode;

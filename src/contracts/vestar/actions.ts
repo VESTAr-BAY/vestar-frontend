@@ -268,6 +268,14 @@ export async function getElectionAddress(electionId: Hex): Promise<Address> {
   });
 }
 
+export async function getElectionId(electionAddress: Address): Promise<Hex> {
+  return readVestarContract<Hex>({
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: "electionId",
+  });
+}
+
 export async function getFactoryElectionCount(): Promise<bigint> {
   return readVestarContract<bigint>({
     abi: vestarElectionFactoryAbi,
@@ -442,6 +450,7 @@ export async function getCandidateGroup(
 
 export async function getElectionSnapshot(electionAddress: Address): Promise<ElectionSnapshot> {
   const [
+    electionId,
     config,
     state,
     visibilityMode,
@@ -452,6 +461,7 @@ export async function getElectionSnapshot(electionAddress: Address): Promise<Ele
     refundSummary,
   ] =
     await Promise.all([
+      getElectionId(electionAddress),
       getElectionConfig(electionAddress),
       getElectionState(electionAddress),
       getElectionVisibilityMode(electionAddress),
@@ -464,6 +474,7 @@ export async function getElectionSnapshot(electionAddress: Address): Promise<Ele
 
   return {
     address: electionAddress,
+    electionId,
     config,
     state,
     visibilityMode,
