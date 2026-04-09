@@ -1,7 +1,7 @@
 import verifiedIcon from '../../assets/verified.svg'
 import { useLanguage } from '../../providers/LanguageProvider'
-import { resolveIpfsUrl } from '../../utils/ipfs'
 import type { BadgeVariant, VoteDetailData } from '../../types/vote'
+import { resolveIpfsUrl } from '../../utils/ipfs'
 
 const BADGE_STYLES: Record<BadgeVariant, string> = {
   live: 'bg-[rgba(34,197,94,0.12)] text-[#16a34a] border border-[rgba(34,197,94,0.2)]',
@@ -25,58 +25,54 @@ export function VoteHero({ vote }: VoteHeroProps) {
   const { t } = useLanguage()
 
   return (
-    <div className="h-80 bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] px-5 pb-7 pt-[calc(56px+24px)] -mt-14 relative overflow-hidden">
-      {/*남은 시간을 제목의 오른쪽 부분으로 빼서 조금 더 시간을 명확하게 보여줄 수 있도록 설정하기*/}
-      {/* Bottom accent line */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7140FF] to-transparent" />
-
-      {/* Top row: badge + deadline */}
-      <div className="flex items-center gap-2 mb-4">
-        {/*verification badge는 좀 더 큰 크기로 작성돼야 함-> 사람들이 가시적으로 인식할 수 있을 정도로*/}
-        <span
-          className={`text-[10px] font-bold font-mono px-2 py-[3px] rounded-[10px] tracking-[0.4px] uppercase ${BADGE_STYLES[vote.badge]}`}
-        >
-          {vote.badge === 'end' ? t('badge_end') : BADGE_LABEL[vote.badge]}
-        </span>
-        <span
-          className={`text-[12px] font-mono ${vote.urgent ? 'text-[#dc2626]' : 'text-[#707070]'}`}
-        >
-          {vote.deadlineLabel}
-        </span>
-      </div>
-
-      {/* Banner image (shown when available) */}
-      {vote.imageUrl && (
-        <div className="mb-4 rounded-2xl overflow-hidden h-[140px] -mx-5 px-0">
-          <img src={resolveIpfsUrl(vote.imageUrl)} alt="" className="w-full h-full object-cover" />
-        </div>
+    <div className="relative min-h-[360px] overflow-hidden bg-[#1C1D22] px-5 pb-7 pt-[calc(56px+24px)] -mt-14">
+      {vote.imageUrl ? (
+        <img
+          src={resolveIpfsUrl(vote.imageUrl)}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,#CFCFCF_0%,#6C6C6C_48%,#2F2F31_100%)]" />
       )}
 
-      {/* Org icon */}
-      <div className="w-16 h-16 bg-white/60 border border-[#E7E9ED] rounded-[18px] flex items-center justify-center text-[32px] mb-4">
-        {vote.emoji}
-      </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#090A0B]/82 via-[#090A0B]/44 to-[#090A0B]/18" />
 
-      {/* Org row */}
-      <div className="flex items-center gap-1 mb-2">
-        <span className="text-[11px] text-[#707070] font-mono">{vote.org}</span>
-        {vote.verified && <span className="text-[#7140FF] text-[11px]">✦</span>}
-        {vote.verified && <img src={verifiedIcon} alt="verified" className="w-3 h-3 opacity-60" />}
-      </div>
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
 
-      {/* Title */}
-      <h1 className="text-[22px] font-bold text-[#090A0B] leading-tight mb-4">{vote.title}</h1>
+      <div className="relative flex min-h-[296px] flex-col justify-end">
+        <div className="flex items-center gap-2 mb-3">
+          <span
+            className={`text-[10px] font-bold font-mono px-2 py-[3px] rounded-[10px] tracking-[0.4px] uppercase ${BADGE_STYLES[vote.badge]}`}
+          >
+            {vote.badge === 'end' ? t('badge_end') : BADGE_LABEL[vote.badge]}
+          </span>
+          <span
+            className={`text-[12px] font-mono ${vote.urgent ? 'text-[#FCA5A5]' : 'text-white/74'}`}
+          >
+            {vote.deadlineLabel}
+          </span>
+        </div>
 
-      {/* Meta row */}
-      {/*여기에서 적용되는 참여자 수 등의 모든 내용은 CONTRACT 내용에 따라 달라짐*/}
-      <div className="flex items-center gap-0 text-[12px] text-[#707070] flex-wrap mb-3">
-        <span className="font-mono font-semibold text-[#090A0B]">
-          {vote.participantCount.toLocaleString()} {t('vh_participants')}
-        </span>
-        <span className="mx-2">·</span>
-        <span>{vote.voteFrequency}</span>
-        <span className="mx-2">·</span>
-        <span>{vote.voteLimit}</span>
+        <div className="flex items-center gap-1 mb-2">
+          <span className="text-[11px] text-white/76 font-mono">{vote.org}</span>
+          {vote.verified && <span className="text-white/80 text-[11px]">✦</span>}
+          {vote.verified && (
+            <img src={verifiedIcon} alt="verified" className="w-3 h-3 opacity-75 invert" />
+          )}
+        </div>
+
+        <h1 className="text-[22px] font-bold text-white leading-tight mb-4">{vote.title}</h1>
+
+        <div className="flex items-center gap-0 text-[12px] text-white/74 flex-wrap mb-3">
+          <span className="font-mono font-semibold text-white">
+            {vote.participantCount.toLocaleString()} {t('vh_participants')}
+          </span>
+          <span className="mx-2">·</span>
+          <span>{vote.voteFrequency}</span>
+          <span className="mx-2">·</span>
+          <span>{vote.voteLimit}</span>
+        </div>
       </div>
     </div>
   )
