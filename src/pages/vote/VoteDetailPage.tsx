@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router'
-import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import type { Address } from 'viem'
+import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import completeVoteIcon from '../../assets/complete_vote.svg'
 import reportProblemIcon from '../../assets/report_problem.svg'
 import { VoteDetailHeaderContext } from '../../components/layout/VoteDetailLayout'
@@ -13,8 +13,9 @@ import { useSectionVoteSelection } from '../../hooks/user/useSectionVoteSelectio
 import { useVoteDetail } from '../../hooks/user/useVoteDetail'
 import { useVoteSubmit } from '../../hooks/user/useVoteSubmit'
 import { useVotedVotes } from '../../hooks/useVotedVotes'
-import { useToast } from '../../providers/ToastProvider'
 import { useLanguage } from '../../providers/LanguageProvider'
+import { useToast } from '../../providers/ToastProvider'
+import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 import { CandidateSection, GroupedCandidateSection } from '../user/CandidateSection'
 import { VoteBottomSheetContent } from '../user/VoteBottomSheetContent'
 import { VoteHero } from '../user/VoteHero'
@@ -33,6 +34,7 @@ interface DangerConfirmModalProps {
   open: boolean
   target: string
   feeLabel: string
+  selectedCandidateLabels: string[]
   onConfirm: () => void
   onCancel: () => void
 }
@@ -41,6 +43,7 @@ function DangerConfirmModal({
   open,
   target,
   feeLabel,
+  selectedCandidateLabels,
   onConfirm,
   onCancel,
 }: DangerConfirmModalProps) {
@@ -94,6 +97,17 @@ function DangerConfirmModal({
           <span className="text-[#707070]">{t('dm_vote_fee')}</span>
           <span className="font-bold text-[#090A0B]">{feeLabel}</span>
         </div>
+
+        {selectedCandidateLabels.length > 0 && (
+          <div className="bg-[#F7F8FA] rounded-xl px-4 py-3 mb-5">
+            <div className="text-[11px] text-[#707070] font-mono uppercase tracking-[1px] mb-2">
+              {t('dm_selected_candidates')}
+            </div>
+            <div className="text-[13px] font-medium text-[#090A0B] leading-relaxed break-words">
+              {selectedCandidateLabels.join(', ')}
+            </div>
+          </div>
+        )}
 
         {/* Buttons */}
         <div className="flex gap-3">
@@ -184,8 +198,29 @@ export function VoteDetailPage() {
     [vote, resolvedHasVoted, votedCandidateIds, selectedIds],
   )
 
+  const selectedCandidateLabels = useMemo(() => {
+    if (!vote) return []
+
+    if (isGrouped) {
+      return sectionSelection.selectedSections.map((section) => {
+        const candidateName =
+          vote.sections
+            ?.find((voteSection) => voteSection.id === section.sectionId)
+            ?.candidates.find((candidate) => candidate.id === section.candidateId)?.name ??
+          section.candidateId
+
+        return `${section.sectionName}: ${candidateName}`
+      })
+    }
+
+    return vote.candidates
+      .filter((candidate) => selectedIds.has(candidate.id))
+      .map((candidate) => candidate.name)
+  }, [isGrouped, sectionSelection.selectedSections, selectedIds, vote])
+
   const votedSectionCount = votedCandidateIds?.size ?? 0
-  const activeCanSubmit = (isGrouped ? sectionSelection.canSubmit : canSubmit) && canSubmitByEligibility
+  const activeCanSubmit =
+    (isGrouped ? sectionSelection.canSubmit : canSubmit) && canSubmitByEligibility
 
   useEffect(() => {
     if (!vote) return
@@ -201,6 +236,8 @@ export function VoteDetailPage() {
 
   useEffect(() => {
     let cancelled = false
+    const submissionTxHash = txHash
+    void submissionTxHash
 
     if (!vote?.electionAddress || !address) {
       setCanSubmitByEligibility(true)
@@ -225,7 +262,9 @@ export function VoteDetailPage() {
   useEffect(() => {
     if (!errorMessage) return
     addToast({ type: 'error', message: errorMessage })
-  }, [addToast, errorMessage])
+    setSheetOpen(false)
+    reset()
+  }, [addToast, errorMessage, reset])
 
   useEffect(() => {
     if (state !== 'success' || !vote) return
@@ -278,10 +317,25 @@ export function VoteDetailPage() {
   }, [vote, isGrouped, sectionSelection.selectedSections, selectedIds, submit])
 
   const handleClose = useCallback(() => {
-    if (state === 'loading') return
+    if (state === 'awaiting_signature' || state === 'confirming') return
     setSheetOpen(false)
     if (state === 'success') reset()
   }, [state, reset])
+
+  const handleSwitchNetwork = useCallback(async () => {
+    try {
+      await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: getWalletActionErrorMessage(error, {
+          lang,
+          defaultMessage:
+            lang === 'ko' ? '네트워크 전환에 실패했습니다.' : 'Failed to switch the network.',
+        }),
+      })
+    }
+  }, [addToast, lang, switchChainAsync])
 
   if (isLoading || !vote) return <LoadingSkeleton />
 
@@ -356,7 +410,7 @@ export function VoteDetailPage() {
         {isWrongNetwork ? (
           <button
             type="button"
-            onClick={() => switchChainAsync({ chainId: vestarStatusTestnetChain.id })}
+            onClick={handleSwitchNetwork}
             className="w-full bg-[#FEF5E7] border border-[#FDE68A] text-[#92400E] rounded-2xl py-4 text-[14px] font-bold hover:bg-[#FDE68A] transition-colors"
           >
             {t('vd_switch_network')}
@@ -410,6 +464,7 @@ export function VoteDetailPage() {
         open={dangerModalOpen}
         target={dangerTarget}
         feeLabel={voteFeeLabel}
+        selectedCandidateLabels={selectedCandidateLabels}
         onConfirm={handleDangerConfirm}
         onCancel={() => setDangerModalOpen(false)}
       />
@@ -421,6 +476,8 @@ export function VoteDetailPage() {
             state={state}
             txHash={txHash}
             karmaEarned={karmaEarned}
+            selectedCandidateLabels={selectedCandidateLabels}
+            isPrivateVote={vote.visibilityMode === 'PRIVATE'}
             onClose={handleClose}
           />
         </BottomSheet>

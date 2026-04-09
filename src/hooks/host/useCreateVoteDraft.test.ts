@@ -29,7 +29,9 @@ vi.mock('../../contracts/vestar/client', () => ({
 }))
 
 vi.mock('../../utils/ipfs', () => ({
-  uploadJsonToPinata: vi.fn(),
+  createJsonArtifact: vi.fn(),
+  uploadFileToPinata: vi.fn(),
+  uploadJsonArtifactToPinata: vi.fn(),
 }))
 
 describe('useCreateVoteDraft', () => {

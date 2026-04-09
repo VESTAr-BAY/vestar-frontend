@@ -12,6 +12,7 @@ import {
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
+import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
 interface ProfilePanelProps {
   open: boolean
@@ -174,12 +175,11 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
       console.error('[ProfilePanel] failed to mint MockUSDT:', error)
       addToast({
         type: 'error',
-        message:
-          error instanceof Error
-            ? error.message
-            : lang === 'ko'
-              ? 'MockUSDT 민트에 실패했습니다.'
-              : 'Failed to mint MockUSDT.',
+        message: getWalletActionErrorMessage(error, {
+          lang,
+          defaultMessage:
+            lang === 'ko' ? 'MockUSDT 민트에 실패했습니다.' : 'Failed to mint MockUSDT.',
+        }),
       })
     } finally {
       setIsMintingMockUsdt(false)
