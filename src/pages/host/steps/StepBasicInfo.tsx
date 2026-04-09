@@ -130,7 +130,10 @@ export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoPr
 
       {/* Banner Image */}
       <div>
-        <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#090A0B] mb-2">
+        <label
+          htmlFor="vote-banner-image"
+          className="flex items-center gap-1.5 text-[13px] font-semibold text-[#090A0B] mb-2"
+        >
           <span>배너 이미지</span>
           {isBannerChanged && (
             <span className="text-[10px] font-bold text-[#7140FF] bg-[#7140FF]/10 px-1.5 py-0.5 rounded-md">
@@ -138,7 +141,8 @@ export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoPr
             </span>
           )}
         </label>
-        <div
+        <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
           className="w-full aspect-[21/9] rounded-xl border-2 border-dashed border-[#E7E9ED] bg-[#F7F8FA] hover:border-[#7140FF]/50 transition-colors flex items-center justify-center cursor-pointer overflow-hidden relative"
         >
@@ -155,7 +159,9 @@ export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoPr
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
               >
+                <title>이미지 업로드</title>
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
@@ -164,14 +170,17 @@ export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoPr
             </div>
           )}
           <input
+            id="vote-banner-image"
             type="file"
             accept="image/*"
             ref={fileInputRef}
             onChange={handleImageUpload}
             className="hidden"
           />
-        </div>
+        </button>
       </div>
+
+      
 
       {/* Category */}
       <div>
