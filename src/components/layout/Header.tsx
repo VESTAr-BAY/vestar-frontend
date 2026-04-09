@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router";
 import { useAccount, useConnect } from "wagmi";
 import keyboardArrowLeft from "../../assets/keyboard_arrow_left.svg";
-
+import { requestWalletConnection } from '../../utils/walletConnection'
 import accountCircleIcon from "../../assets/account_circle.svg";
 import walletIcon from "../../assets/account_balance_wallet.svg";
 import complete_vote from "../../assets/complete_vote.svg";
@@ -43,12 +43,8 @@ export function Header({
   const showLogo = isHomeLike;
 
   const handleConnect = () => {
-    const injectedConnector =
-      connectors.find((c) => c.id === "injected") ?? connectors[0];
-    if (injectedConnector) {
-      connect({ connector: injectedConnector });
-    }
-  };
+    requestWalletConnection({ connect, connectors })
+  }
 
   return (
     <header

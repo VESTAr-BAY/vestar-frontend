@@ -1,5 +1,6 @@
 import { useConnect } from 'wagmi'
 import walletIcon from '../../assets/account_balance_wallet.svg'
+import { requestWalletConnection } from '../../utils/walletConnection'
 
 interface WalletButtonProps {
   onConnected?: () => void
@@ -9,12 +10,12 @@ export function WalletButton({ onConnected }: WalletButtonProps) {
   const { connect, connectors, isPending } = useConnect()
 
   const handleConnect = () => {
-    const injected = connectors.find((c) => c.id === 'injected')
-    const connector = injected ?? connectors[0]
-    if (connector) {
-      connect({ connector })
-      onConnected?.()
-    }
+    requestWalletConnection({
+      connect,
+      connectors,
+      onConnectStart: onConnected,
+      onDeeplinkOpen: onConnected,
+    })
   }
 
   return (
