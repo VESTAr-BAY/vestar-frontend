@@ -35,7 +35,6 @@ export type PinataJsonUploadArtifact<T> = PinataUploadArtifact & {
   hash: Hex
 }
 
-// sungje : verification-portal/src/vestar/constants.ts 와 같은 gateway를 기본값으로 고정해서 읽기/쓰기 경로가 엇갈리지 않게 맞춘다.
 export const PINATA_GATEWAY_URL = 'https://chocolate-elegant-otter-530.mypinata.cloud'
 
 const PINATA_API_URL = 'https://uploads.pinata.cloud/v3/files'
@@ -60,16 +59,27 @@ function normalizeGatewayUrl(value: string) {
 }
 
 function getPinataJwt() {
-  const value = __PINATA_JWT__.trim()
-  if (!value) {
+  const value =
+    (import.meta.env.VITE_PINATA_JWT as string | undefined) ||
+    (import.meta.env.PINATA_JWT as string | undefined) ||
+    ''
+
+  if (!value.trim()) {
     throw new Error('PINATA_JWT 설정이 없어서 IPFS 업로드를 진행할 수 없습니다.')
   }
 
-  return value
+  return value.trim()
 }
 
 function getConfiguredPinataGateways() {
-  const configured = __PINATA_GATEWAYS__.split(',').map(normalizeGatewayUrl).filter(Boolean)
+  const configured = (
+    (import.meta.env.VITE_PINATA_GATEWAY_URL as string | undefined) ||
+    (import.meta.env.PINATA_GATEWAYS as string | undefined) ||
+    ''
+  )
+    .split(',')
+    .map(normalizeGatewayUrl)
+    .filter(Boolean)
 
   if (configured.length > 0) {
     return configured
@@ -80,6 +90,16 @@ function getConfiguredPinataGateways() {
 
 function getGatewayBaseUrl() {
   return getConfiguredPinataGateways()[0]
+}
+
+export function resolveIpfsUrls(uri: string): string[] {
+  if (!uri) return [uri]
+  if (!uri.startsWith('ipfs://')) {
+    return [uri]
+  }
+
+  const cid = uri.replace('ipfs://', '')
+  return getConfiguredPinataGateways().map((gateway) => `${gateway}/ipfs/${cid}`)
 }
 
 function createBrowserFile(parts: BlobPart[], fileName: string, type: string) {
@@ -169,7 +189,6 @@ async function verifyUploadedIpfsArtifact({
 
 async function uploadFileForm(file: File): Promise<PinataUploadArtifact> {
   const formData = new FormData()
-  // sungje : 현재 프론트 업로드는 Pinata v3 uploads API + public network 기준으로 고정해서 메타데이터와 이미지를 모두 같은 규칙으로 올린다.
   formData.append('network', 'public')
   formData.append('file', file)
   formData.append('name', file.name)
@@ -233,9 +252,5 @@ export async function uploadFileToPinata(file: File): Promise<PinataUploadArtifa
 }
 
 export function resolveIpfsUrl(uri: string): string {
-  if (!uri) return uri
-  if (uri.startsWith('ipfs://')) {
-    return `${getGatewayBaseUrl()}/ipfs/${uri.replace('ipfs://', '')}`
-  }
-  return uri
+  return resolveIpfsUrls(uri)[0]
 }

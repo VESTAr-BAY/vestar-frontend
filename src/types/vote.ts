@@ -87,6 +87,7 @@ export interface VoteDetailData {
   voteLimit: string
   resultPublic: boolean
   paymentMode?: 'FREE' | 'PAID'
+  paymentToken?: `0x${string}` | null
   costPerBallot?: string
   candidates: Candidate[]
   sections?: VoteSection[] // present = grouped vote mode

@@ -232,6 +232,34 @@ export async function getMockUsdtBalance(account: Address): Promise<bigint> {
   })
 }
 
+export async function getErc20Allowance(
+  tokenAddress: Address,
+  owner: Address,
+  spender: Address,
+): Promise<bigint> {
+  return readVestarContract<bigint>({
+    abi: mockUsdtAbi,
+    address: tokenAddress,
+    functionName: 'allowance',
+    args: [owner, spender],
+  })
+}
+
+export async function approveErc20Spender(
+  walletClient: WalletClient,
+  tokenAddress: Address,
+  spender: Address,
+  amount: bigint,
+): Promise<Hash> {
+  return writeVestarContract({
+    walletClient,
+    abi: mockUsdtAbi,
+    address: tokenAddress,
+    functionName: 'approve',
+    args: [spender, amount],
+  })
+}
+
 export async function isKarmaEligible(account: Address, minTier: number): Promise<boolean> {
   return readVestarContract<boolean>({
     abi: vestarKarmaRegistryAbi,

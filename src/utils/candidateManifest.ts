@@ -6,8 +6,8 @@ export const CANDIDATE_MANIFEST_VERSION = 1 as const
 export type CandidateManifestCandidate = {
   displayName: string
   groupLabel?: string | null
-  candidateKey?: string
-  displayOrder?: number
+  candidateKey: string
+  displayOrder: number
   imageUrl?: string | null
 }
 
@@ -177,8 +177,7 @@ export function parseCandidateManifest(value: unknown): CandidateManifest | null
       ? {
           title: typeof election.title === 'string' ? election.title.trim() : '',
           category: typeof election.category === 'string' ? election.category : null,
-          coverImageUrl:
-            typeof election.coverImageUrl === 'string' ? election.coverImageUrl : null,
+          coverImageUrl: typeof election.coverImageUrl === 'string' ? election.coverImageUrl : null,
           visibilityMode:
             election.visibilityMode === 'OPEN' || election.visibilityMode === 'PRIVATE'
               ? election.visibilityMode
@@ -221,8 +220,10 @@ export function buildCandidateManifest(args: BuildCandidateManifestArgs): Candid
     candidates: [...args.candidates]
       .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
       .map((candidate) => ({
+        candidateKey: candidate.candidateKey.trim(),
         displayName: candidate.displayName.trim(),
         groupLabel: candidate.groupLabel ?? null,
+        displayOrder: candidate.displayOrder,
         imageUrl: candidate.imageUrl ?? null,
       })),
   }

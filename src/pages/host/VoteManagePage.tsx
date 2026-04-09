@@ -142,6 +142,7 @@ export function VoteManagePage() {
         type: 'success',
         message: '온체인 finalize가 완료되었습니다. 인덱서 반영을 기다리는 중입니다.',
       })
+      navigate(`/host/${id}/settlement`)
     } catch (error) {
       addToast({
         type: 'info',

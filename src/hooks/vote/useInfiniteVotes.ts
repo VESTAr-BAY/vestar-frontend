@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { fetchCandidateManifest } from '../../api/candidateManifest'
 import { fetchElections } from '../../api/elections'
 import { VOTE_ITEMS } from '../../data/mockVotes'
-import { mapToVoteListItem } from '../../utils/electionMapper'
+import { applyManifestToElection, mapToVoteListItem } from '../../utils/electionMapper'
 import type { ApiElection } from '../../api/types'
 import type { VoteListItem } from '../../types/vote'
 
@@ -64,6 +65,19 @@ export function useInfiniteVotes(filter: VoteFilter = 'all'): UseInfiniteVotesRe
 
     setIsLoading(true)
     fetchElections({ onchainState })
+      .then((elections) =>
+        Promise.all(
+          elections.map(async (election) =>
+            applyManifestToElection(
+              election,
+              await fetchCandidateManifest(
+                election.candidateManifestUri,
+                election.candidateManifestHash,
+              ),
+            ),
+          ),
+        ),
+      )
       .then((elections) => {
         if (cancelled) return
         const sorted = sortElections(elections, filter)

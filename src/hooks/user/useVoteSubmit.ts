@@ -2,9 +2,12 @@ import { useCallback, useState } from 'react'
 import type { Address } from 'viem'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import {
+  approveErc20Spender,
   canAccountSubmitBallot,
+  getErc20Allowance,
   getElectionRemainingBallots,
   getElectionState,
+  quoteElectionPayment,
   submitEncryptedVote,
   submitOpenVote,
   waitForVestarTransactionReceipt,
@@ -43,15 +46,28 @@ export function useVoteSubmit(): VoteSubmitResult {
       setErrorMessage(null)
 
       try {
+        console.info('[useVoteSubmit] preflight', {
+          electionAddress: vote?.electionAddress,
+          onchainElectionId: vote?.onchainElectionId,
+          visibilityMode: vote?.visibilityMode,
+          chainId,
+          walletAddress: walletClient?.account?.address,
+          candidateKeys,
+        })
+
         if (!vote?.electionAddress || !vote.onchainElectionId) {
           throw new Error('아직 온체인 election 정보가 인덱싱되지 않아 투표할 수 없습니다.')
         }
 
         if (!walletClient?.account) {
-          throw new Error('Wallet not connected')
+          throw new Error('지갑 연결이 확인되지 않습니다. 지갑을 다시 연결한 뒤 시도해주세요.')
         }
 
         if (chainId !== vestarStatusTestnetChain.id) {
+          console.warn('[useVoteSubmit] wrong chain', {
+            currentChainId: chainId,
+            expectedChainId: vestarStatusTestnetChain.id,
+          })
           await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
           throw new Error(
             '네트워크를 Status testnet으로 변경했습니다. 다시 한 번 투표를 눌러주세요.',
@@ -63,6 +79,12 @@ export function useVoteSubmit(): VoteSubmitResult {
           walletClient.account.address,
         )
 
+        console.info('[useVoteSubmit] canSubmitBallot', {
+          electionAddress: vote.electionAddress,
+          walletAddress: walletClient.account.address,
+          canSubmit,
+        })
+
         if (!canSubmit) {
           const [state, remainingBallots] = await Promise.all([
             getElectionState(vote.electionAddress as Address).catch(() => undefined),
@@ -71,6 +93,13 @@ export function useVoteSubmit(): VoteSubmitResult {
               walletClient.account.address,
             ).catch(() => undefined),
           ])
+
+          console.warn('[useVoteSubmit] blocked before wallet request', {
+            electionAddress: vote.electionAddress,
+            walletAddress: walletClient.account.address,
+            state,
+            remainingBallots,
+          })
 
           if (state !== undefined && state !== VESTAR_ELECTION_STATE.ACTIVE) {
             throw new Error('현재 투표 가능한 상태가 아닙니다.')
@@ -84,6 +113,53 @@ export function useVoteSubmit(): VoteSubmitResult {
         }
 
         setState('awaiting_signature')
+
+        if (
+          vote.paymentMode === 'PAID' &&
+          vote.paymentToken &&
+          vote.paymentToken !== '0x0000000000000000000000000000000000000000'
+        ) {
+          const quotedPayment = await quoteElectionPayment(vote.electionAddress as Address, 1)
+
+          console.info('[useVoteSubmit] payment quote', {
+            electionAddress: vote.electionAddress,
+            paymentToken: vote.paymentToken,
+            quotedPayment: quotedPayment.toString(),
+          })
+
+          if (quotedPayment > 0n) {
+            const allowance = await getErc20Allowance(
+              vote.paymentToken,
+              walletClient.account.address,
+              vote.electionAddress as Address,
+            )
+
+            console.info('[useVoteSubmit] token allowance', {
+              tokenAddress: vote.paymentToken,
+              owner: walletClient.account.address,
+              spender: vote.electionAddress,
+              allowance: allowance.toString(),
+              required: quotedPayment.toString(),
+            })
+
+            if (allowance < quotedPayment) {
+              const approvalHash = await approveErc20Spender(
+                walletClient,
+                vote.paymentToken,
+                vote.electionAddress as Address,
+                quotedPayment,
+              )
+
+              console.info('[useVoteSubmit] approval sent', {
+                tokenAddress: vote.paymentToken,
+                spender: vote.electionAddress,
+                approvalHash,
+              })
+
+              await waitForVestarTransactionReceipt(approvalHash)
+            }
+          }
+        }
 
         const hash =
           vote.visibilityMode === 'PRIVATE'
@@ -110,6 +186,12 @@ export function useVoteSubmit(): VoteSubmitResult {
                 }),
               )
             : await submitOpenVote(walletClient, vote.electionAddress as Address, candidateKeys)
+
+        console.info('[useVoteSubmit] wallet request sent', {
+          electionAddress: vote.electionAddress,
+          visibilityMode: vote.visibilityMode,
+          hash,
+        })
 
         setState('confirming')
         await waitForVestarTransactionReceipt(hash)
