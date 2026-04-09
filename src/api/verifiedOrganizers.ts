@@ -5,6 +5,7 @@ export interface ApiVerifiedOrganizer {
   walletAddress: `0x${string}`
   status: 'PENDING' | 'VERIFIED' | 'REJECTED'
   organizationName: string
+  contactEmail: string | null
   organizationLogoUrl: string | null
   rejectionReason: string | null
   verifiedBy: string | null
@@ -39,7 +40,7 @@ export function fetchVerifiedOrganizerRequests(status?: ApiVerifiedOrganizer['st
 export function requestVerifiedOrganizer(body: {
   walletAddress: string
   organizationName: string
-  organizationLogoUrl?: string | null
+  contactEmail?: string | null
 }) {
   return apiFetch<ApiVerifiedOrganizer>('/verified-organizers/request', {
     method: 'POST',

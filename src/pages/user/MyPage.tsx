@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { useAccount } from "wagmi";
 // import keyboardArrowLeft from "../../assets/keyboard_arrow_left.svg";
 import { useLanguage } from "../../providers/LanguageProvider";
@@ -53,14 +53,30 @@ const KARMA_TYPE_STYLES: Record<KarmaEventType, { bg: string; text: string }> =
     streak: { bg: "#E8F0FF", text: "#2563eb" },
   };
 
-function VoteHistoryList({ votes }: { votes: MyVoteItem[] }) {
+function VoteHistoryList({
+  votes,
+  isLoading,
+}: {
+  votes: MyVoteItem[]
+  isLoading: boolean
+}) {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const badgeLabel: Record<BadgeVariant, string> = {
     live: "● LIVE",
     hot: "🔥 HOT",
     new: "NEW",
     end: lang === "ko" ? "종료" : "END",
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <span className="text-5xl">⏳</span>
+        <p className="text-[14px] text-[#707070]">{t("common_loading")}</p>
+      </div>
+    );
+  }
 
   if (votes.length === 0) {
     return (
@@ -74,9 +90,11 @@ function VoteHistoryList({ votes }: { votes: MyVoteItem[] }) {
   return (
     <div className="flex flex-col gap-[10px] px-4 py-4">
       {votes.map((item) => (
-        <div
+        <button
+          type="button"
           key={item.id}
-          className="bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px]"
+          onClick={() => navigate(`/vote/${item.voteId}`)}
+          className="bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px] text-left transition-colors hover:border-[#d9ddf3]"
         >
           <div
             className="w-[48px] h-[48px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
@@ -109,7 +127,7 @@ function VoteHistoryList({ votes }: { votes: MyVoteItem[] }) {
               +{item.karmaEarned} ⚡
             </span>
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -191,7 +209,7 @@ export function MyPage() {
   const tab = searchParams.get("tab") === "karma" ? "karma" : "votes";
   const { t } = useLanguage();
 
-  const { votes } = useMyVotes();
+  const { votes, isLoading: isVotesLoading } = useMyVotes();
   const { events, total } = useMyKarma();
   const tier = getKarmaTier(total);
 
@@ -254,7 +272,7 @@ export function MyPage() {
       {/* Tab content */}
       <div className="bg-[#ffffff] min-h-screen">
         {tab === "votes" ? (
-          <VoteHistoryList votes={votes} />
+          <VoteHistoryList votes={votes} isLoading={isVotesLoading} />
         ) : (
           <KarmaHistoryList events={events} total={total} />
         )}

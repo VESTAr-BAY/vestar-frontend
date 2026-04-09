@@ -91,19 +91,15 @@ export function VerifiedAdminPage() {
                     <div className="text-[15px] font-semibold text-[#090A0B]">
                       {item.organizationName}
                     </div>
+                    <div className="mt-1 text-[12px] text-[#707070]">
+                      {item.contactEmail ?? '이메일 미입력'}
+                    </div>
                     <div className="mt-1 break-all font-mono text-[12px] text-[#707070]">
                       {item.walletAddress}
                     </div>
                   </div>
                   <StatusBadge status={item.status} />
                 </div>
-
-                {item.organizationLogoUrl ? (
-                  <div className="mt-3 text-[12px] text-[#707070]">
-                    로고: <span className="break-all">{item.organizationLogoUrl}</span>
-                  </div>
-                ) : null}
-
                 <textarea
                   value={reasons[item.id] ?? ''}
                   onChange={(event) =>

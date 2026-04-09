@@ -4,6 +4,7 @@ import { VoteDetailLayout } from '../components/layout/VoteDetailLayout'
 import { HostGuard } from '../guards/HostGuard'
 import { WalletGuard } from '../guards/WalletGuard'
 import { HostDashboardPage } from '../pages/host/HostDashboardPage'
+import { HostLiveTallyPage } from '../pages/host/HostLiveTallyPage'
 import { VoteCreatePage } from '../pages/host/VoteCreatePage'
 import { VoteEditPage } from '../pages/host/VoteEditPage'
 import { VoteManagePage } from '../pages/host/VoteManagePage'
@@ -80,6 +81,10 @@ export const router = createBrowserRouter([
               {
                 path: '/host/manage/:id',
                 element: <VoteManagePage />,
+              },
+              {
+                path: '/host/:id/live',
+                element: <HostLiveTallyPage />,
               },
             ],
           },
