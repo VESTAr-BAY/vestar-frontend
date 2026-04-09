@@ -14,7 +14,6 @@ export function WalletButton({ onConnected }: WalletButtonProps) {
       connect,
       connectors,
       onConnectStart: onConnected,
-      onDeeplinkOpen: onConnected,
     })
   }
 
