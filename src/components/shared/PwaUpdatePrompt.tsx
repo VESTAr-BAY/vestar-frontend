@@ -11,6 +11,8 @@ export function PwaUpdatePrompt() {
     if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return
 
     let intervalId: number | null = null
+    const serviceWorkerScope = import.meta.env.BASE_URL
+    const serviceWorkerUrl = `${serviceWorkerScope}sw.js`
 
     const handleControllerChange = () => {
       if (hasReloadedRef.current) return
@@ -30,7 +32,10 @@ export function PwaUpdatePrompt() {
 
     const registerServiceWorker = async () => {
       try {
-        const registration = await navigator.serviceWorker.register('/sw.js')
+        // sungje : PWA service worker는 배포 base(/vote/) 아래에서 등록되어야 standalone 진입과 내부 라우팅이 깨지지 않는다.
+        const registration = await navigator.serviceWorker.register(serviceWorkerUrl, {
+          scope: serviceWorkerScope,
+        })
 
         if (registration.waiting && navigator.serviceWorker.controller) {
           setNeedRefresh(true)
@@ -68,7 +73,7 @@ export function PwaUpdatePrompt() {
 
     try {
       setIsUpdating(true)
-      const registration = await navigator.serviceWorker.getRegistration()
+      const registration = await navigator.serviceWorker.getRegistration(import.meta.env.BASE_URL)
       if (registration?.waiting) {
         registration.waiting.postMessage({ type: 'SKIP_WAITING' })
         return

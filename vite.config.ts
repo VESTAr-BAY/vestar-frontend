@@ -22,6 +22,7 @@ export default defineConfig(({ mode, command }) => {
       babel({ presets: [reactCompilerPreset()] }),
       tailwindcss(),
       VitePWA({
+        injectRegister: false,
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'pwa-icon.svg'],
         manifest: {
@@ -51,7 +52,7 @@ export default defineConfig(({ mode, command }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,woff2}'],
-          navigateFallback: '/index.html',
+          navigateFallback: `${baseUrl}index.html`,
           navigateFallbackAllowlist: [/^(?!\/__).*/],
           navigateFallbackDenylist: [/^\/api/],
           runtimeCaching: [
