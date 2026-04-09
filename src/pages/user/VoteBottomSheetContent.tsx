@@ -1,18 +1,52 @@
-import { useLanguage } from '../../providers/LanguageProvider'
 import type { SubmitState } from '../../hooks/user/useVoteSubmit'
+import { useLanguage } from '../../providers/LanguageProvider'
 
 interface VoteBottomSheetContentProps {
   state: SubmitState
   txHash: string | null
   karmaEarned: number
+  selectedCandidateLabels: string[]
+  isPrivateVote: boolean
   onClose: () => void
 }
 
-function LoadingPhase({ label }: { label: string }) {
+function LoadingPhase({
+  title,
+  label,
+  selectedCandidateLabels,
+  isPrivateVote,
+  t,
+}: {
+  title: string
+  label: string
+  selectedCandidateLabels: string[]
+  isPrivateVote: boolean
+  t: (key: Parameters<ReturnType<typeof useLanguage>['t']>[0]) => string
+}) {
   return (
     <div className="flex flex-col items-center py-10 gap-4">
       <div className="w-12 h-12 rounded-full border-4 border-[#E7E9ED] border-t-[#7140FF] animate-spin" />
-      <span className="text-[14px] text-[#707070]">{label}</span>
+      <div className="text-center">
+        <div className="text-[16px] font-bold text-[#090A0B] mb-1">{title}</div>
+        <div className="text-[14px] text-[#707070]">{label}</div>
+      </div>
+
+      {selectedCandidateLabels.length > 0 && (
+        <div className="w-full rounded-2xl bg-[#F7F8FA] border border-[#E7E9ED] px-4 py-3">
+          <div className="text-[11px] text-[#707070] font-mono uppercase tracking-[1px] mb-2">
+            {t('bs_selected_candidates')}
+          </div>
+          <div className="text-[14px] text-[#090A0B] font-medium leading-relaxed break-words">
+            {selectedCandidateLabels.join(', ')}
+          </div>
+        </div>
+      )}
+
+      {isPrivateVote && (
+        <div className="w-full rounded-2xl bg-[#FEF5E7] border border-[#FDE68A] px-4 py-3 text-[12px] leading-relaxed text-[#92400E]">
+          {t('bs_private_vote_note')}
+        </div>
+      )}
     </div>
   )
 }
@@ -109,11 +143,22 @@ export function VoteBottomSheetContent({
   state,
   txHash,
   karmaEarned,
+  selectedCandidateLabels,
+  isPrivateVote,
   onClose,
 }: VoteBottomSheetContentProps) {
   const { t } = useLanguage()
 
   if (state === 'success')
     return <SuccessPhase txHash={txHash} karmaEarned={karmaEarned} onClose={onClose} t={t} />
-  return <LoadingPhase label={t('bs_processing')} />
+
+  return (
+    <LoadingPhase
+      title={state === 'awaiting_signature' ? t('bs_confirm_wallet') : t('bs_processing')}
+      label={state === 'awaiting_signature' ? t('bs_confirm_wallet_sub') : t('bs_processing_sub')}
+      selectedCandidateLabels={selectedCandidateLabels}
+      isPrivateVote={isPrivateVote}
+      t={t}
+    />
+  )
 }

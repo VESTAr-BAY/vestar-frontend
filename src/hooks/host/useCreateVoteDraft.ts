@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
-import { decodeEventLog, keccak256, parseUnits, toHex, zeroAddress, zeroHash } from 'viem'
 import type { Address, Hash, Hex } from 'viem'
+import { decodeEventLog, keccak256, parseUnits, toHex, zeroAddress, zeroHash } from 'viem'
+import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { fetchVerifiedOrganizerByWallet } from '../../api/verifiedOrganizers'
 import { apiClient } from '../../config/api'
-import { vestarFactory, vestarUtils } from '../../contracts/vestar/client'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
+import { vestarFactory, vestarUtils } from '../../contracts/vestar/client'
 import { vestarContractAddresses } from '../../contracts/vestar/generated'
 import { vestarElectionFactoryAbi } from '../../contracts/vestar/generated/vestarElectionFactoryAbi'
 import {
+  type ElectionConfigInput,
   VESTAR_BALLOT_POLICY,
   VESTAR_PAYMENT_MODE,
   VESTAR_VISIBILITY_MODE,
-  type ElectionConfigInput,
 } from '../../contracts/vestar/types'
+import { useLanguage } from '../../providers/LanguageProvider'
 import type {
   CandidateDraft,
   CreateStep,
@@ -21,11 +22,12 @@ import type {
   SectionDraft,
   VoteCreateDraft,
 } from '../../types/host'
-import { uploadJsonToPinata } from '../../utils/ipfs'
 import {
   getEffectiveResultRevealAt,
   normalizeElectionSettingsDraft,
 } from '../../utils/hostElectionSettings'
+import { uploadJsonToPinata } from '../../utils/ipfs'
+import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
 type SubmitVoteResult = {
   txHash: Hash
@@ -150,7 +152,9 @@ function isStep1Valid(draft: VoteCreateDraft): boolean {
 function hasDuplicateCandidateNames(draft: VoteCreateDraft) {
   if (draft.sections.length > 0) {
     return draft.sections.some((section) => {
-      const normalized = section.candidates.map((candidate) => candidate.name.trim()).filter(Boolean)
+      const normalized = section.candidates
+        .map((candidate) => candidate.name.trim())
+        .filter(Boolean)
       return new Set(normalized).size !== normalized.length
     })
   }
@@ -174,7 +178,8 @@ function isStep2Valid(draft: VoteCreateDraft): boolean {
   if (draft.electionTitle.trim().length === 0) return false
 
   return (
-    draft.candidates.length >= 2 && draft.candidates.every((candidate) => candidate.name.trim().length > 0)
+    draft.candidates.length >= 2 &&
+    draft.candidates.every((candidate) => candidate.name.trim().length > 0)
   )
 }
 
@@ -212,7 +217,10 @@ function isStep3Valid(draft: VoteCreateDraft): boolean {
       if (!Number.isFinite(price) || price <= 0) return false
     }
 
-    return normalizedSettings.maxChoices >= 1 && normalizedSettings.maxChoices <= Math.max(candidateCount, 1)
+    return (
+      normalizedSettings.maxChoices >= 1 &&
+      normalizedSettings.maxChoices <= Math.max(candidateCount, 1)
+    )
   }
 
   if (draft.sections.length > 0) {
@@ -246,7 +254,11 @@ function convertResetIntervalToSeconds(value: string, unit: VoteCreateDraft['res
     throw new Error('유효한 투표권 갱신 주기를 입력하세요.')
   }
 
-  return unit === 'DAY' ? numericValue * 86_400 : unit === 'HOUR' ? numericValue * 3_600 : numericValue * 60
+  return unit === 'DAY'
+    ? numericValue * 86_400
+    : unit === 'HOUR'
+      ? numericValue * 3_600
+      : numericValue * 60
 }
 
 function buildCanonicalManifest(candidates: FlattenedCandidate[]) {
@@ -297,7 +309,8 @@ async function parseElectionAddress(txHash: Hash): Promise<Address> {
   const receipt = await vestarUtils.waitForReceipt(txHash)
 
   for (const log of receipt.logs) {
-    if (log.address.toLowerCase() !== vestarContractAddresses.electionFactory.toLowerCase()) continue
+    if (log.address.toLowerCase() !== vestarContractAddresses.electionFactory.toLowerCase())
+      continue
 
     try {
       const parsed = decodeEventLog({
@@ -309,9 +322,7 @@ async function parseElectionAddress(txHash: Hash): Promise<Address> {
       if (parsed.eventName === 'ElectionCreated') {
         return parsed.args.electionAddress as Address
       }
-    } catch {
-      continue
-    }
+    } catch {}
   }
 
   throw new Error('ElectionCreated 이벤트에서 electionAddress를 찾지 못했습니다.')
@@ -371,6 +382,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient()
   const { switchChainAsync } = useSwitchChain()
+  const { lang } = useLanguage()
 
   const isCurrentStepValid = validateStep(step, draft)
 
@@ -601,7 +613,9 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
             }))
 
       const [bannerImageUrl, candidateImageEntries] = await Promise.all([
-        draft.bannerImageFile ? uploadImage(draft.bannerImageFile) : Promise.resolve<string | null>(null),
+        draft.bannerImageFile
+          ? uploadImage(draft.bannerImageFile)
+          : Promise.resolve<string | null>(null),
         Promise.all(
           allCandidates.map(async (candidate) => [
             candidate.id,
@@ -723,7 +737,9 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         }
 
         const normalizedAllowMultipleChoice =
-          normalizedSettings.ballotPolicy === 'UNLIMITED_PAID' ? false : normalizedSettings.maxChoices > 1
+          normalizedSettings.ballotPolicy === 'UNLIMITED_PAID'
+            ? false
+            : normalizedSettings.maxChoices > 1
         const normalizedMaxSelectionsPerSubmission = normalizedAllowMultipleChoice
           ? Math.max(2, normalizedSettings.maxChoices)
           : 1
@@ -757,7 +773,9 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
                 )
               : 0,
           paymentMode:
-            normalizedSettings.paymentMode === 'PAID' ? VESTAR_PAYMENT_MODE.PAID : VESTAR_PAYMENT_MODE.FREE,
+            normalizedSettings.paymentMode === 'PAID'
+              ? VESTAR_PAYMENT_MODE.PAID
+              : VESTAR_PAYMENT_MODE.FREE,
           costPerBallot:
             normalizedSettings.paymentMode === 'PAID'
               ? parseUnits(normalizedSettings.costPerBallotEth || '0', 6)
@@ -778,7 +796,11 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
           keccak256(toHex(candidate.candidateKey)),
         )
 
-        const txHash = await vestarFactory.createElection(walletClient, config, initialCandidateHashes)
+        const txHash = await vestarFactory.createElection(
+          walletClient,
+          config,
+          initialCandidateHashes,
+        )
         const electionAddress = await parseElectionAddress(txHash)
 
         elections.push({
@@ -795,6 +817,14 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         electionAddress: lastElection.electionAddress,
         elections,
       }
+    } catch (error) {
+      throw new Error(
+        getWalletActionErrorMessage(error, {
+          lang,
+          defaultMessage:
+            lang === 'ko' ? '투표 생성에 실패했습니다.' : 'Failed to create the vote.',
+        }),
+      )
     } finally {
       setIsSubmitting(false)
       setSubmissionProgress({
@@ -803,7 +833,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         currentTitle: null,
       })
     }
-  }, [chainId, draft, switchChainAsync, walletClient])
+  }, [chainId, draft, lang, switchChainAsync, walletClient])
 
   return {
     draft,

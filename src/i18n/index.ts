@@ -107,10 +107,25 @@ const STRINGS = {
     ko: '⚠ 이 투표는 되돌릴 수 없어요. 한 번 제출하면 변경하거나 취소할 수 없습니다.',
   },
   dm_vote_fee: { en: 'Vote fee', ko: '투표권' },
+  dm_selected_candidates: { en: 'Selected candidates', ko: '선택한 후보' },
 
   // ── Bottom Sheet (Vote Status) ──────────────────────────────────────────────
   bs_title: { en: 'Vote Status', ko: '투표 상태' },
+  bs_confirm_wallet: { en: 'Confirm in wallet', ko: '지갑에서 승인해주세요' },
+  bs_confirm_wallet_sub: {
+    en: 'Review the transaction in your wallet and approve it.',
+    ko: '지갑에서 트랜잭션 내용을 확인하고 승인해주세요.',
+  },
   bs_processing: { en: 'Processing your vote…', ko: '투표를 처리하는 중…' },
+  bs_processing_sub: {
+    en: 'The transaction has been sent and is being confirmed on-chain.',
+    ko: '트랜잭션이 전송되었고 체인에서 확인되는 중입니다.',
+  },
+  bs_selected_candidates: { en: 'Selected candidates', ko: '선택한 후보' },
+  bs_private_vote_note: {
+    en: 'Private votes may appear as encrypted bytes in the wallet by design.',
+    ko: '비공개 투표는 설계상 지갑에서 암호화된 bytes 형태로 보일 수 있습니다.',
+  },
   bs_success_title: { en: 'Vote recorded!', ko: '투표가 기록됐어요!' },
   bs_success_sub: {
     en: 'Your vote has been securely saved',
