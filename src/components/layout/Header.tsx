@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router";
 import { useAccount, useConnect } from "wagmi";
 import keyboardArrowLeft from "../../assets/keyboard_arrow_left.svg";
-import searchIcon from "../../assets/search_button.svg";
+
 import accountCircleIcon from "../../assets/account_circle.svg";
 import walletIcon from "../../assets/account_balance_wallet.svg";
 import complete_vote from "../../assets/complete_vote.svg";
@@ -30,7 +30,7 @@ function truncateAddress(address: string): string {
 export function Header({
   scrollState,
   onOpenPanel,
-  onOpenSearch,
+  
 }: HeaderProps) {
   const { isConnected, address } = useAccount();
   const { connect, connectors, isPending } = useConnect();

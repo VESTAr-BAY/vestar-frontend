@@ -127,7 +127,6 @@ export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoPr
         />
         <div className="text-right text-[11px] text-[#707070] mt-1">{draft.title.length}/60</div>
       </div>
-<<<<<<< HEAD
 
       {/* Banner Image */}
       <div>
@@ -173,8 +172,6 @@ export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoPr
           />
         </div>
       </div>
-=======
->>>>>>> 7e3cca7 (feat: add banner preview on /host/create page)
 
       {/* Category */}
       <div>
