@@ -4,12 +4,8 @@ import { HOT_VOTES } from '../../data/mockVotes'
 import { mapToHotVote } from '../../utils/electionMapper'
 import type { HotVote } from '../../types/vote'
 
-/** Filters mock HOT_VOTES to those with >10,000 participants */
 function hotMockFallback(): HotVote[] {
-  return HOT_VOTES.filter((v) => {
-    const n = Number.parseInt(v.count.replace(/,/g, ''), 10)
-    return n > 10_000
-  })
+  return HOT_VOTES.slice(0, 4)
 }
 
 export interface UseVoteListResult {
@@ -28,11 +24,15 @@ export function useVoteList(): UseVoteListResult {
   useEffect(() => {
     let cancelled = false
 
-    fetchElections({ onchainState: 'ACTIVE' })
+    fetchElections({ onchainState: 'ACTIVE', sortBy: 'HOT' })
       .then((elections) => {
         if (cancelled) return
         const hot = elections
-          .filter((election) => (election.resultSummary?.totalSubmissions ?? 0) > 10_000)
+          .sort(
+            (left, right) =>
+              (right.resultSummary?.totalSubmissions ?? 0) -
+              (left.resultSummary?.totalSubmissions ?? 0),
+          )
           .slice(0, 4)
           .map(mapToHotVote)
         setHotVotes(hot.length > 0 ? hot : hotMockFallback())

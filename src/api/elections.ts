@@ -20,6 +20,7 @@ export interface FetchElectionsParams {
   syncState?: string
   onchainState?: string
   visibilityMode?: ApiVisibilityMode
+  sortBy?: 'LATEST' | 'HOT'
 }
 
 function buildQuery(params: Record<string, string | undefined>): string {
@@ -45,6 +46,7 @@ export function fetchElections(params: FetchElectionsParams = {}): Promise<ApiEl
       syncState: params.syncState,
       onchainState: params.onchainState,
       visibilityMode: params.visibilityMode,
+      sortBy: params.sortBy,
     })}`,
   )
 }
