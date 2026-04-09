@@ -161,6 +161,7 @@ export function CandidateSection({
 interface GroupedCandidateSectionProps {
   sections: VoteSection[]
   resultPublic: boolean
+  feeLabel?: string
   isSelected: (sectionId: string, candidateId: string) => boolean
   onToggle: (sectionId: string, candidateId: string) => void
   isEnded: boolean
@@ -172,6 +173,7 @@ const SECTION_COLORS = ['#F0EDFF', '#E8FFF0', '#FFF5E8', '#E8F0FF', '#FEF9EC', '
 export function GroupedCandidateSection({
   sections,
   resultPublic,
+  feeLabel,
   isSelected,
   onToggle,
   isEnded,
@@ -195,7 +197,7 @@ export function GroupedCandidateSection({
                 </span>
               </div>
               <span className="text-[11px] bg-[#F0EDFF] text-[#7140FF] px-2.5 py-1 rounded-full font-medium">
-                ₩100
+                {feeLabel ?? (resultPublic ? '공개' : '비공개')}
               </span>
             </div>
 

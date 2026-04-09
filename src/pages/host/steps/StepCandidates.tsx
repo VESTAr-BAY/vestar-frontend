@@ -3,8 +3,10 @@ import type { CandidateDraft, SectionDraft, VoteCreateDraft } from '../../../typ
 const MAX_CANDIDATES = 10
 
 interface StepCandidatesProps {
+  electionTitle: VoteCreateDraft['electionTitle']
   candidates: VoteCreateDraft['candidates']
   sections: VoteCreateDraft['sections']
+  onUpdateElectionTitle: (value: VoteCreateDraft['electionTitle']) => void
   onAdd: () => void
   onRemove: (id: string) => void
   onUpdate: (
@@ -241,8 +243,10 @@ function SectionCard({
 }
 
 export function StepCandidates({
+  electionTitle,
   candidates,
   sections,
+  onUpdateElectionTitle,
   onAdd,
   onRemove,
   onUpdate,
@@ -294,9 +298,29 @@ export function StepCandidates({
         </button>
       </div>
 
+      {!useSections && (
+        <div className="bg-white border border-[#E7E9ED] rounded-2xl px-4 py-4 mb-4">
+          <label htmlFor="election-title" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+            투표 이름 <span className="text-[#7140FF]">*</span>
+          </label>
+          <input
+            id="election-title"
+            type="text"
+            value={electionTitle}
+            onChange={(e) => onUpdateElectionTitle(e.target.value)}
+            placeholder="예: 남자 그룹 인기상"
+            maxLength={60}
+            className="w-full bg-[#F7F8FA] border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] placeholder:text-[#C0C4CC] outline-none focus:border-[#7140FF] focus:bg-white transition-all"
+          />
+        </div>
+      )}
+
       {useSections ? (
         // ── Sections mode ──────────────────────────────────────────────────
         <>
+          <div className="text-[12px] text-[#707070] mb-4">
+            각 섹션 이름이 개별 투표 이름으로 사용됩니다.
+          </div>
           <div className="text-[12px] text-[#707070] mb-4">
             {isEditMode 
               ? "수정 모드에서는 후보의 삭제 및 추가가 제한됩니다." 

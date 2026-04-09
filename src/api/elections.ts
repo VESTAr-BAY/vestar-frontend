@@ -1,85 +1,94 @@
-import { apiFetch, isApiConfigured } from './client'
-import {
-  fetchOnchainElectionDetail,
-  fetchOnchainElectionList,
-  fetchOnchainElectionSubmissionCount,
-} from './onchainElections'
-import type { ApiElection, ApiElectionDetail, ApiElectionListResponse } from './types'
+import { apiFetch } from './client'
+import type {
+  ApiElection,
+  ApiElectionMetadata,
+  ApiElectionResultSummary,
+  ApiFinalizedTallyRow,
+  ApiLiveTallyRow,
+  ApiVoteSubmissionStatus,
+  ApiVisibilityMode,
+  PreparePrivateElectionRequest,
+  PreparePrivateElectionResponse,
+} from './types'
 
-async function hydrateElectionTotalSubmissions<T extends ApiElection>(election: T): Promise<T> {
-  if (!election.onchain_election_address) {
-    return election
-  }
+export interface FetchElectionsParams {
+  seriesId?: string
+  onchainElectionId?: string
+  onchainElectionAddress?: string
+  syncState?: string
+  onchainState?: string
+  visibilityMode?: ApiVisibilityMode
+}
 
-  if ((election.total_submissions ?? 0) > 0) {
-    return election
-  }
+function buildQuery(params: Record<string, string | undefined>): string {
+  const query = new URLSearchParams()
 
-  try {
-    // sungje : 백엔드 indexer 가 참여수를 아직 못 채운 경우에도 온체인 제출 이벤트 개수로 0 표시를 방지
-    const liveTotalSubmissions = await fetchOnchainElectionSubmissionCount(
-      election.onchain_election_address,
-    )
-
-    if (liveTotalSubmissions <= 0) {
-      return election
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) {
+      query.set(key, value)
     }
+  })
 
-    return {
-      ...election,
-      total_submissions: liveTotalSubmissions,
-    }
-  } catch {
-    return election
-  }
+  const serialized = query.toString()
+  return serialized ? `?${serialized}` : ''
 }
 
-export interface FetchElectionListParams {
-  state?: string // filter by onchain_state
-  page?: number
-  pageSize?: number
+export function fetchElections(params: FetchElectionsParams = {}): Promise<ApiElection[]> {
+  return apiFetch<ApiElection[]>(
+    `/elections${buildQuery({
+      seriesId: params.seriesId,
+      onchainElectionId: params.onchainElectionId,
+      onchainElectionAddress: params.onchainElectionAddress,
+      syncState: params.syncState,
+      onchainState: params.onchainState,
+      visibilityMode: params.visibilityMode,
+    })}`,
+  )
 }
 
-export async function fetchElectionList(
-  params: FetchElectionListParams = {},
-): Promise<ApiElectionListResponse> {
-  const q = new URLSearchParams()
-  if (params.state) q.set('state', params.state)
-  if (params.page != null) q.set('page', String(params.page))
-  if (params.pageSize != null) q.set('page_size', String(params.pageSize))
-
-  const qs = q.toString()
-  return apiFetch<ApiElectionListResponse>(`/elections${qs ? `?${qs}` : ''}`)
+export function fetchElectionMetadata(
+  params: Omit<FetchElectionsParams, 'onchainState'> = {},
+): Promise<ApiElectionMetadata[]> {
+  return apiFetch<ApiElectionMetadata[]>(
+    `/elections/meta${buildQuery({
+      seriesId: params.seriesId,
+      onchainElectionId: params.onchainElectionId,
+      onchainElectionAddress: params.onchainElectionAddress,
+      syncState: params.syncState,
+      visibilityMode: params.visibilityMode,
+    })}`,
+  )
 }
 
-export async function fetchElectionDetail(id: string): Promise<ApiElectionDetail> {
-  return apiFetch<ApiElectionDetail>(`/elections/${id}`)
+export function fetchElectionDetail(id: string): Promise<ApiElection> {
+  return apiFetch<ApiElection>(`/elections/${id}`)
 }
 
-export async function fetchElectionListResolved(
-  params: FetchElectionListParams = {},
-): Promise<ApiElectionListResponse> {
-  if (isApiConfigured()) {
-    try {
-      const response = await fetchElectionList(params)
-      if (response.elections.length > 0) {
-        return {
-          ...response,
-          elections: await Promise.all(response.elections.map(hydrateElectionTotalSubmissions)),
-        }
-      }
-    } catch {}
-  }
-
-  return fetchOnchainElectionList(params)
+export function fetchLiveTally(electionId: string): Promise<ApiLiveTallyRow[]> {
+  return apiFetch<ApiLiveTallyRow[]>(`/live-tally${buildQuery({ electionId })}`)
 }
 
-export async function fetchElectionDetailResolved(id: string): Promise<ApiElectionDetail> {
-  if (isApiConfigured()) {
-    try {
-      return await hydrateElectionTotalSubmissions(await fetchElectionDetail(id))
-    } catch {}
-  }
+export function fetchFinalizedTally(electionId: string): Promise<ApiFinalizedTallyRow[]> {
+  return apiFetch<ApiFinalizedTallyRow[]>(`/finalized-tally${buildQuery({ electionId })}`)
+}
 
-  return fetchOnchainElectionDetail(id)
+export function fetchResultSummaries(electionId: string): Promise<ApiElectionResultSummary[]> {
+  return apiFetch<ApiElectionResultSummary[]>(`/result-summaries${buildQuery({ electionId })}`)
+}
+
+export function fetchVoteSubmissionByTxHash(
+  txHash: string,
+): Promise<ApiVoteSubmissionStatus | null> {
+  return apiFetch<ApiVoteSubmissionStatus | null>(
+    `/vote-submissions/by-tx-hash${buildQuery({ txHash })}`,
+  )
+}
+
+export function preparePrivateElection(
+  payload: PreparePrivateElectionRequest,
+): Promise<PreparePrivateElectionResponse> {
+  return apiFetch<PreparePrivateElectionResponse>('/private-elections/prepare', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }

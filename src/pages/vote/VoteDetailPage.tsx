@@ -1,12 +1,13 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router'
-import { useAccount, useChainId, useConnect, useSwitchChain } from 'wagmi'
+import { useAccount, useChainId, useSwitchChain } from 'wagmi'
+import type { Address } from 'viem'
 import completeVoteIcon from '../../assets/complete_vote.svg'
 import reportProblemIcon from '../../assets/report_problem.svg'
 import { VoteDetailHeaderContext } from '../../components/layout/VoteDetailLayout'
 import { BottomSheet } from '../../components/shared/BottomSheet'
+import { getElectionVoterSnapshot } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
-import { VESTAR_ELECTION_STATE } from '../../contracts/vestar/types'
 import { useCandidateSelection } from '../../hooks/user/useCandidateSelection'
 import { useSectionVoteSelection } from '../../hooks/user/useSectionVoteSelection'
 import { useVoteDetail } from '../../hooks/user/useVoteDetail'
@@ -18,7 +19,6 @@ import { CandidateSection, GroupedCandidateSection } from '../user/CandidateSect
 import { VoteBottomSheetContent } from '../user/VoteBottomSheetContent'
 import { VoteHero } from '../user/VoteHero'
 import { VoteInfoSection } from '../user/VoteInfoSection'
-import type { Candidate, VoteDetailData } from '../../types/vote'
 
 function LoadingSkeleton() {
   return (
@@ -28,33 +28,22 @@ function LoadingSkeleton() {
   )
 }
 
-function collectVoteCandidates(vote: VoteDetailData): Candidate[] {
-  return vote.sections?.flatMap((section) => section.candidates) ?? vote.candidates
-}
-
-function resolveSelectedCandidateKeys(vote: VoteDetailData, candidateIds: string[]) {
-  const candidateKeyMap = new Map(
-    collectVoteCandidates(vote).map((candidate) => [
-      candidate.id,
-      candidate.candidateKey ?? candidate.name,
-    ]),
-  )
-
-  // sungje : 화면 선택 id를 컨트랙트 submitOpenVote/private payload의 candidateKey preimage로 역매핑
-  return candidateIds
-    .map((candidateId) => candidateKeyMap.get(candidateId))
-    .filter((candidateKey): candidateKey is string => Boolean(candidateKey))
-}
-
 // ── Centered danger confirmation modal ──────────────────────────────────────
 interface DangerConfirmModalProps {
   open: boolean
   target: string
+  feeLabel: string
   onConfirm: () => void
   onCancel: () => void
 }
 
-function DangerConfirmModal({ open, target, onConfirm, onCancel }: DangerConfirmModalProps) {
+function DangerConfirmModal({
+  open,
+  target,
+  feeLabel,
+  onConfirm,
+  onCancel,
+}: DangerConfirmModalProps) {
   const { t } = useLanguage()
   if (!open) return null
   return (
@@ -103,7 +92,7 @@ function DangerConfirmModal({ open, target, onConfirm, onCancel }: DangerConfirm
         {/* Vote fee */}
         <div className="flex justify-between items-center bg-[#F7F8FA] rounded-xl px-4 py-3 mb-5 text-[13px]">
           <span className="text-[#707070]">{t('dm_vote_fee')}</span>
-          <span className="font-bold text-[#090A0B]">₩100</span>
+          <span className="font-bold text-[#090A0B]">{feeLabel}</span>
         </div>
 
         {/* Buttons */}
@@ -131,127 +120,72 @@ function DangerConfirmModal({ open, target, onConfirm, onCancel }: DangerConfirm
 // ── Main page ────────────────────────────────────────────────────────────────
 export function VoteDetailPage() {
   const { id = '1' } = useParams()
-  const {
-    vote,
-    isLoading,
-    voterSnapshot,
-    voteAccessReason,
-    voterKarmaTier,
-    isVoteAccessLoading,
-    refreshVoteAccess,
-  } = useVoteDetail(id)
+  const { vote, isLoading } = useVoteDetail(id)
+  const { address } = useAccount()
 
   const isGrouped = (vote?.sections?.length ?? 0) > 0
 
-  const { isSelected, toggle, canSubmit, selectedIds, reset: resetCandidateSelection } =
-    useCandidateSelection(vote?.maxChoices ?? 1)
+  const { isSelected, toggle, canSubmit, selectedIds } = useCandidateSelection(
+    vote?.maxChoices ?? 1,
+  )
   const sectionSelection = useSectionVoteSelection(vote?.sections ?? [])
 
-  const { markVoted, getVotedCandidates } = useVotedVotes()
-  const { state, txHash, karmaEarned, submit, reset } = useVoteSubmit()
+  const { isVoted, markVoted, getVotedCandidates } = useVotedVotes()
+  const { state, txHash, errorMessage, karmaEarned, submit, reset } = useVoteSubmit()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [dangerModalOpen, setDangerModalOpen] = useState(false)
-  const [lastSubmittedCandidateIds, setLastSubmittedCandidateIds] = useState<string[]>(() =>
-    getVotedCandidates(id),
-  )
-  const handledSuccessTxRef = useRef<string | null>(null)
+  const [hasVoted, setHasVoted] = useState(() => isVoted(id))
+  const [canSubmitByEligibility, setCanSubmitByEligibility] = useState(true)
 
   const { setConfig, scrollState } = useContext(VoteDetailHeaderContext)
   const chainId = useChainId()
   const { switchChainAsync } = useSwitchChain()
-  const { isConnected } = useAccount()
-  const { connect, connectors, isPending: isConnectPending } = useConnect()
   const { addToast } = useToast()
   const { t, lang } = useLanguage()
 
-  // sungje : 종료/예정/진행중을 badge 문자열이 아니라 컨트랙트 state + 종료 시각으로 같이 판정
-  const isWrongNetwork = isConnected && !!vote?.electionAddress && chainId !== vestarStatusTestnetChain.id
-  const isTimeClosed = vote ? new Date(vote.endDateISO).getTime() <= Date.now() : false
-  const isVoteActive = vote
-    ? vote.electionState !== undefined
-      ? vote.electionState === VESTAR_ELECTION_STATE.ACTIVE
-      : vote.badge === 'live' && !isTimeClosed
-    : false
-  const isVoteEnded = vote
-    ? vote.electionState !== undefined
-      ? vote.electionState >= VESTAR_ELECTION_STATE.CLOSED
-      : vote.badge === 'end' || isTimeClosed
-    : false
-  const isVoteScheduled = vote
-    ? vote.electionState !== undefined
-      ? vote.electionState === VESTAR_ELECTION_STATE.SCHEDULED
-      : vote.badge === 'new' && !isTimeClosed
-    : false
-  const hasOnchainElection = Boolean(vote?.electionAddress)
-  const isVoteAccessPending =
-    isConnected && hasOnchainElection && isVoteActive && isVoteAccessLoading && !voterSnapshot
-  const isVoteAccessBlocked =
-    isConnected &&
-    hasOnchainElection &&
-    !isVoteAccessLoading &&
-    voterSnapshot !== null &&
-    !voterSnapshot.canSubmitBallot
-  const showStoredVoteSelections = isVoteAccessBlocked && lastSubmittedCandidateIds.length > 0
-  const selectedCandidateIds = useMemo(
-    () =>
-      isGrouped
-        ? sectionSelection.selectedSections.map((section) => section.candidateId)
-        : Array.from(selectedIds),
-    [isGrouped, sectionSelection.selectedSections, selectedIds],
-  )
-  const displayedCandidateIds = showStoredVoteSelections
-    ? lastSubmittedCandidateIds
-    : selectedCandidateIds
-  const displayedCandidateIdSet = useMemo(
-    () => new Set(displayedCandidateIds),
-    [displayedCandidateIds],
-  )
-  const displayedCandidates = useMemo(
-    () =>
-      vote ? collectVoteCandidates(vote).filter((candidate) => displayedCandidateIdSet.has(candidate.id)) : [],
-    [vote, displayedCandidateIdSet],
-  )
-  const displayedCandidateCount = displayedCandidates.length
+  const isEnded = vote?.badge === 'end'
+  const isWrongNetwork = !!vote?.electionAddress && chainId !== vestarStatusTestnetChain.id
+  const voteFeeLabel =
+    vote?.paymentMode === 'PAID' && vote.costPerBallot && vote.costPerBallot !== '0'
+      ? vote.costPerBallot
+      : '무료'
+  const groupedSelectionLabel =
+    vote?.paymentMode === 'PAID' && vote.costPerBallot && vote.costPerBallot !== '0'
+      ? `${sectionSelection.selectedCount} ${lang === 'ko' ? `섹션 선택됨 · ${vote.costPerBallot}` : `sections selected · ${vote.costPerBallot}`}`
+      : `${sectionSelection.selectedCount} ${lang === 'ko' ? '섹션 선택됨 · 무료' : 'sections selected · free'}`
+  const resolvedHasVoted = hasVoted && !canSubmitByEligibility
 
+  // ── Voted candidate IDs (from localStorage, stable after voting or on reload) ──
+  const votedCandidateIds = useMemo<Set<string> | undefined>(
+    () => (resolvedHasVoted ? new Set(getVotedCandidates(id)) : undefined),
+    [resolvedHasVoted, id, getVotedCandidates],
+  )
+
+  // ── Override isSelected to show voted candidates highlighted after voting ──
   const effectiveIsSelected = useCallback(
     (candidateId: string) =>
-      showStoredVoteSelections
-        ? displayedCandidateIdSet.has(candidateId)
-        : isSelected(candidateId),
-    [showStoredVoteSelections, displayedCandidateIdSet, isSelected],
+      resolvedHasVoted ? (votedCandidateIds?.has(candidateId) ?? false) : isSelected(candidateId),
+    [resolvedHasVoted, votedCandidateIds, isSelected],
   )
   const effectiveSectionIsSelected = useCallback(
-    (sectionId: string, candidateId: string) =>
-      showStoredVoteSelections
-        ? displayedCandidateIdSet.has(candidateId)
-        : sectionSelection.isSelected(sectionId, candidateId),
-    [showStoredVoteSelections, displayedCandidateIdSet, sectionSelection],
+    (_sectionId: string, candidateId: string) =>
+      resolvedHasVoted
+        ? (votedCandidateIds?.has(candidateId) ?? false)
+        : sectionSelection.isSelected(_sectionId, candidateId),
+    [resolvedHasVoted, votedCandidateIds, sectionSelection],
   )
 
-  const selectedCandidate = displayedCandidates[0] ?? null
-  const activeCanSubmit = isGrouped ? sectionSelection.canSubmit : canSubmit
-  const isSelectionDisabled = !isVoteActive || isVoteAccessBlocked
-  const minKarmaTier = vote?.minKarmaTier ?? 0
-  const voteBlockedLabel = isVoteScheduled
-    ? lang === 'ko'
-      ? '아직 투표 시작 전이에요'
-      : 'Voting has not started yet'
-    : voteAccessReason === 'karma' && minKarmaTier > 0
-      ? lang === 'ko'
-        ? `Karma ${minKarmaTier} 이상이 필요해요${voterKarmaTier !== null ? ` · 현재 ${voterKarmaTier}` : ''}`
-        : `Karma tier ${minKarmaTier}+ required${voterKarmaTier !== null ? ` · current ${voterKarmaTier}` : ''}`
-      : vote?.ballotPolicy === 'ONE_PER_INTERVAL'
-        ? lang === 'ko'
-          ? '이번 회차의 투표권을 이미 사용했어요'
-          : 'You already used this round’s ballot'
-        : lang === 'ko'
-          ? '이미 이 투표의 투표권을 사용했어요'
-          : 'You already used your ballot for this vote'
+  // Derive selected candidate for flat mode (works on reload via votedCandidateIds)
+  const selectedCandidate = useMemo(
+    () =>
+      vote?.candidates.find((c) =>
+        resolvedHasVoted ? votedCandidateIds?.has(c.id) : selectedIds.has(c.id),
+      ) ?? null,
+    [vote, resolvedHasVoted, votedCandidateIds, selectedIds],
+  )
 
-  useEffect(() => {
-    setLastSubmittedCandidateIds(getVotedCandidates(id))
-    handledSuccessTxRef.current = null
-  }, [id, getVotedCandidates])
+  const votedSectionCount = votedCandidateIds?.size ?? 0
+  const activeCanSubmit = (isGrouped ? sectionSelection.canSubmit : canSubmit) && canSubmitByEligibility
 
   useEffect(() => {
     if (!vote) return
@@ -266,19 +200,44 @@ export function VoteDetailPage() {
   }, [vote, setConfig])
 
   useEffect(() => {
-    if (state !== 'success' || !vote || !txHash || handledSuccessTxRef.current === txHash) return
+    let cancelled = false
 
-    handledSuccessTxRef.current = txHash
-    markVoted(vote.id, selectedCandidateIds)
-    setLastSubmittedCandidateIds(selectedCandidateIds)
+    if (!vote?.electionAddress || !address) {
+      setCanSubmitByEligibility(true)
+      return
+    }
 
-    if (isGrouped || displayedCandidateCount > 1) {
+    getElectionVoterSnapshot(vote.electionAddress as Address, address as Address)
+      .then((snapshot) => {
+        if (cancelled) return
+        setCanSubmitByEligibility(snapshot.canSubmitBallot)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setCanSubmitByEligibility(true)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [address, txHash, vote?.electionAddress])
+
+  useEffect(() => {
+    if (!errorMessage) return
+    addToast({ type: 'error', message: errorMessage })
+  }, [addToast, errorMessage])
+
+  useEffect(() => {
+    if (state !== 'success' || !vote) return
+    const candidateIds = isGrouped
+      ? sectionSelection.selectedSections.map((s) => s.candidateId)
+      : Array.from(selectedIds)
+    setHasVoted(true)
+    markVoted(vote.id, candidateIds)
+    if (isGrouped) {
       addToast({
         type: 'success',
-        message:
-          lang === 'ko'
-            ? `${displayedCandidateCount}명 선택 투표 완료! ⚡`
-            : `${displayedCandidateCount} selections submitted! ⚡`,
+        message: `${sectionSelection.selectedCount} ${lang === 'ko' ? '섹션 투표 완료! ⚡' : 'sections voted! ⚡'}`,
       })
     } else {
       addToast({
@@ -289,88 +248,34 @@ export function VoteDetailPage() {
             : `Voted for "${selectedCandidate?.name}"! ⚡`,
       })
     }
-
-    resetCandidateSelection()
-    sectionSelection.reset()
-    refreshVoteAccess().catch(() => {})
   }, [
     state,
     vote,
-    txHash,
     isGrouped,
-    displayedCandidateCount,
-    selectedCandidateIds,
+    sectionSelection,
+    selectedIds,
     selectedCandidate,
     markVoted,
-    resetCandidateSelection,
-    sectionSelection,
-    refreshVoteAccess,
     addToast,
     lang,
   ])
 
-  const handleConnectWallet = useCallback(() => {
-    const injectedConnector =
-      connectors.find((connector) => connector.id === 'injected') ?? connectors[0]
-    if (injectedConnector) {
-      connect({ connector: injectedConnector })
-    }
-  }, [connect, connectors])
-
   // Open danger modal when user taps the vote button
   const handleVoteClick = useCallback(() => {
-    if (!isConnected) {
-      handleConnectWallet()
-      return
-    }
-
-    if (
-      !vote ||
-      !hasOnchainElection ||
-      !isVoteActive ||
-      isVoteAccessPending ||
-      isVoteAccessBlocked ||
-      !activeCanSubmit
-    ) {
-      return
-    }
-
+    if (!activeCanSubmit || resolvedHasVoted || isEnded) return
     setDangerModalOpen(true)
-  }, [
-    isConnected,
-    handleConnectWallet,
-    vote,
-    hasOnchainElection,
-    isVoteActive,
-    isVoteAccessPending,
-    isVoteAccessBlocked,
-    activeCanSubmit,
-  ])
+  }, [activeCanSubmit, resolvedHasVoted, isEnded])
 
   // Called when user confirms in the danger modal
   const handleDangerConfirm = useCallback(() => {
     if (!vote) return
-
-    const candidateKeys = resolveSelectedCandidateKeys(vote, selectedCandidateIds)
-    if (!candidateKeys.length || candidateKeys.length !== selectedCandidateIds.length) {
-      addToast({
-        type: 'error',
-        message: lang === 'ko' ? '후보 정보를 다시 불러와주세요.' : 'Please refresh candidate data.',
-      })
-      return
-    }
-
     setDangerModalOpen(false)
     setSheetOpen(true)
-    // sungje : confirm 이후에는 UI id 배열이 아니라 컨트랙트/PRIVATE payload용 candidateKey 배열로 제출
-    submit({ vote, candidateKeys }).catch((error) => {
-      setSheetOpen(false)
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : t('vd_ballot_unavailable'),
-      })
-    })
-  }, [vote, selectedCandidateIds, submit, addToast, lang, t])
+    const candidateKeys = isGrouped
+      ? sectionSelection.selectedSections.map((s) => s.candidateId)
+      : Array.from(selectedIds)
+    submit(vote, candidateKeys)
+  }, [vote, isGrouped, sectionSelection.selectedSections, selectedIds, submit])
 
   const handleClose = useCallback(() => {
     if (state === 'loading') return
@@ -381,40 +286,30 @@ export function VoteDetailPage() {
   if (isLoading || !vote) return <LoadingSkeleton />
 
   // ── Action bar label ──────────────────────────────────────────────────────
-  const submitLabel = !isConnected
-    ? isConnectPending
-      ? lang === 'ko'
-        ? '지갑 연결 중…'
-        : 'Connecting wallet…'
-      : t('vd_connect_wallet')
-    : !hasOnchainElection
-      ? t('vd_onchain_pending')
-      : isVoteAccessPending
-        ? t('vd_checking_eligibility')
-        : showStoredVoteSelections
-          ? displayedCandidateCount > 1
-            ? `✓ ${displayedCandidateCount} ${lang === 'ko' ? '명 선택 제출 완료' : 'choices submitted'}`
-            : `✓ ${lang === 'ko' ? `"${selectedCandidate?.name ?? ''}" 투표 완료` : `Voted for "${selectedCandidate?.name ?? ''}"`}`
-          : isVoteEnded
-            ? t('vd_voting_ended')
-            : !isVoteActive || isVoteAccessBlocked
-              ? voteBlockedLabel
-              : isGrouped
-                ? activeCanSubmit
-                  ? `${sectionSelection.selectedCount} ${lang === 'ko' ? `섹션 선택됨 · ₩${sectionSelection.selectedCount * 100}` : `sections selected · ₩${sectionSelection.selectedCount * 100}`}`
-                  : t('vd_select_section')
-                : activeCanSubmit
-                  ? displayedCandidateCount > 1
-                    ? `${displayedCandidateCount} ${lang === 'ko' ? '명 선택하고 투표하기' : 'choices ready to vote'}`
-                    : `${lang === 'ko' ? `"${selectedCandidate?.name}" 투표` : `Vote for "${selectedCandidate?.name}"`}`
-                  : t('vd_select_candidate')
+  const submitLabel = resolvedHasVoted
+    ? isGrouped
+      ? `✓ ${votedSectionCount} ${lang === 'ko' ? '섹션 투표 완료!' : 'sections voted!'}`
+      : `✓ ${lang === 'ko' ? `"${selectedCandidate?.name ?? ''}" 투표 완료` : `Voted for "${selectedCandidate?.name ?? ''}"`}`
+    : isGrouped
+      ? activeCanSubmit
+        ? groupedSelectionLabel
+        : canSubmitByEligibility
+          ? t('vd_select_section')
+          : lang === 'ko'
+            ? '현재 제출 가능한 투표권이 없습니다.'
+            : 'No ballot available right now.'
+      : activeCanSubmit
+        ? `${lang === 'ko' ? `"${selectedCandidate?.name}" 투표` : `Vote for "${selectedCandidate?.name}"`}`
+        : canSubmitByEligibility
+          ? t('vd_select_candidate')
+          : lang === 'ko'
+            ? '현재 제출 가능한 투표권이 없습니다.'
+            : 'No ballot available right now.'
 
   // Danger modal target label
   const dangerTarget = isGrouped
     ? `${sectionSelection.selectedCount} ${lang === 'ko' ? '섹션' : `section${sectionSelection.selectedCount !== 1 ? 's' : ''}`}`
-    : displayedCandidateCount > 1
-      ? `${displayedCandidateCount} ${lang === 'ko' ? '명의 후보' : 'candidates'}`
-      : selectedCandidate
+    : selectedCandidate
       ? `"${selectedCandidate.name}"`
       : lang === 'ko'
         ? '선택된 후보'
@@ -433,10 +328,11 @@ export function VoteDetailPage() {
           <GroupedCandidateSection
             sections={vote.sections!}
             resultPublic={vote.resultPublic}
+            feeLabel={voteFeeLabel}
             isSelected={effectiveSectionIsSelected}
-            onToggle={isSelectionDisabled ? () => {} : sectionSelection.toggle}
-            isEnded={isSelectionDisabled}
-            votedCandidateIds={showStoredVoteSelections ? displayedCandidateIdSet : undefined}
+            onToggle={resolvedHasVoted || isEnded ? () => {} : sectionSelection.toggle}
+            isEnded={isEnded || resolvedHasVoted}
+            votedCandidateIds={votedCandidateIds}
           />
         ) : (
           <CandidateSection
@@ -444,9 +340,9 @@ export function VoteDetailPage() {
             maxChoices={vote.maxChoices}
             resultPublic={vote.resultPublic}
             isSelected={effectiveIsSelected}
-            onToggle={isSelectionDisabled ? () => {} : toggle}
-            isEnded={isSelectionDisabled}
-            votedCandidateIds={showStoredVoteSelections ? displayedCandidateIdSet : undefined}
+            onToggle={resolvedHasVoted || isEnded ? () => {} : toggle}
+            isEnded={isEnded || resolvedHasVoted}
+            votedCandidateIds={votedCandidateIds}
           />
         )}
       </div>
@@ -465,16 +361,7 @@ export function VoteDetailPage() {
           >
             {t('vd_switch_network')}
           </button>
-        ) : !isConnected ? (
-          <button
-            type="button"
-            onClick={handleConnectWallet}
-            disabled={isConnectPending}
-            className="w-full bg-[#7140FF] text-white rounded-2xl py-4 text-[15px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:cursor-default hover:enabled:opacity-85 transition-opacity active:enabled:scale-[0.99]"
-          >
-            {submitLabel}
-          </button>
-        ) : showStoredVoteSelections ? (
+        ) : resolvedHasVoted ? (
           <div className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-[rgba(34,197,94,0.12)] border border-[rgba(34,197,94,0.25)] text-[14px] font-semibold text-[#16a34a]">
             <img
               src={completeVoteIcon}
@@ -488,7 +375,7 @@ export function VoteDetailPage() {
             />
             {submitLabel}
           </div>
-        ) : isVoteEnded ? (
+        ) : isEnded ? (
           <div className="w-full py-4 rounded-2xl bg-[#F7F8FA] border border-[#E7E9ED] text-[14px] font-semibold text-[#707070] text-center cursor-default flex items-center justify-center gap-2">
             <svg
               width="16"
@@ -506,10 +393,6 @@ export function VoteDetailPage() {
             </svg>
             {t('vd_voting_ended')}
           </div>
-        ) : !hasOnchainElection || !isVoteActive || isVoteAccessPending || isVoteAccessBlocked ? (
-          <div className="w-full py-4 rounded-2xl bg-[#F7F8FA] border border-[#E7E9ED] text-[14px] font-semibold text-[#707070] text-center cursor-default">
-            {submitLabel}
-          </div>
         ) : (
           <button
             type="button"
@@ -526,18 +409,22 @@ export function VoteDetailPage() {
       <DangerConfirmModal
         open={dangerModalOpen}
         target={dangerTarget}
+        feeLabel={voteFeeLabel}
         onConfirm={handleDangerConfirm}
         onCancel={() => setDangerModalOpen(false)}
       />
 
-      <BottomSheet open={sheetOpen} onClose={handleClose} title={t('bs_title')}>
-        <VoteBottomSheetContent
-          state={state}
-          txHash={txHash}
-          karmaEarned={karmaEarned}
-          onClose={handleClose}
-        />
-      </BottomSheet>
+      {/* Bottom sheet — progress + receipt (only before voting) */}
+      {!resolvedHasVoted && !isEnded && (
+        <BottomSheet open={sheetOpen} onClose={handleClose} title={t('bs_title')}>
+          <VoteBottomSheetContent
+            state={state}
+            txHash={txHash}
+            karmaEarned={karmaEarned}
+            onClose={handleClose}
+          />
+        </BottomSheet>
+      )}
     </>
   )
 }

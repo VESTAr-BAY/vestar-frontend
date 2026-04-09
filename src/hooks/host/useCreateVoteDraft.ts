@@ -1,9 +1,10 @@
-import { useCallback, useState } from 'react'
-import { useSwitchChain, useWalletClient } from 'wagmi'
+import { useCallback, useEffect, useState } from 'react'
+import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { decodeEventLog, keccak256, parseUnits, toHex, zeroAddress, zeroHash } from 'viem'
 import type { Address, Hash, Hex } from 'viem'
+import { fetchVerifiedOrganizerByWallet } from '../../api/verifiedOrganizers'
 import { apiClient } from '../../config/api'
-import { vestarFactory, vestarOrganizer, vestarUtils } from '../../contracts/vestar/client'
+import { vestarFactory, vestarUtils } from '../../contracts/vestar/client'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { vestarContractAddresses } from '../../contracts/vestar/generated'
 import { vestarElectionFactoryAbi } from '../../contracts/vestar/generated/vestarElectionFactoryAbi'
@@ -11,11 +12,16 @@ import {
   VESTAR_BALLOT_POLICY,
   VESTAR_PAYMENT_MODE,
   VESTAR_VISIBILITY_MODE,
-  type VestarBallotPolicy,
   type ElectionConfigInput,
 } from '../../contracts/vestar/types'
+import type {
+  CandidateDraft,
+  CreateStep,
+  ElectionSettingsDraft,
+  SectionDraft,
+  VoteCreateDraft,
+} from '../../types/host'
 import { uploadJsonToPinata } from '../../utils/ipfs'
-import type { CandidateDraft, CreateStep, VoteCreateDraft } from '../../types/host'
 
 type SubmitVoteResult = {
   txHash: Hash
@@ -25,28 +31,6 @@ type SubmitVoteResult = {
     electionAddress: Address
     title: string
   }>
-}
-
-type CreateVoteDebugInfo = {
-  walletAddress?: Address
-  chainId?: number
-  seriesPreimage?: string
-  organizerVerified?: boolean
-  organizerTier?: number
-  canCreateElection?: boolean
-  stage?: string
-  errorMessage?: string
-}
-
-type FlattenedCandidate = {
-  id: string
-  candidateKey: string
-  imageFile?: File | null
-}
-
-type ElectionDraftUnit = {
-  title: string
-  candidates: FlattenedCandidate[]
 }
 
 type PreparePrivateElectionResponse = {
@@ -66,8 +50,21 @@ type PreparePrivateElectionResponse = {
     candidates: Array<{
       candidateKey: string
       displayOrder: number
+      imageUrl?: string | null
     }>
   }
+}
+
+type FlattenedCandidate = {
+  id: string
+  candidateKey: string
+  imageFile?: File | null
+}
+
+type SubmissionUnit = {
+  title: string
+  settings: ElectionSettingsDraft
+  candidates: FlattenedCandidate[]
 }
 
 let counter = 3
@@ -85,73 +82,160 @@ function makeBlankCandidate(): CandidateDraft {
   }
 }
 
+function buildDefaultSchedule() {
+  const start = new Date()
+  start.setSeconds(0, 0)
+
+  const end = new Date(start)
+  end.setHours(end.getHours() + 1)
+
+  const reveal = new Date(end)
+  reveal.setHours(reveal.getHours() + 1)
+
+  const format = (value: Date) => {
+    const year = value.getFullYear()
+    const month = String(value.getMonth() + 1).padStart(2, '0')
+    const day = String(value.getDate()).padStart(2, '0')
+    const hours = String(value.getHours()).padStart(2, '0')
+    const minutes = String(value.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  }
+
+  return {
+    startDate: format(start),
+    endDate: format(end),
+    resultRevealAt: format(reveal),
+  }
+}
+
+const defaultSchedule = buildDefaultSchedule()
+
+function buildDefaultElectionSettings(): ElectionSettingsDraft {
+  return {
+    startDate: defaultSchedule.startDate,
+    endDate: defaultSchedule.endDate,
+    resultRevealAt: defaultSchedule.resultRevealAt,
+    maxChoices: 1,
+    visibilityMode: 'PRIVATE',
+    ballotPolicy: 'ONE_PER_ELECTION',
+    paymentMode: 'FREE',
+    costPerBallotEth: '0',
+    minKarmaTier: '0',
+    resetIntervalValue: '24',
+    resetIntervalUnit: 'HOUR',
+    resultReveal: 'after_end',
+  }
+}
+
 const INITIAL_DRAFT: VoteCreateDraft = {
   title: '',
+  electionTitle: '',
   group: '',
   bannerImage: '',
   bannerImageFile: null,
   category: '음악방송',
-  visibility: 'PRIVATE',
   candidates: [makeBlankCandidate(), makeBlankCandidate()],
   sections: [],
-  startDate: '',
-  endDate: '',
-  revealDate: '',
-  maxChoices: 1,
-  resultReveal: 'after_end',
-  votePolicy: 'ONE_TIME',
-  resetIntervalValue: 1,
-  resetIntervalUnit: 'days',
-  paymentType: 'FREE',
-  costPerBallot: 0,
-  minKarmaTier: 0,
+  ...buildDefaultElectionSettings(),
 }
 
-function flattenCandidates(draft: VoteCreateDraft): FlattenedCandidate[] {
+function isStep1Valid(draft: VoteCreateDraft): boolean {
+  return draft.title.trim().length > 0
+}
+
+function hasDuplicateCandidateNames(draft: VoteCreateDraft) {
   if (draft.sections.length > 0) {
-    return draft.sections.flatMap((section) =>
-      section.candidates.map((candidate) => ({
-        id: candidate.id,
-        candidateKey: candidate.name.trim(),
-        imageFile: candidate.imageFile ?? null,
-      })),
+    return draft.sections.some((section) => {
+      const normalized = section.candidates.map((candidate) => candidate.name.trim()).filter(Boolean)
+      return new Set(normalized).size !== normalized.length
+    })
+  }
+
+  const normalized = draft.candidates.map((candidate) => candidate.name.trim()).filter(Boolean)
+  return new Set(normalized).size !== normalized.length
+}
+
+function isStep2Valid(draft: VoteCreateDraft): boolean {
+  if (hasDuplicateCandidateNames(draft)) return false
+
+  if (draft.sections.length > 0) {
+    return draft.sections.every(
+      (section) =>
+        section.name.trim().length > 0 &&
+        section.candidates.length >= 2 &&
+        section.candidates.every((candidate) => candidate.name.trim().length > 0),
     )
   }
 
-  return draft.candidates.map((candidate) => ({
-    id: candidate.id,
-    candidateKey: candidate.name.trim(),
-    imageFile: candidate.imageFile ?? null,
-  }))
+  if (draft.electionTitle.trim().length === 0) return false
+
+  return (
+    draft.candidates.length >= 2 && draft.candidates.every((candidate) => candidate.name.trim().length > 0)
+  )
 }
 
-function hasUniqueCandidateKeys(candidates: FlattenedCandidate[]): boolean {
-  const uniqueKeys = new Set(candidates.map((candidate) => candidate.candidateKey.toLowerCase()))
-  return uniqueKeys.size === candidates.length
-}
+function isStep3Valid(draft: VoteCreateDraft): boolean {
+  const validateSettings = (settings: ElectionSettingsDraft, candidateCount: number) => {
+    if (!settings.startDate.trim() || !settings.endDate.trim() || !settings.resultRevealAt.trim()) {
+      return false
+    }
 
-function getCandidateCount(draft: VoteCreateDraft): number {
-  return flattenCandidates(draft).length
-}
+    const startAt = Date.parse(settings.startDate)
+    const endAt = Date.parse(settings.endDate)
+    const resultRevealAt = Date.parse(settings.resultRevealAt)
 
-function getElectionUnits(draft: VoteCreateDraft): ElectionDraftUnit[] {
-  if (draft.sections.length > 0) {
-    return draft.sections.map((section) => ({
-      title: section.name.trim(),
-      candidates: section.candidates.map((candidate) => ({
-        id: candidate.id,
-        candidateKey: candidate.name.trim(),
-        imageFile: candidate.imageFile ?? null,
-      })),
-    }))
+    if (!Number.isFinite(startAt) || !Number.isFinite(endAt) || !Number.isFinite(resultRevealAt)) {
+      return false
+    }
+
+    if (startAt >= endAt) return false
+    if (settings.visibilityMode === 'PRIVATE' && resultRevealAt < endAt) return false
+
+    if (settings.ballotPolicy === 'ONE_PER_INTERVAL') {
+      const interval = Number(settings.resetIntervalValue)
+      if (!Number.isFinite(interval) || interval <= 0) return false
+    }
+
+    if (settings.paymentMode === 'PAID') {
+      const price = Number(settings.costPerBallotEth)
+      if (!Number.isFinite(price) || price <= 0) return false
+    }
+
+    return settings.maxChoices >= 1 && settings.maxChoices <= Math.max(candidateCount, 1)
   }
 
-  return [
-    {
-      title: draft.title.trim(),
-      candidates: flattenCandidates(draft),
-    },
-  ]
+  if (draft.sections.length > 0) {
+    return draft.sections.every((section) => validateSettings(section, section.candidates.length))
+  }
+
+  return validateSettings(draft, draft.candidates.length)
+}
+
+function validateStep(step: CreateStep, draft: VoteCreateDraft): boolean {
+  if (step === 1) return isStep1Valid(draft)
+  if (step === 2) return isStep2Valid(draft)
+  return isStep3Valid(draft)
+}
+
+async function uploadImage(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await apiClient.post<{ url: string }>('/uploads/candidate-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+
+  return response.data.url
+}
+
+function convertResetIntervalToSeconds(value: string, unit: VoteCreateDraft['resetIntervalUnit']) {
+  const numericValue = Number(value)
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    throw new Error('유효한 투표권 갱신 주기를 입력하세요.')
+  }
+
+  return unit === 'DAY' ? numericValue * 86_400 : unit === 'HOUR' ? numericValue * 3_600 : numericValue * 60
 }
 
 function buildCanonicalManifest(candidates: FlattenedCandidate[]) {
@@ -172,10 +256,8 @@ function buildManifestMetadata(
 ) {
   return {
     title: electionTitle,
-    seriesPreimage: draft.sections.length > 0 ? draft.title.trim() : (draft.group || draft.title).trim(),
+    seriesPreimage: draft.title.trim(),
     category: draft.category,
-    visibility: draft.visibility,
-    resultReveal: draft.resultReveal,
     coverImageUrl: bannerImageUrl,
     candidates: candidates.map((candidate, index) => ({
       candidateKey: candidate.candidateKey,
@@ -196,111 +278,15 @@ function buildManifestUriFallback(manifest: unknown): string {
   return `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(manifest))}`
 }
 
-function getResetIntervalSeconds(draft: VoteCreateDraft): number {
-  if (draft.votePolicy !== 'PERIODIC') return 0
-
-  if (draft.resetIntervalUnit === 'days') return draft.resetIntervalValue * 24 * 60 * 60
-  if (draft.resetIntervalUnit === 'hours') return draft.resetIntervalValue * 60 * 60
-  return draft.resetIntervalValue * 60
-}
-
-function getBallotPolicy(draft: VoteCreateDraft): VestarBallotPolicy {
-  if (draft.votePolicy === 'PERIODIC') return VESTAR_BALLOT_POLICY.ONE_PER_INTERVAL
-  if (draft.votePolicy === 'UNLIMITED') return VESTAR_BALLOT_POLICY.UNLIMITED_PAID
-  return VESTAR_BALLOT_POLICY.ONE_PER_ELECTION
-}
-
-function getVisibilityFromResultReveal(resultReveal: VoteCreateDraft['resultReveal']) {
-  return resultReveal === 'immediate' ? 'OPEN' : 'PRIVATE'
-}
-
-function getResultRevealAt(draft: VoteCreateDraft, endAt: number): number {
-  if (draft.resultReveal === 'immediate') return endAt
-  return Math.floor(new Date(draft.revealDate).getTime() / 1000)
-}
-
 function extractPublicKeyValue(publicKey: PreparePrivateElectionResponse['publicKey']): string {
   return typeof publicKey === 'string' ? publicKey : publicKey.value
-}
-
-function isStep1Valid(draft: VoteCreateDraft): boolean {
-  return draft.title.trim().length > 0
-}
-
-function isStep2Valid(draft: VoteCreateDraft): boolean {
-  const candidates = flattenCandidates(draft)
-
-  if (draft.sections.length > 0) {
-    const sectionsValid = draft.sections.every(
-      (section) =>
-        section.name.trim().length > 0 &&
-        section.candidates.length >= 2 &&
-        section.candidates.every((candidate) => candidate.name.trim().length > 0),
-    )
-
-    return sectionsValid && hasUniqueCandidateKeys(candidates)
-  }
-
-  return (
-    draft.candidates.length >= 2 &&
-    draft.candidates.every((candidate) => candidate.name.trim().length > 0) &&
-    hasUniqueCandidateKeys(candidates)
-  )
-}
-
-function isStep3Valid(draft: VoteCreateDraft): boolean {
-  if (!draft.startDate || !draft.endDate || !draft.revealDate) return false
-
-  const startAt = new Date(draft.startDate)
-  const endAt = new Date(draft.endDate)
-  const revealAt = new Date(draft.revealDate)
-
-  return endAt > startAt && revealAt >= endAt && draft.maxChoices >= 1 && draft.maxChoices < getCandidateCount(draft)
-}
-
-function isStep4Valid(draft: VoteCreateDraft): boolean {
-  if (!Number.isInteger(draft.minKarmaTier) || draft.minKarmaTier < 0 || draft.minKarmaTier > 255) {
-    return false
-  }
-
-  if (draft.paymentType === 'PAID' && (draft.costPerBallot <= 0 || draft.costPerBallot > 100)) {
-    return false
-  }
-
-  if (draft.votePolicy === 'PERIODIC' && draft.resetIntervalValue <= 0) {
-    return false
-  }
-
-  return true
-}
-
-function validateStep(step: CreateStep, draft: VoteCreateDraft): boolean {
-  if (step === 1) return isStep1Valid(draft)
-  if (step === 2) return isStep2Valid(draft)
-  if (step === 3) return isStep3Valid(draft)
-  return isStep4Valid(draft)
-}
-
-async function uploadImage(file: File): Promise<string> {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  const response = await apiClient.post<{ url: string }>('/uploads/candidate-image', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  })
-
-  return response.data.url
 }
 
 async function parseElectionAddress(txHash: Hash): Promise<Address> {
   const receipt = await vestarUtils.waitForReceipt(txHash)
 
   for (const log of receipt.logs) {
-    if (log.address.toLowerCase() !== vestarContractAddresses.electionFactory.toLowerCase()) {
-      continue
-    }
+    if (log.address.toLowerCase() !== vestarContractAddresses.electionFactory.toLowerCase()) continue
 
     try {
       const parsed = decodeEventLog({
@@ -322,9 +308,14 @@ async function parseElectionAddress(txHash: Hash): Promise<Address> {
 
 export interface UseCreateVoteDraftResult {
   draft: VoteCreateDraft
+  organizationName: string
   step: CreateStep
   isCurrentStepValid: boolean
-  debugInfo: CreateVoteDebugInfo | null
+  submissionProgress: {
+    current: number
+    total: number
+    currentTitle: string | null
+  }
   updateField: <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => void
   addCandidate: () => void
   removeCandidate: (id: string) => void
@@ -336,6 +327,11 @@ export interface UseCreateVoteDraftResult {
   addSection: () => void
   removeSection: (sectionId: string) => void
   updateSectionName: (sectionId: string, name: string) => void
+  updateSectionField: <K extends keyof ElectionSettingsDraft>(
+    sectionId: string,
+    key: K,
+    value: ElectionSettingsDraft[K],
+  ) => void
   addCandidateToSection: (sectionId: string) => void
   removeCandidateFromSection: (sectionId: string, candidateId: string) => void
   updateSectionCandidate: (
@@ -355,59 +351,74 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
   const [draft, setDraft] = useState<VoteCreateDraft>(INITIAL_DRAFT)
   const [step, setStep] = useState<CreateStep>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  // DEBUG: create preflight/result snapshot. Remove after create flow is stable.
-  const [debugInfo, setDebugInfo] = useState<CreateVoteDebugInfo | null>(null)
+  const [submissionProgress, setSubmissionProgress] = useState({
+    current: 0,
+    total: 0,
+    currentTitle: null as string | null,
+  })
+  const { address, isConnected } = useAccount()
+  const chainId = useChainId()
   const { data: walletClient } = useWalletClient()
   const { switchChainAsync } = useSwitchChain()
 
   const isCurrentStepValid = validateStep(step, draft)
 
+  useEffect(() => {
+    let cancelled = false
+
+    if (!isConnected || !address) {
+      setDraft((prev) => ({ ...prev, group: '' }))
+      return
+    }
+
+    fetchVerifiedOrganizerByWallet(address)
+      .then((organizer) => {
+        if (cancelled) return
+        setDraft((prev) => ({ ...prev, group: organizer?.organizationName ?? '' }))
+      })
+      .catch(() => {
+        if (cancelled) return
+        setDraft((prev) => ({ ...prev, group: '' }))
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [address, isConnected])
+
   const updateField = useCallback(
     <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => {
       setDraft((prev) => {
-        const nextDraft = { ...prev, [key]: value } as VoteCreateDraft
-        const candidateCount = getCandidateCount(nextDraft)
-        const maxAllowed = Math.max(1, candidateCount - 1)
-
-        if (key === 'votePolicy' && value === 'UNLIMITED') {
-          nextDraft.paymentType = 'PAID'
-          nextDraft.costPerBallot = 100
-          nextDraft.maxChoices = 1
+        if (key === 'visibilityMode') {
+          return {
+            ...prev,
+            visibilityMode: value as VoteCreateDraft['visibilityMode'],
+            resultReveal: value === 'OPEN' ? 'immediate' : 'after_end',
+          }
         }
 
-        if (key === 'resultReveal') {
-          nextDraft.visibility = getVisibilityFromResultReveal(value as VoteCreateDraft['resultReveal'])
+        if (key === 'paymentMode' && value === 'FREE') {
+          return { ...prev, paymentMode: 'FREE', costPerBallotEth: '0' }
         }
 
-        if (key === 'paymentType' && value === 'FREE' && nextDraft.votePolicy !== 'UNLIMITED') {
-          nextDraft.costPerBallot = 0
-        }
-
-        if (key === 'maxChoices' && typeof value === 'number' && value > maxAllowed) {
-          nextDraft.maxChoices = maxAllowed
-        }
-
-        return nextDraft
+        return { ...prev, [key]: value }
       })
     },
     [],
   )
 
   const addCandidate = useCallback(() => {
-    setDraft((prev) => ({ ...prev, candidates: [...prev.candidates, makeBlankCandidate()] }))
+    setDraft((prev) => ({
+      ...prev,
+      candidates: [...prev.candidates, makeBlankCandidate()],
+    }))
   }, [])
 
   const removeCandidate = useCallback((id: string) => {
-    setDraft((prev) => {
-      const candidates = prev.candidates.filter((candidate) => candidate.id !== id)
-      const maxAllowed = Math.max(1, candidates.length - 1)
-
-      return {
-        ...prev,
-        candidates,
-        maxChoices: Math.min(prev.maxChoices, maxAllowed),
-      }
-    })
+    setDraft((prev) => ({
+      ...prev,
+      candidates: prev.candidates.filter((candidate) => candidate.id !== id),
+    }))
   }, [])
 
   const updateCandidate = useCallback(
@@ -427,59 +438,106 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
   )
 
   const addSection = useCallback(() => {
-    setDraft((prev) => ({
-      ...prev,
-      sections: [
-        ...prev.sections,
-        {
-          id: makeId(),
-          name: '',
-          candidates: [makeBlankCandidate(), makeBlankCandidate()],
-        },
-      ],
-    }))
+    setDraft((prev) => {
+      const defaultCandidates =
+        prev.sections.length === 0
+          ? prev.candidates.map((candidate) => ({ ...candidate, id: makeId() }))
+          : [makeBlankCandidate(), makeBlankCandidate()]
+
+      const newSection: SectionDraft = {
+        id: makeId(),
+        name: '',
+        candidates: defaultCandidates,
+        startDate: prev.startDate,
+        endDate: prev.endDate,
+        resultRevealAt: prev.resultRevealAt,
+        maxChoices: prev.maxChoices,
+        visibilityMode: prev.visibilityMode,
+        ballotPolicy: prev.ballotPolicy,
+        paymentMode: prev.paymentMode,
+        costPerBallotEth: prev.costPerBallotEth,
+        minKarmaTier: prev.minKarmaTier,
+        resetIntervalValue: prev.resetIntervalValue,
+        resetIntervalUnit: prev.resetIntervalUnit,
+        resultReveal: prev.resultReveal,
+      }
+
+      return { ...prev, sections: [...prev.sections, newSection], electionTitle: '' }
+    })
   }, [])
 
   const removeSection = useCallback((sectionId: string) => {
-    setDraft((prev) => ({ ...prev, sections: prev.sections.filter((section) => section.id !== sectionId) }))
+    setDraft((prev) => ({
+      ...prev,
+      sections: prev.sections.filter((section) => section.id !== sectionId),
+    }))
   }, [])
 
   const updateSectionName = useCallback((sectionId: string, name: string) => {
     setDraft((prev) => ({
       ...prev,
-      sections: prev.sections.map((section) => (section.id === sectionId ? { ...section, name } : section)),
+      sections: prev.sections.map((section) =>
+        section.id === sectionId ? { ...section, name } : section,
+      ),
     }))
   }, [])
+
+  const updateSectionField = useCallback(
+    <K extends keyof ElectionSettingsDraft>(
+      sectionId: string,
+      key: K,
+      value: ElectionSettingsDraft[K],
+    ) => {
+      setDraft((prev) => ({
+        ...prev,
+        sections: prev.sections.map((section) => {
+          if (section.id !== sectionId) return section
+
+          if (key === 'visibilityMode') {
+            return {
+              ...section,
+              visibilityMode: value as ElectionSettingsDraft['visibilityMode'],
+              resultReveal: value === 'OPEN' ? 'immediate' : 'after_end',
+            }
+          }
+
+          if (key === 'paymentMode' && value === 'FREE') {
+            return { ...section, paymentMode: 'FREE', costPerBallotEth: '0' }
+          }
+
+          return { ...section, [key]: value }
+        }),
+      }))
+    },
+    [],
+  )
 
   const addCandidateToSection = useCallback((sectionId: string) => {
     setDraft((prev) => ({
       ...prev,
       sections: prev.sections.map((section) =>
         section.id === sectionId
-          ? { ...section, candidates: [...section.candidates, makeBlankCandidate()] }
+          ? {
+              ...section,
+              candidates: [...section.candidates, makeBlankCandidate()],
+            }
           : section,
       ),
     }))
   }, [])
 
   const removeCandidateFromSection = useCallback((sectionId: string, candidateId: string) => {
-    setDraft((prev) => {
-      const sections = prev.sections.map((section) =>
+    setDraft((prev) => ({
+      ...prev,
+      sections: prev.sections.map((section) =>
         section.id === sectionId
           ? {
               ...section,
               candidates: section.candidates.filter((candidate) => candidate.id !== candidateId),
             }
           : section,
-      )
-      const maxAllowed = Math.max(1, getCandidateCount({ ...prev, sections }) - 1)
-
-      return {
-        ...prev,
-        sections,
-        maxChoices: Math.min(prev.maxChoices, maxAllowed),
-      }
-    })
+      ),
+    }))
   }, [])
 
   const updateSectionCandidate = useCallback(
@@ -507,14 +565,14 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
   )
 
   const clearSections = useCallback(() => {
-    setDraft((prev) => {
-      const maxAllowed = Math.max(1, prev.candidates.length - 1)
-      return { ...prev, sections: [], maxChoices: Math.min(prev.maxChoices, maxAllowed) }
-    })
+    setDraft((prev) => ({ ...prev, sections: [] }))
   }, [])
 
   const nextStep = useCallback(() => {
-    setStep((prev) => (validateStep(prev, draft) ? (Math.min(prev + 1, 4) as CreateStep) : prev))
+    setStep((prev) => {
+      if (!validateStep(prev, draft)) return prev
+      return Math.min(prev + 1, 3) as CreateStep
+    })
   }, [draft])
 
   const prevStep = useCallback(() => {
@@ -526,44 +584,32 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
       throw new Error('Status Network Testnet에 연결된 지갑이 필요합니다.')
     }
 
-    const startAt = Math.floor(new Date(draft.startDate).getTime() / 1000)
-    const endAt = Math.floor(new Date(draft.endDate).getTime() / 1000)
-    const resultRevealAt = getResultRevealAt(draft, endAt)
-    const seriesPreimage =
-      draft.sections.length > 0 ? draft.title.trim() : (draft.group || draft.title).trim()
-    const electionUnits = getElectionUnits(draft)
+    if (!validateStep(3, draft)) {
+      throw new Error('투표 입력값이 아직 완성되지 않았습니다.')
+    }
 
     setIsSubmitting(true)
 
     try {
-      // DEBUG: capture organizer eligibility before simulate/write. Remove after create flow is stable.
-      const [organizerVerified, organizerTier] = await Promise.all([
-        vestarOrganizer.isVerified(walletClient.account.address),
-        vestarOrganizer.getKarmaTier(walletClient.account.address),
-      ])
-      const canCreateElection = await vestarOrganizer.canCreateElection(
-        walletClient.account.address,
-        organizerTier,
-      )
-
-      setDebugInfo({
-        walletAddress: walletClient.account.address,
-        chainId: walletClient.chain?.id,
-        seriesPreimage,
-        organizerVerified,
-        organizerTier,
-        canCreateElection,
-        stage: 'preflight_checked',
-      })
-
-      if (walletClient.chain?.id !== vestarStatusTestnetChain.id) {
-        if (switchChainAsync) {
-          await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
-        }
-        throw new Error('Status Network Testnet으로 네트워크를 전환한 뒤 다시 시도해 주세요.')
+      if (chainId !== vestarStatusTestnetChain.id) {
+        await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
       }
 
-      const allCandidates = electionUnits.flatMap((unit) => unit.candidates)
+      const allCandidates =
+        draft.sections.length > 0
+          ? draft.sections.flatMap((section) =>
+              section.candidates.map((candidate) => ({
+                id: candidate.id,
+                candidateKey: candidate.name.trim(),
+                imageFile: candidate.imageFile ?? null,
+              })),
+            )
+          : draft.candidates.map((candidate) => ({
+              id: candidate.id,
+              candidateKey: candidate.name.trim(),
+              imageFile: candidate.imageFile ?? null,
+            }))
+
       const [bannerImageUrl, candidateImageEntries] = await Promise.all([
         draft.bannerImageFile ? uploadImage(draft.bannerImageFile) : Promise.resolve<string | null>(null),
         Promise.all(
@@ -578,24 +624,66 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         candidateImageEntries.filter((entry): entry is [string, string] => entry[1] !== null),
       )
 
+      const electionDrafts: SubmissionUnit[] =
+        draft.sections.length > 0
+          ? draft.sections.map((section) => ({
+              title: section.name.trim(),
+              settings: section,
+              candidates: section.candidates.map((candidate) => ({
+                id: candidate.id,
+                candidateKey: candidate.name.trim(),
+                imageFile: candidate.imageFile ?? null,
+              })),
+            }))
+          : [
+              {
+                title: draft.electionTitle.trim(),
+                settings: draft,
+                candidates: draft.candidates.map((candidate) => ({
+                  id: candidate.id,
+                  candidateKey: candidate.name.trim(),
+                  imageFile: candidate.imageFile ?? null,
+                })),
+              },
+            ]
+
       const elections: SubmitVoteResult['elections'] = []
 
-      for (const unit of electionUnits) {
-        const canonicalManifest = buildCanonicalManifest(unit.candidates)
+      setSubmissionProgress({
+        current: 0,
+        total: electionDrafts.length,
+        currentTitle: null,
+      })
+
+      for (const [index, electionDraft] of electionDrafts.entries()) {
+        setSubmissionProgress({
+          current: index + 1,
+          total: electionDrafts.length,
+          currentTitle: electionDraft.title,
+        })
+
+        if (electionDraft.candidates.length < 2) {
+          throw new Error('후보는 최소 2명 이상이어야 합니다.')
+        }
+
+        const normalizedKeys = electionDraft.candidates.map((candidate) => candidate.candidateKey)
+        if (new Set(normalizedKeys).size !== normalizedKeys.length) {
+          throw new Error('후보명은 같은 투표 안에서 중복될 수 없습니다.')
+        }
+
+        const canonicalManifest = buildCanonicalManifest(electionDraft.candidates)
         const manifestMetadata = buildManifestMetadata(
           draft,
-          unit.title,
-          unit.candidates,
+          electionDraft.title,
+          electionDraft.candidates,
           candidateImageUrls,
           bannerImageUrl,
         )
-        let candidateManifestURI = buildManifestUriFallback(manifestMetadata)
 
+        let candidateManifestURI = buildManifestUriFallback(manifestMetadata)
         try {
           const uploadedManifestUri = await uploadJsonToPinata(manifestMetadata)
-          if (uploadedManifestUri) {
-            candidateManifestURI = uploadedManifestUri
-          }
+          if (uploadedManifestUri) candidateManifestURI = uploadedManifestUri
         } catch {
           candidateManifestURI = buildManifestUriFallback(manifestMetadata)
         }
@@ -608,19 +696,19 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         let keySchemeVersion: number
         let manifestForChain = canonicalManifest.candidates
 
-        if (draft.visibility === 'PRIVATE') {
+        if (electionDraft.settings.visibilityMode === 'PRIVATE') {
           const prepareResponse = await apiClient.post<PreparePrivateElectionResponse>(
             '/private-elections/prepare',
             {
-              seriesPreimage,
-              groupKey: seriesPreimage,
+              seriesPreimage: draft.title.trim(),
               seriesCoverImageUrl: bannerImageUrl,
-              title: unit.title,
+              title: electionDraft.title,
               coverImageUrl: bannerImageUrl,
               candidateManifestPreimage: {
-                candidates: canonicalManifest.candidates.map((candidate, index) => ({
+                candidates: canonicalManifest.candidates.map((candidate, candidateIndex) => ({
                   ...candidate,
-                  imageUrl: candidateImageUrls.get(unit.candidates[index].id) ?? null,
+                  imageUrl:
+                    candidateImageUrls.get(electionDraft.candidates[candidateIndex].id) ?? null,
                 })),
               },
             },
@@ -634,38 +722,63 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
           keySchemeVersion = Number(prepareResponse.data.keySchemeVersion)
           manifestForChain = prepareResponse.data.candidateManifestPreimage.candidates
         } else {
-          seriesId = keccak256(toHex(seriesPreimage))
-          titleHash = keccak256(toHex(unit.title))
+          seriesId = keccak256(toHex(draft.title.trim()))
+          titleHash = keccak256(toHex(electionDraft.title))
           candidateManifestHash = keccak256(toHex(JSON.stringify(canonicalManifest)))
           electionPublicKey = '0x'
           privateKeyCommitmentHash = zeroHash
           keySchemeVersion = 0
         }
 
-        const costPerBallot =
-          draft.paymentType === 'PAID' ? parseUnits(String(draft.costPerBallot), 6) : 0n
+        const normalizedAllowMultipleChoice =
+          electionDraft.settings.ballotPolicy === 'UNLIMITED_PAID'
+            ? false
+            : electionDraft.settings.maxChoices > 1
+        const normalizedMaxSelectionsPerSubmission = normalizedAllowMultipleChoice
+          ? Math.max(2, electionDraft.settings.maxChoices)
+          : 1
 
         const config: ElectionConfigInput = {
           seriesId,
           visibilityMode:
-            draft.visibility === 'PRIVATE' ? VESTAR_VISIBILITY_MODE.PRIVATE : VESTAR_VISIBILITY_MODE.OPEN,
+            electionDraft.settings.visibilityMode === 'PRIVATE'
+              ? VESTAR_VISIBILITY_MODE.PRIVATE
+              : VESTAR_VISIBILITY_MODE.OPEN,
           titleHash,
           candidateManifestHash,
           candidateManifestURI,
-          startAt,
-          endAt,
-          resultRevealAt,
-          minKarmaTier: draft.minKarmaTier,
-          ballotPolicy: getBallotPolicy(draft),
-          resetInterval: getResetIntervalSeconds(draft),
+          startAt: Math.floor(Date.parse(electionDraft.settings.startDate) / 1000),
+          endAt: Math.floor(Date.parse(electionDraft.settings.endDate) / 1000),
+          resultRevealAt: Math.floor(Date.parse(electionDraft.settings.resultRevealAt) / 1000),
+          minKarmaTier: Number(electionDraft.settings.minKarmaTier),
+          ballotPolicy:
+            electionDraft.settings.ballotPolicy === 'ONE_PER_ELECTION'
+              ? VESTAR_BALLOT_POLICY.ONE_PER_ELECTION
+              : electionDraft.settings.ballotPolicy === 'ONE_PER_INTERVAL'
+                ? VESTAR_BALLOT_POLICY.ONE_PER_INTERVAL
+                : VESTAR_BALLOT_POLICY.UNLIMITED_PAID,
+          resetInterval:
+            electionDraft.settings.ballotPolicy === 'ONE_PER_INTERVAL'
+              ? convertResetIntervalToSeconds(
+                  electionDraft.settings.resetIntervalValue,
+                  electionDraft.settings.resetIntervalUnit,
+                )
+              : 0,
           paymentMode:
-            draft.paymentType === 'PAID' ? VESTAR_PAYMENT_MODE.PAID : VESTAR_PAYMENT_MODE.FREE,
-          costPerBallot,
-          allowMultipleChoice: draft.maxChoices > 1,
-          maxSelectionsPerSubmission: draft.maxChoices,
+            electionDraft.settings.paymentMode === 'PAID'
+              ? VESTAR_PAYMENT_MODE.PAID
+              : VESTAR_PAYMENT_MODE.FREE,
+          costPerBallot:
+            electionDraft.settings.paymentMode === 'PAID'
+              ? parseUnits(electionDraft.settings.costPerBallotEth || '0', 6)
+              : 0n,
+          allowMultipleChoice: normalizedAllowMultipleChoice,
+          maxSelectionsPerSubmission: normalizedMaxSelectionsPerSubmission,
           timezoneWindowOffset: -new Date().getTimezoneOffset() * 60,
           paymentToken:
-            draft.paymentType === 'PAID' ? vestarContractAddresses.mockUsdt : zeroAddress,
+            electionDraft.settings.paymentMode === 'PAID'
+              ? vestarContractAddresses.mockUsdt
+              : zeroAddress,
           electionPublicKey,
           privateKeyCommitmentHash,
           keySchemeVersion,
@@ -675,57 +788,39 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
           keccak256(toHex(candidate.candidateKey)),
         )
 
-        setDebugInfo((prev) => ({
-          ...prev,
-          walletAddress: walletClient.account.address,
-          chainId: walletClient.chain?.id,
-          stage: `submitting_${unit.title}`,
-        }))
-
         const txHash = await vestarFactory.createElection(walletClient, config, initialCandidateHashes)
         const electionAddress = await parseElectionAddress(txHash)
 
         elections.push({
           txHash,
           electionAddress,
-          title: unit.title,
+          title: electionDraft.title,
         })
       }
 
       const lastElection = elections[elections.length - 1]
-
-      setDebugInfo((prev) => ({
-        ...prev,
-        walletAddress: walletClient.account.address,
-        chainId: walletClient.chain?.id,
-        stage: 'submitted',
-      }))
 
       return {
         txHash: lastElection.txHash,
         electionAddress: lastElection.electionAddress,
         elections,
       }
-    } catch (error) {
-      setDebugInfo((prev) => ({
-        ...prev,
-        walletAddress: walletClient.account.address,
-        chainId: walletClient.chain?.id,
-        seriesPreimage,
-        stage: 'failed',
-        errorMessage: error instanceof Error ? error.message : String(error),
-      }))
-      throw error
     } finally {
       setIsSubmitting(false)
+      setSubmissionProgress({
+        current: 0,
+        total: 0,
+        currentTitle: null,
+      })
     }
-  }, [draft, switchChainAsync, walletClient])
+  }, [chainId, draft, switchChainAsync, walletClient])
 
   return {
     draft,
+    organizationName: draft.group,
     step,
     isCurrentStepValid,
-    debugInfo,
+    submissionProgress,
     updateField,
     addCandidate,
     removeCandidate,
@@ -733,6 +828,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     addSection,
     removeSection,
     updateSectionName,
+    updateSectionField,
     addCandidateToSection,
     removeCandidateFromSection,
     updateSectionCandidate,

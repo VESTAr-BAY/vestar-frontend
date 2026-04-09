@@ -1,192 +1,126 @@
 import { useCallback, useState } from 'react'
-import { useSwitchChain, useWalletClient } from 'wagmi'
-import type { Address, Hash, WalletClient } from 'viem'
+import { useChainId, useWalletClient, useSwitchChain } from 'wagmi'
+import type { Address } from 'viem'
 import {
-  approveErc20Spending,
-  getErc20Allowance,
-  quoteElectionPayment,
+  canAccountSubmitBallot,
+  getElectionRemainingBallots,
+  getElectionState,
   submitEncryptedVote,
   submitOpenVote,
   waitForVestarTransactionReceipt,
 } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
-import { encryptPrivateBallot } from '../../contracts/vestar/privateBallot'
+import { VESTAR_ELECTION_STATE } from '../../contracts/vestar/types'
 import type { VoteDetailData } from '../../types/vote'
+import { encryptBallotWithPublicKey, randomNonceHex } from '../../utils/privateBallot'
 
 export type SubmitState = 'idle' | 'loading' | 'success'
-
-export interface VoteSubmitInput {
-  vote: Pick<
-    VoteDetailData,
-    | 'electionAddress'
-    | 'electionId'
-    | 'visibilityMode'
-    | 'paymentMode'
-    | 'paymentToken'
-    | 'electionPublicKey'
-  >
-  candidateKeys: string[]
-}
 
 export interface VoteSubmitResult {
   state: SubmitState
   txHash: string | null
+  errorMessage: string | null
   karmaEarned: number
-  submit: (input: VoteSubmitInput) => Promise<void>
+  submit: (vote: VoteDetailData | null, candidateKeys: string[]) => Promise<void>
   reset: () => void
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message
-  }
-
-  return String(error)
-}
-
-function normalizeVoteSubmitError(error: unknown) {
-  const message = getErrorMessage(error).toLowerCase()
-
-  if (
-    message.includes('user rejected') ||
-    message.includes('user denied') ||
-    message.includes('rejected the request')
-  ) {
-    return new Error('지갑 요청이 취소됐어요.')
-  }
-
-  if (message.includes('wallet not connected')) {
-    return new Error('지갑을 연결한 뒤 다시 시도해주세요.')
-  }
-
-  if (message.includes('election not active')) {
-    return new Error('지금은 투표할 수 없는 상태예요.')
-  }
-
-  if (message.includes('ballot unavailable')) {
-    return new Error('현재 조건으로는 투표할 수 없어요. 지갑 자격과 남은 투표권을 확인해주세요.')
-  }
-
-  if (message.includes('candidate') || message.includes('selection')) {
-    return new Error('후보 선택을 다시 확인해주세요.')
-  }
-
-  if (message.includes('allowance') || message.includes('insufficient')) {
-    return new Error('결제 토큰 승인 상태를 확인한 뒤 다시 시도해주세요.')
-  }
-
-  if (message.includes('public key')) {
-    return new Error('비공개 투표용 공개키를 아직 불러오지 못했어요.')
-  }
-
-  return new Error('투표 제출 중 문제가 생겼어요. 다시 시도해주세요.')
-}
-
-async function ensureElectionPaymentApproval(
-  walletClient: WalletClient,
-  vote: VoteSubmitInput['vote'],
-) {
-  if (vote.paymentMode !== 'PAID' || !vote.paymentToken || !vote.electionAddress) {
-    return
-  }
-
-  const owner = walletClient.account?.address as Address | undefined
-  if (!owner) {
-    throw new Error('Wallet not connected')
-  }
-
-  const paymentAmount = await quoteElectionPayment(vote.electionAddress, 1)
-  if (paymentAmount === 0n) {
-    return
-  }
-
-  const currentAllowance = await getErc20Allowance(vote.paymentToken, owner, vote.electionAddress)
-  if (currentAllowance >= paymentAmount) {
-    return
-  }
-
-  // sungje : PAID 선거는 ballot 1개 기준으로 quote 후 allowance 부족분만 approve
-  const approveHash = await approveErc20Spending(
-    walletClient,
-    vote.paymentToken,
-    vote.electionAddress,
-    paymentAmount,
-  )
-  await waitForVestarTransactionReceipt(approveHash)
 }
 
 export function useVoteSubmit(): VoteSubmitResult {
   const [state, setState] = useState<SubmitState>('idle')
   const [txHash, setTxHash] = useState<string | null>(null)
-  const karmaEarned = 20 // TODO: query KarmaRegistry delta after tx confirms
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const karmaEarned = 20
 
-  const { data: walletClient } = useWalletClient()
+  const chainId = useChainId()
+  const { data: walletClient } = useWalletClient({ chainId: vestarStatusTestnetChain.id })
   const { switchChainAsync } = useSwitchChain()
 
   const submit = useCallback(
-    async ({ vote, candidateKeys }: VoteSubmitInput) => {
+    async (vote: VoteDetailData | null, candidateKeys: string[]) => {
       setState('loading')
+      setErrorMessage(null)
 
       try {
-        if (!vote.electionAddress) {
-          throw new Error('On-chain election is not ready')
+        if (!vote?.electionAddress || !vote.onchainElectionId) {
+          throw new Error('아직 온체인 election 정보가 인덱싱되지 않아 투표할 수 없습니다.')
         }
 
-        if (!walletClient?.account?.address) {
+        if (!walletClient?.account) {
           throw new Error('Wallet not connected')
         }
 
-        if (!candidateKeys.length) {
-          throw new Error('No candidate selection provided')
-        }
-
-        // sungje : 잘못된 체인에서 바로 revert 나지 않게 제출 전에 테스트넷 전환 선행
-        if (!walletClient.chain || walletClient.chain.id !== vestarStatusTestnetChain.id) {
+        if (chainId !== vestarStatusTestnetChain.id) {
           await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
         }
 
-        await ensureElectionPaymentApproval(walletClient, vote)
+        const canSubmit = await canAccountSubmitBallot(
+          vote.electionAddress as Address,
+          walletClient.account.address,
+        )
 
-        let hash: Hash
+        if (!canSubmit) {
+          const [state, remainingBallots] = await Promise.all([
+            getElectionState(vote.electionAddress as Address).catch(() => undefined),
+            getElectionRemainingBallots(
+              vote.electionAddress as Address,
+              walletClient.account.address,
+            ).catch(() => undefined),
+          ])
 
-        if (vote.visibilityMode === 'PRIVATE') {
-          if (!vote.electionId || !vote.electionPublicKey) {
-            throw new Error('Private election public key is missing')
+          if (state !== undefined && state !== VESTAR_ELECTION_STATE.ACTIVE) {
+            throw new Error('현재 투표 가능한 상태가 아닙니다.')
           }
 
-          // sungje : PRIVATE 선거는 canonical payload를 프론트에서 암호화한 ciphertext만 컨트랙트에 전달
-          const encryptedBallot = await encryptPrivateBallot({
-            electionId: vote.electionId,
-            electionAddress: vote.electionAddress,
-            electionPublicKey: vote.electionPublicKey,
-            voterAddress: walletClient.account.address as Address,
-            candidateKeys,
-          })
-          hash = await submitEncryptedVote(walletClient, vote.electionAddress, encryptedBallot)
-        } else {
-          hash = await submitOpenVote(walletClient, vote.electionAddress, candidateKeys)
+          if (remainingBallots !== undefined && remainingBallots <= 0) {
+            throw new Error('이 주소로 사용할 수 있는 투표권을 모두 사용했습니다.')
+          }
+
+          throw new Error('현재 제출 가능한 투표권이 없습니다.')
         }
 
+        const hash =
+          vote.visibilityMode === 'PRIVATE'
+            ? await submitEncryptedVote(
+                walletClient,
+                vote.electionAddress as Address,
+                await encryptBallotWithPublicKey({
+                  publicKeyPem: (() => {
+                    if (!vote.publicKeyPem) {
+                      throw new Error('Private election public key is missing')
+                    }
+
+                    return vote.publicKeyPem
+                  })(),
+                  payload: {
+                    schemaVersion: 1,
+                    electionId: vote.onchainElectionId,
+                    chainId: vestarStatusTestnetChain.id,
+                    electionAddress: vote.electionAddress,
+                    voterAddress: walletClient.account.address,
+                    candidateKeys,
+                    nonce: randomNonceHex(),
+                  },
+                }),
+              )
+            : await submitOpenVote(walletClient, vote.electionAddress as Address, candidateKeys)
+
         await waitForVestarTransactionReceipt(hash)
-
-        // 백엔드
-        // 코드 : 인덱서/영수증 동기화 API가 열리면 tx hash 기준 후처리를 이 지점에 연결
-
         setTxHash(hash)
         setState('success')
       } catch (error) {
         console.error('[useVoteSubmit] failed:', error)
         setState('idle')
-        throw normalizeVoteSubmitError(error)
+        setErrorMessage(error instanceof Error ? error.message : '투표 제출에 실패했습니다.')
       }
     },
-    [walletClient, switchChainAsync],
+    [chainId, switchChainAsync, walletClient],
   )
 
   const reset = useCallback(() => {
     setState('idle')
     setTxHash(null)
+    setErrorMessage(null)
   }, [])
 
-  return { state, txHash, karmaEarned, submit, reset }
+  return { state, txHash, errorMessage, karmaEarned, submit, reset }
 }

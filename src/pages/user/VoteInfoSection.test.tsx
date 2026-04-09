@@ -7,6 +7,7 @@ const mockVote: VoteDetailData = {
   id: '1',
   title: '이번 주 1위는 누구?',
   org: 'Show! Music Core × Mubeat',
+  host: 'MBC',
   verified: true,
   emoji: '🎤',
   badge: 'live',

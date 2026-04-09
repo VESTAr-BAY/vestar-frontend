@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchElectionListResolved } from '../../api/elections'
+import { fetchElections } from '../../api/elections'
 import { VOTE_ITEMS } from '../../data/mockVotes'
 import { mapToVoteListItem } from '../../utils/electionMapper'
 import type { ApiElection } from '../../api/types'
@@ -32,19 +32,18 @@ function filterToApiState(filter: VoteFilter): string | undefined {
 
 /** Client-side sort for filters that need it */
 function sortElections(elections: ApiElection[], filter: VoteFilter): ApiElection[] {
-  if (filter === 'popular') {
-    return [...elections].sort((a, b) => (b.total_submissions ?? 0) - (a.total_submissions ?? 0))
+  const byNewest = [...elections].sort((a, b) => Number(b.id) - Number(a.id))
+
+  if (filter === 'popular' || filter === 'hot') {
+    return byNewest
   }
-  // 'hot' = ACTIVE sorted by submissions desc (most popular active)
-  if (filter === 'hot') {
-    return [...elections].sort((a, b) => (b.total_submissions ?? 0) - (a.total_submissions ?? 0))
-  }
-  return elections
+
+  return byNewest
 }
 
 /**
- * Fetches a paginated + filtered list of elections from backend indexer first,
- * then from on-chain fallback when the backend is unavailable or empty.
+ * Fetches a paginated + filtered list of elections.
+ * Falls back to mock data when the API is unavailable.
  */
 export function useInfiniteVotes(filter: VoteFilter = 'all'): UseInfiniteVotesResult {
   const [allItems, setAllItems] = useState<VoteListItem[]>([])
@@ -58,21 +57,19 @@ export function useInfiniteVotes(filter: VoteFilter = 'all'): UseInfiniteVotesRe
     setPage(1)
   }, [filter])
 
-  // Fetch all elections for the current filter from the API
   useEffect(() => {
     let cancelled = false
-    const state = filterToApiState(filter)
+    const onchainState = filterToApiState(filter)
 
     setIsLoading(true)
-    fetchElectionListResolved({ state, pageSize: 100 })
-      .then((res) => {
+    fetchElections({ onchainState })
+      .then((elections) => {
         if (cancelled) return
-        const sorted = sortElections(res.elections, filter)
+        const sorted = sortElections(elections, filter)
         setAllItems(sorted.map((e, i) => mapToVoteListItem(e, i)))
       })
       .catch(() => {
         if (cancelled) return
-        // 목업 : API/온체인 소스 모두 실패했을 때만 리스트 mock fallback 사용
         const mockFiltered = applyMockFilter(VOTE_ITEMS, filter)
         setAllItems(mockFiltered)
       })

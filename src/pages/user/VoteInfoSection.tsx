@@ -26,7 +26,7 @@ export function VoteInfoSection({ vote }: VoteInfoSectionProps) {
   const { t } = useLanguage()
   return (
     <div className="mx-5 mt-5 bg-white rounded-2xl border border-[#E7E9ED] px-4 overflow-hidden">
-      <InfoRow label={t('vi_host')}>{vote.org}</InfoRow>
+      <InfoRow label={t('vi_host')}>{vote.host}</InfoRow>
       <InfoRow label={t('vi_start')}>{vote.startDate}</InfoRow>
       <InfoRow label={t('vi_end')}>{vote.endDate}</InfoRow>
       <InfoRow label={t('vi_results')} last>

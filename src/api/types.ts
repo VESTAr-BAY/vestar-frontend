@@ -1,19 +1,3 @@
-/**
- * API response types — mirrors vestar-backend DB schema.
- *
- * Key DB tables:
- *   election_series      → series_preimage, onchain_series_id, cover_image_url
- *   election_drafts      → title, cover_image_url, visibility_mode, sync_state
- *   election_candidates  → candidate_key (preimage), image_url, display_order
- *   onchain_elections    → onchain_election_id, onchain_election_address,
- *                          onchain_state, start_at, end_at, result_reveal_at,
- *                          payment_mode, ballot_policy, allow_multiple_choice,
- *                          max_selections_per_submission, cost_per_ballot
- */
-
-// ── State / mode enums ────────────────────────────────────────────────────────
-
-/** Mirrors onchain_elections.onchain_state */
 export type ApiElectionState =
   | 'SCHEDULED'
   | 'ACTIVE'
@@ -23,90 +7,215 @@ export type ApiElectionState =
   | 'FINALIZED'
   | 'CANCELLED'
 
-/** Mirrors onchain_elections.visibility_mode */
 export type ApiVisibilityMode = 'OPEN' | 'PRIVATE'
-
-/** Mirrors onchain_elections.payment_mode */
 export type ApiPaymentMode = 'FREE' | 'PAID'
-
-/** Mirrors onchain_elections.ballot_policy */
 export type ApiBallotPolicy = 'ONE_PER_ELECTION' | 'ONE_PER_INTERVAL' | 'UNLIMITED_PAID'
+export type ApiElectionSyncState = 'PREPARED' | 'INDEXED' | 'FINALIZED'
 
-// ── Core election ─────────────────────────────────────────────────────────────
-
-/**
- * A single election row as returned by the list endpoint.
- * Joins: onchain_elections + election_drafts + election_series.
- */
-export interface ApiElection {
-  /** DB primary key — used as URL id */
+export interface ApiElectionSeries {
   id: string
+  seriesPreimage: string
+  onchainSeriesId: string | null
+  coverImageUrl: string | null
+}
 
-  /** On-chain bytes32 electionId */
+export interface ApiElectionKey {
+  publicKey: string
+}
+
+export interface ApiElectionCandidate {
+  id: string
+  candidateKey: string
+  imageUrl: string | null
+  displayOrder: number
+}
+
+export interface ApiCandidateManifestPreimage {
+  candidates: Array<{
+    candidateKey: string
+    displayOrder: number
+    imageUrl?: string | null
+  }>
+}
+
+export interface ApiElectionResultSummary {
+  id: string
+  electionRefId: string
+  totalSubmissions: number
+  totalDecryptedBallots: number
+  totalValidVotes: number
+  totalInvalidVotes: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ApiElection {
+  id: string
+  draftId: string | null
+  onchainSeriesId: string | null
+  onchainElectionId: string
+  onchainElectionAddress: `0x${string}` | null
+  organizerWalletAddress: `0x${string}`
+  organizerVerifiedSnapshot: boolean
+  organizer: {
+    walletAddress: `0x${string}`
+    organizationName: string
+  } | null
+  visibilityMode: ApiVisibilityMode
+  paymentMode: ApiPaymentMode
+  ballotPolicy: ApiBallotPolicy
+  startAt: string
+  endAt: string
+  resultRevealAt: string
+  minKarmaTier: number
+  resetIntervalSeconds: number
+  allowMultipleChoice: boolean
+  maxSelectionsPerSubmission: number
+  timezoneWindowOffset: number
+  paymentToken: `0x${string}` | null
+  costPerBallot: string
+  onchainState: ApiElectionState
+  title: string | null
+  coverImageUrl: string | null
+  syncState: ApiElectionSyncState | null
+  candidateManifestPreimage: ApiCandidateManifestPreimage | null
+  series: ApiElectionSeries | null
+  electionKey: ApiElectionKey | null
+  electionCandidates: ApiElectionCandidate[]
+  validDecryptedBallotCount: number
+  resultSummary: ApiElectionResultSummary | null
+}
+
+export interface ApiElectionMetadata {
+  id: string
+  draftId: string | null
+  onchainSeriesId: string | null
+  onchainElectionId: string
+  onchainElectionAddress: `0x${string}` | null
+  organizer: {
+    walletAddress: `0x${string}`
+    organizationName: string
+  } | null
+  title: string | null
+  coverImageUrl: string | null
+  series: ApiElectionSeries | null
+  electionKey: ApiElectionKey | null
+  electionCandidates: ApiElectionCandidate[]
+}
+
+// Legacy compatibility aliases used by the on-chain fallback data module.
+export type ApiCandidate = {
+  candidate_key: string
+  display_name: string | null
+  group_label: string | null
+  image_url: string | null
+  display_order: number
+}
+
+export type ApiElectionDetail = {
+  id: string
   onchain_election_id: string
-
-  /** Deployed contract address; null if not yet indexed */
-  onchain_election_address: `0x${string}` | null
-
-  /** Cached on-chain state from last indexer sync */
+  onchain_election_address: `0x${string}`
   onchain_state: ApiElectionState
-
-  /** election_drafts.title */
   title: string
-
-  /** election_drafts.cover_image_url — banner / hero image */
   cover_image_url: string | null
-
-  /** election_series.series_preimage — human-readable org/series name */
   series_preimage: string
-
-  organizer_wallet_address: string
+  organizer_wallet_address: `0x${string}`
   organizer_verified_snapshot: boolean
-
-  /** ISO 8601 datetime strings */
   start_at: string
   end_at: string
   result_reveal_at: string
-
   visibility_mode: ApiVisibilityMode
   payment_mode: ApiPaymentMode
   ballot_policy: ApiBallotPolicy
   allow_multiple_choice: boolean
   max_selections_per_submission: number
-
-  /** Numeric string (wei / token units) */
   cost_per_ballot: string
-
-  /** Cached total submissions from live_tally or result_summaries */
-  total_submissions?: number
-}
-
-// ── Candidate ─────────────────────────────────────────────────────────────────
-
-/**
- * One row from election_candidates.
- * candidate_key is the preimage; the on-chain key is keccak256(toHex(candidate_key)).
- */
-export interface ApiCandidate {
-  /** Human-readable identifier — also used as on-chain key preimage */
-  candidate_key: string
-  display_name?: string | null
-  group_label?: string | null
-  image_url: string | null
-  display_order: number
-}
-
-// ── Detail response ───────────────────────────────────────────────────────────
-
-export interface ApiElectionDetail extends ApiElection {
+  total_submissions: number
   candidates: ApiCandidate[]
 }
 
-// ── List response ─────────────────────────────────────────────────────────────
-
-export interface ApiElectionListResponse {
-  elections: ApiElection[]
+export type ApiElectionListResponse = {
+  elections: ApiElectionDetail[]
   total: number
   page: number
   page_size: number
+}
+
+export interface ApiLiveTallyRow {
+  id: string
+  electionRefId: string
+  candidateKey: string
+  count: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ApiFinalizedTallyRow {
+  id: string
+  electionRefId: string
+  candidateKey: string
+  count: number
+  voteRatio: number
+  finalizedAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ApiVoteSubmissionStatus {
+  id: string
+  onchainTxHash: string
+  voterAddress: `0x${string}`
+  blockNumber: number
+  blockTimestamp: string
+  onchainElection: {
+    id: string
+    onchainElectionId: string
+    onchainElectionAddress: `0x${string}`
+    onchainState: ApiElectionState
+    draft: {
+      id: string
+      title: string
+      series: {
+        id: string
+        seriesPreimage: string
+      } | null
+    } | null
+  }
+  decryptedBallot: {
+    id: string
+    candidateKeys: string[]
+    nonce: string
+    isValid: boolean
+    validatedAt: string | null
+    createdAt: string
+  } | null
+  invalidBallots: Array<{
+    id: string
+    reasonCode: string
+    reasonDetail: string | null
+    createdAt: string
+  }>
+}
+
+export interface PreparePrivateElectionRequest {
+  seriesPreimage: string
+  seriesCoverImageUrl?: string | null
+  title: string
+  coverImageUrl?: string | null
+  candidateManifestPreimage: ApiCandidateManifestPreimage
+}
+
+export interface PreparePrivateElectionResponse {
+  seriesIdHash: `0x${string}`
+  titleHash: `0x${string}`
+  candidateManifestHash: `0x${string}`
+  keySchemeVersion: number
+  publicKey: {
+    format: 'pem'
+    algorithm: 'ECDH-P256'
+    value: string
+  }
+  privateKeyCommitmentHash: `0x${string}`
+  candidateManifestPreimage: ApiCandidateManifestPreimage
 }

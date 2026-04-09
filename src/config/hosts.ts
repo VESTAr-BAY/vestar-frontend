@@ -3,8 +3,7 @@
  * These addresses can access /host/* routes and create votes.
  */
 const HOST_ADDRESSES: Set<string> = new Set([
-  // Add host wallet addresses here, e.g.:
-  // "0xabc123...".toLowerCase(),
+  '0x19462D8199e41924D47EfECa0DBc7B8294d30103'.toLowerCase(),
 ])
 
 export function isHost(address: string | undefined): boolean {

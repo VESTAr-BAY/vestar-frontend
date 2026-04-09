@@ -19,24 +19,25 @@ function makeBlankCandidate(): CandidateDraft {
 
 const INITIAL_DRAFT: VoteCreateDraft = {
   title: '',
+  electionTitle: '',
   group: '',
   bannerImage: '',
   bannerImageFile: null,
   category: '음악방송',
-  visibility: 'PRIVATE',
+  visibilityMode: 'PRIVATE',
   candidates: [],
   sections: [],
   startDate: '',
   endDate: '',
-  revealDate: '',
+  resultRevealAt: '',
   maxChoices: 1,
   resultReveal: 'after_end',
-  votePolicy: 'ONE_TIME',
-  resetIntervalValue: 1,
-  resetIntervalUnit: 'days',
-  paymentType: 'FREE',
-  costPerBallot: 0,
-  minKarmaTier: 0,
+  ballotPolicy: 'ONE_PER_ELECTION',
+  resetIntervalValue: '24',
+  resetIntervalUnit: 'DAY',
+  paymentMode: 'FREE',
+  costPerBallotEth: '0',
+  minKarmaTier: '0',
 }
 
 function isStep1Valid(draft: VoteCreateDraft): boolean {
@@ -52,7 +53,11 @@ function isStep2Valid(draft: VoteCreateDraft): boolean {
         s.candidates.every((c) => c.name.trim().length > 0),
     )
   }
-  return draft.candidates.length >= 2 && draft.candidates.every((c) => c.name.trim().length > 0)
+  return (
+    draft.electionTitle.trim().length > 0 &&
+    draft.candidates.length >= 2 &&
+    draft.candidates.every((c) => c.name.trim().length > 0)
+  )
 }
 
 function validateStep(step: CreateStep, draft: VoteCreateDraft): boolean {
@@ -71,12 +76,13 @@ export function useEditVoteDraft(id: string) {
   useEffect(() => {
     if (vote && !initialDraft) {
       const init: VoteCreateDraft = {
-        title: vote.title,
-        group: vote.org || '',
+        title: vote.org || '',
+        electionTitle: vote.title,
+        group: vote.host || '',
         bannerImage: '', // Mock doesn't have it
         bannerImageFile: null,
         category: '음악방송',
-        visibility: 'PRIVATE',
+        visibilityMode: vote.visibilityMode ?? 'PRIVATE',
         candidates: vote.candidates.map(c => ({
           id: c.id,
           name: c.name,
@@ -86,15 +92,15 @@ export function useEditVoteDraft(id: string) {
         sections: [],
         startDate: vote.startDate || '',
         endDate: vote.endDate || '',
-        revealDate: vote.startDate || '', // Temporary
+        resultRevealAt: vote.resultReveal || vote.endDate || '',
         maxChoices: vote.maxChoices || 1,
         resultReveal: vote.resultPublic ? 'immediate' : 'after_end',
-        votePolicy: 'ONE_TIME',
-        resetIntervalValue: 1,
-        resetIntervalUnit: 'days',
-        paymentType: 'FREE',
-        costPerBallot: 0,
-        minKarmaTier: 0,
+        ballotPolicy: 'ONE_PER_ELECTION',
+        resetIntervalValue: '24',
+        resetIntervalUnit: 'DAY',
+        paymentMode: vote.paymentMode ?? 'FREE',
+        costPerBallotEth: vote.costPerBallot ?? '0',
+        minKarmaTier: '0',
       }
       setInitialDraft(init)
       setDraft(init)
@@ -147,6 +153,18 @@ export function useEditVoteDraft(id: string) {
         id: makeId(),
         name: '',
         candidates: [makeBlankCandidate(), makeBlankCandidate()],
+        startDate: prev.startDate,
+        endDate: prev.endDate,
+        resultRevealAt: prev.resultRevealAt,
+        maxChoices: prev.maxChoices,
+        visibilityMode: prev.visibilityMode,
+        ballotPolicy: prev.ballotPolicy,
+        paymentMode: prev.paymentMode,
+        costPerBallotEth: prev.costPerBallotEth,
+        minKarmaTier: prev.minKarmaTier,
+        resetIntervalValue: prev.resetIntervalValue,
+        resetIntervalUnit: prev.resetIntervalUnit,
+        resultReveal: prev.resultReveal,
       }
       return { ...prev, sections: [...prev.sections, newSection] }
     })

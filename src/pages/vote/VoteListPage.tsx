@@ -90,14 +90,13 @@ function VoteItem({
   isVoted: boolean
 }) {
   const isEnded = item.badge === 'end'
-  const isOnchainRoute = item.id.startsWith('0x')
   const { t } = useLanguage()
   const badgeLabel = item.badge === 'end' ? t('badge_end') : BADGE_LABEL[item.badge]
 
   return (
     <button
       type="button"
-      onClick={() => onNavigate(isEnded && !isOnchainRoute ? `${item.id}/result` : item.id)}
+      onClick={() => onNavigate(isEnded ? `${item.id}/result` : item.id)}
       className="w-full bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px] cursor-pointer transition-[border-color,background] duration-150 hover:border-[rgba(113,64,255,0.25)] hover:bg-[#F0EDFF] active:scale-[0.99] text-left"
     >
       <div
@@ -107,9 +106,6 @@ function VoteItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1 mb-1">
           <span className="text-[11px] text-[#707070] font-mono truncate">{item.org}</span>
-          {item.verified && (
-            <img src={verifiedIcon} alt="verified" className="w-3 h-3 flex-shrink-0 opacity-60" />
-          )}
         </div>
         <div className="text-[15px] font-semibold text-[#090A0B] mb-1.5 truncate leading-[1.35]">
           {item.name}
@@ -147,6 +143,59 @@ function VoteItem({
   )
 }
 
+function SeriesSection({
+  title,
+  host,
+  verified,
+  items,
+  onNavigate,
+  isVoted,
+}: {
+  title: string
+  host?: string
+  verified?: boolean
+  items: VoteListItem[]
+  onNavigate: (id: string) => void
+  isVoted: (id: string) => boolean
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-[15px] font-semibold text-[#090A0B]">{title}</div>
+          <div className="text-[12px] text-[#707070]">{items.length}개의 투표</div>
+        </div>
+        {host ? (
+          <div className="flex items-center gap-1.5 max-w-[168px] self-start rounded-full border border-[#E7E9ED] bg-white px-2.5 py-1">
+            {verified ? (
+              <img
+                src={verifiedIcon}
+                alt="verified organizer"
+                className="w-4 h-4 flex-shrink-0"
+                style={{
+                  filter:
+                    'brightness(0) saturate(100%) invert(48%) sepia(76%) saturate(566%) hue-rotate(88deg) brightness(95%) contrast(93%)',
+                }}
+              />
+            ) : null}
+            <span className="text-[11px] font-semibold text-[#090A0B] truncate">{host}</span>
+          </div>
+        ) : null}
+      </div>
+      <div className="flex flex-col gap-[10px]">
+        {items.map((item) => (
+          <VoteItem
+            key={item.id}
+            item={item}
+            onNavigate={onNavigate}
+            isVoted={isVoted(item.id)}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export function VoteListPage() {
   const [activeFilter, setActiveFilter] = useState(0)
   const navigate = useNavigate()
@@ -162,6 +211,34 @@ export function VoteListPage() {
   const { t } = useLanguage()
 
   const handleNavigate = (id: string) => navigate(`/vote/${id}`)
+  const groupedItems = items.reduce<
+    Array<{ key: string; title: string; host?: string; verified?: boolean; items: VoteListItem[] }>
+  >(
+    (groups, item) => {
+      const resolvedSeriesKey = item.seriesKey ?? `series:${item.org}`
+      const existing = groups.find((group) => group.key === resolvedSeriesKey)
+      if (existing) {
+        existing.items.push(item)
+        existing.host = existing.host ?? item.host
+        existing.verified = existing.verified ?? item.verified
+        return groups
+      }
+
+      groups.push({
+        key: resolvedSeriesKey,
+        title: item.org,
+        host: item.host,
+        verified: item.verified,
+        items: [item],
+      })
+      return groups
+    },
+    [],
+  )
+
+  groupedItems.forEach((group) => {
+    group.items.sort((a, b) => (b.sortKey ?? Number(b.id)) - (a.sortKey ?? Number(a.id)))
+  })
 
   return (
     <>
@@ -220,20 +297,23 @@ export function VoteListPage() {
         {/*여기에서 사용되는 EMOJI모두 지우기*/}
         <div className="flex items-center justify-between px-5 pt-[20px] pb-[10px]">
           <span className="text-[15px] font-semibold text-[#090A0B]">{t('vl_active_section')}</span>
-          <span className="text-[12px] text-[#7140FF] cursor-pointer">{t('vl_sort')}</span>
+          <span className="text-[12px] text-[#7140FF] cursor-pointer">최신 생성순</span>
         </div>
-        <div className="px-5 flex flex-col gap-[10px] pb-2">
+        <div className="px-5 flex flex-col gap-6 pb-2">
           {isItemsLoading
             ? Array.from({ length: 6 }, (_, i) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders have no stable id
                 <VoteCardSkeleton key={i} />
               ))
-            : items.map((item) => (
-                <VoteItem
-                  key={item.id}
-                  item={item}
+            : groupedItems.map((group) => (
+                <SeriesSection
+                  key={group.key}
+                  title={group.title}
+                  host={group.host}
+                  verified={group.verified}
+                  items={group.items}
                   onNavigate={handleNavigate}
-                  isVoted={isVoted(item.id)}
+                  isVoted={isVoted}
                 />
               ))}
         </div>

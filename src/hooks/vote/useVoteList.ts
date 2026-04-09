@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchElectionListResolved } from '../../api/elections'
+import { fetchElections } from '../../api/elections'
 import { HOT_VOTES } from '../../data/mockVotes'
 import { mapToHotVote } from '../../utils/electionMapper'
 import type { HotVote } from '../../types/vote'
@@ -18,8 +18,8 @@ export interface UseVoteListResult {
 }
 
 /**
- * Fetches the HOT section from backend indexer first, then from on-chain fallback.
- * Only falls back to mock data when both real data sources fail.
+ * Fetches the HOT section (top ACTIVE elections) from the backend.
+ * Falls back to mock data when VITE_API_BASE_URL is not configured or the request fails.
  */
 export function useVoteList(): UseVoteListResult {
   const [isLoading, setIsLoading] = useState(true)
@@ -28,18 +28,17 @@ export function useVoteList(): UseVoteListResult {
   useEffect(() => {
     let cancelled = false
 
-    fetchElectionListResolved({ state: 'ACTIVE', pageSize: 20 })
-      .then((res) => {
+    fetchElections({ onchainState: 'ACTIVE' })
+      .then((elections) => {
         if (cancelled) return
-        const hot = res.elections
-          .filter((e) => (e.total_submissions ?? 0) > 10_000)
+        const hot = elections
+          .filter((election) => (election.resultSummary?.totalSubmissions ?? 0) > 10_000)
           .slice(0, 4)
           .map(mapToHotVote)
         setHotVotes(hot.length > 0 ? hot : hotMockFallback())
       })
       .catch(() => {
         if (cancelled) return
-        // 목업 : API/온체인 둘 다 실패했을 때만 HOT 카드 mock fallback 유지
         setHotVotes(hotMockFallback())
       })
       .finally(() => {

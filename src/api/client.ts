@@ -1,12 +1,12 @@
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
 
 export class ApiError extends Error {
-  readonly status: number
+  public readonly status: number
 
   constructor(status: number, message: string) {
     super(message)
-    this.status = status
     this.name = 'ApiError'
+    this.status = status
   }
 }
 
@@ -25,7 +25,19 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   })
 
   if (!res.ok) {
-    throw new ApiError(res.status, `API ${res.status}: ${path}`)
+    const rawBody = await res.text()
+
+    try {
+      const parsed = JSON.parse(rawBody) as {
+        message?: string | string[]
+        error?: string
+      }
+
+      const message = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message
+      throw new ApiError(res.status, message ?? parsed.error ?? `API ${res.status}: ${path}`)
+    } catch {
+      throw new ApiError(res.status, rawBody || `API ${res.status}: ${path}`)
+    }
   }
 
   return res.json() as Promise<T>

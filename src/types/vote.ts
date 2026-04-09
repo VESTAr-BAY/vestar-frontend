@@ -1,7 +1,4 @@
 export type BadgeVariant = 'live' | 'hot' | 'new' | 'end'
-export type VoteVisibilityMode = 'OPEN' | 'PRIVATE'
-export type VotePaymentMode = 'FREE' | 'PAID'
-export type VoteBallotPolicy = 'ONE_PER_ELECTION' | 'ONE_PER_INTERVAL' | 'UNLIMITED_PAID'
 
 export interface HotVote {
   id: string
@@ -16,10 +13,13 @@ export interface HotVote {
 
 export interface VoteListItem {
   id: string
+  seriesKey?: string
+  sortKey?: number
   emoji: string
   emojiColor: string
   org: string
   name: string
+  host?: string
   count: string
   badge: BadgeVariant
   deadline: string
@@ -47,7 +47,6 @@ export interface VoteResultData {
 
 export interface Candidate {
   id: string
-  candidateKey?: string
   name: string
   group: string
   emoji: string
@@ -67,8 +66,10 @@ export interface VoteSection {
 
 export interface VoteDetailData {
   id: string
+  onchainElectionId?: string
   title: string
   org: string
+  host: string
   verified: boolean
   emoji: string
   badge: BadgeVariant
@@ -84,22 +85,14 @@ export interface VoteDetailData {
   voteFrequency: string
   voteLimit: string
   resultPublic: boolean
+  paymentMode?: 'FREE' | 'PAID'
+  costPerBallot?: string
   candidates: Candidate[]
   sections?: VoteSection[] // present = grouped vote mode
   /** On-chain election contract address. When present, real contract calls are used. */
   electionAddress?: `0x${string}`
-  /** On-chain bytes32 election id. */
-  electionId?: `0x${string}`
-  /** Live contract election state when available. */
-  electionState?: number
-  visibilityMode?: VoteVisibilityMode
-  paymentMode?: VotePaymentMode
-  ballotPolicy?: VoteBallotPolicy
-  minKarmaTier?: number
-  allowMultipleChoice?: boolean
-  costPerBallot?: string
-  paymentToken?: `0x${string}`
-  electionPublicKey?: `0x${string}`
+  visibilityMode?: 'OPEN' | 'PRIVATE'
+  publicKeyPem?: string
   /** Optional banner image for the vote hero. Supports ipfs:// and https:// */
   imageUrl?: string
 }

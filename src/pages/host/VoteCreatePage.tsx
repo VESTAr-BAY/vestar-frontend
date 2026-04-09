@@ -4,9 +4,8 @@ import { useToast } from '../../providers/ToastProvider'
 import { StepBasicInfo } from './steps/StepBasicInfo'
 import { StepCandidates } from './steps/StepCandidates'
 import { StepSchedule } from './steps/StepSchedule'
-import { StepPolicy } from './steps/StepPolicy'
 
-const STEP_LABELS = ['기본 정보', '후보 등록', '일정 & 설정', '투표권 정책']
+const STEP_LABELS = ['기본 정보', '후보 등록', '일정 & 설정']
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
@@ -58,7 +57,7 @@ export function VoteCreatePage() {
     draft,
     step,
     isCurrentStepValid,
-    debugInfo,
+    submissionProgress,
     updateField,
     addCandidate,
     removeCandidate,
@@ -66,6 +65,7 @@ export function VoteCreatePage() {
     addSection,
     removeSection,
     updateSectionName,
+    updateSectionField,
     addCandidateToSection,
     removeCandidateFromSection,
     updateSectionCandidate,
@@ -127,7 +127,7 @@ export function VoteCreatePage() {
           <div className="text-[11px] text-white/40 font-mono">{STEP_LABELS[step - 1]}</div>
         </div>
 
-        <StepIndicator current={step} total={4} />
+        <StepIndicator current={step} total={3} />
       </header>
 
       {/* Scrollable content */}
@@ -135,8 +135,10 @@ export function VoteCreatePage() {
         {step === 1 && <StepBasicInfo draft={draft} onUpdate={updateField} />}
         {step === 2 && (
           <StepCandidates
+            electionTitle={draft.electionTitle}
             candidates={draft.candidates}
             sections={draft.sections}
+            onUpdateElectionTitle={(value) => updateField('electionTitle', value)}
             onAdd={addCandidate}
             onRemove={removeCandidate}
             onUpdate={updateCandidate}
@@ -149,22 +151,12 @@ export function VoteCreatePage() {
             onClearSections={clearSections}
           />
         )}
-        {step === 3 && <StepSchedule draft={draft} onUpdate={updateField} />}
-        {step === 4 && (
-          <>
-            <StepPolicy draft={draft} onUpdate={updateField} />
-            {/* DEBUG: temporary on-screen diagnostics for create reverts. Remove after create flow is stable. */}
-            {debugInfo && (
-              <section className="mx-5 mb-6 rounded-2xl border border-[#E7E9ED] bg-white p-4">
-                <div className="mb-2 text-[12px] font-bold text-[#7140FF] font-mono">
-                  DEBUG CREATE CHECK
-                </div>
-                <pre className="whitespace-pre-wrap break-all text-[12px] leading-5 text-[#090A0B] select-text">
-{JSON.stringify(debugInfo, null, 2)}
-                </pre>
-              </section>
-            )}
-          </>
+        {step === 3 && (
+          <StepSchedule
+            draft={draft}
+            onUpdate={updateField}
+            onUpdateSectionField={updateSectionField}
+          />
         )}
       </main>
 
@@ -173,13 +165,20 @@ export function VoteCreatePage() {
         <button
           type="button"
           disabled={!isCurrentStepValid || isSubmitting}
-          onClick={step === 4 ? handleSubmit : nextStep}
+          onClick={step === 3 ? handleSubmit : nextStep}
           className="w-full bg-[#7140FF] text-white rounded-2xl py-4 text-[15px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:cursor-default hover:enabled:opacity-85 transition-opacity active:enabled:scale-[0.99] flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
-            <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-          ) : step === 4 ? (
-            '투표 만들기 완료'
+            <>
+              <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              <span>
+                {submissionProgress.total > 1
+                  ? `${submissionProgress.current}/${submissionProgress.total} 서명 요청`
+                  : '서명 요청 중'}
+              </span>
+            </>
+          ) : step === 3 ? (
+            (draft.sections.length > 0 ? `투표 만들기 (${draft.sections.length}건)` : '투표 만들기 완료')
           ) : (
             <>
               다음 단계

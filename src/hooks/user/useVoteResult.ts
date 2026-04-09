@@ -1,85 +1,95 @@
-import type { VoteResultData } from '../../types/vote'
+import { useEffect, useState } from 'react'
+import {
+  fetchElectionDetail,
+  fetchFinalizedTally,
+  fetchLiveTally,
+  fetchResultSummaries,
+} from '../../api/elections'
+import type { ApiElection, ApiFinalizedTallyRow, ApiLiveTallyRow } from '../../api/types'
+import { formatVoteDate } from '../../utils/electionMapper'
+import { findLocalOpenElectionMetadata } from '../../utils/localOpenElectionMetadata'
+import type { RankedCandidate, VoteResultData } from '../../types/vote'
 
-// 목업 : 결과 페이지는 아직 실제 on-chain/result-summary 연동 전이라 샘플 결과 유지
-const MOCK_RESULTS: Record<string, VoteResultData> = {
-  '1': {
-    id: '1',
-    title: '이번 주 1위는 누구?',
-    org: 'Show! Music Core × Mubeat',
-    verified: true,
-    emoji: '🎤',
-    endDate: '2025.04.03 11:00',
-    totalVotes: 24891,
-    rankedCandidates: [
+type TallyRow = ApiLiveTallyRow | ApiFinalizedTallyRow
+
+function mergeLocalMetadata(election: ApiElection): ApiElection {
+  if (election.title && election.series && election.electionCandidates.length > 0) {
+    return election
+  }
+
+  const local = findLocalOpenElectionMetadata({
+    onchainElectionId: election.onchainElectionId,
+    onchainElectionAddress: election.onchainElectionAddress,
+  })
+
+  if (!local) {
+    return election
+  }
+
+  return {
+    ...election,
+    title: election.title ?? local.title,
+    coverImageUrl: election.coverImageUrl ?? local.coverImageUrl ?? null,
+    series:
+      election.series ??
       {
-        id: '5',
-        name: 'NewJeans',
-        group: '어도어',
-        emoji: '🍀',
-        emojiColor: '#dcfce7',
-        votes: 8934,
-        percentage: 35.9,
-        rank: 1,
+        id: `local-${local.seriesId}`,
+        seriesPreimage: local.series.seriesPreimage,
+        onchainSeriesId: local.seriesId,
+        coverImageUrl: local.series.coverImageUrl ?? null,
       },
-      {
-        id: '1',
-        name: 'BTS',
-        group: '빅히트 뮤직',
-        emoji: '👑',
-        emojiColor: '#fef3c7',
-        votes: 6721,
-        percentage: 27.0,
-        rank: 2,
-      },
-      {
-        id: '3',
-        name: 'aespa',
-        group: 'SM 엔터테인먼트',
-        emoji: '🌌',
-        emojiColor: '#ede9fe',
-        votes: 4203,
-        percentage: 16.9,
-        rank: 3,
-      },
-      {
-        id: '6',
-        name: 'Stray Kids',
-        group: 'JYP 엔터테인먼트',
-        emoji: '🔥',
-        emojiColor: '#fff1f2',
-        votes: 2891,
-        percentage: 11.6,
-        rank: 4,
-      },
-      {
-        id: '2',
-        name: 'BLACKPINK',
-        group: 'YG 엔터테인먼트',
-        emoji: '💗',
-        emojiColor: '#fce7f3',
-        votes: 1547,
-        percentage: 6.2,
-        rank: 5,
-      },
-      {
-        id: '4',
-        name: 'IVE',
-        group: '스타쉽 엔터테인먼트',
-        emoji: '❄️',
-        emojiColor: '#e0f2fe',
-        votes: 595,
-        percentage: 2.4,
-        rank: 6,
-      },
-    ],
-  },
+    electionCandidates:
+      election.electionCandidates.length > 0
+        ? election.electionCandidates
+        : local.electionCandidates.map((candidate, index) => ({
+            id: `local-${election.id}-${index + 1}`,
+            candidateKey: candidate.candidateKey,
+            imageUrl: candidate.imageUrl ?? null,
+            displayOrder: candidate.displayOrder,
+          })),
+  }
 }
 
-const FALLBACK_RESULT = (id: string): VoteResultData => ({
-  ...MOCK_RESULTS['1'],
-  id,
-  title: '투표 결과',
-})
+function toVoteResultData(election: ApiElection, tally: TallyRow[], totalVotes: number): VoteResultData {
+  const tallyMap = new Map(tally.map((row) => [row.candidateKey, row]))
+
+  const rankedCandidates: RankedCandidate[] = election.electionCandidates
+    .slice()
+    .sort((left, right) => left.displayOrder - right.displayOrder)
+    .map((candidate) => {
+      const tallyRow = tallyMap.get(candidate.candidateKey)
+      const votes = tallyRow?.count ?? 0
+      const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0
+
+      return {
+        id: candidate.candidateKey,
+        name: candidate.candidateKey,
+        group: '',
+        emoji: '🎤',
+        emojiColor: '#F0EDFF',
+        imageUrl: candidate.imageUrl ?? undefined,
+        votes,
+        percentage,
+        rank: 0,
+      }
+    })
+    .sort((left, right) => right.votes - left.votes || left.name.localeCompare(right.name))
+    .map((candidate, index) => ({
+      ...candidate,
+      rank: index + 1,
+    }))
+
+  return {
+    id: election.id,
+    title: election.title ?? '투표 결과',
+    org: election.series?.seriesPreimage ?? 'Unknown series',
+    verified: Boolean(election.organizer),
+    emoji: '🎤',
+    endDate: formatVoteDate(election.endAt),
+    totalVotes,
+    rankedCandidates,
+  }
+}
 
 export interface UseVoteResultResult {
   result: VoteResultData | null
@@ -87,6 +97,50 @@ export interface UseVoteResultResult {
 }
 
 export function useVoteResult(id: string): UseVoteResultResult {
-  const result = MOCK_RESULTS[id] ?? FALLBACK_RESULT(id)
-  return { result, isLoading: false }
+  const [result, setResult] = useState<VoteResultData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    setIsLoading(true)
+
+    fetchElectionDetail(id)
+      .then(async (rawElection) => {
+        if (cancelled) return
+
+        const election = mergeLocalMetadata(rawElection)
+        const [summaries, tally] = await Promise.all([
+          fetchResultSummaries(id),
+          election.onchainState === 'FINALIZED'
+            ? fetchFinalizedTally(id)
+            : election.visibilityMode === 'OPEN'
+              ? fetchLiveTally(id)
+              : Promise.resolve([]),
+        ])
+
+        if (cancelled) return
+
+        const totalVotes =
+          summaries[0]?.totalValidVotes ??
+          tally.reduce((sum, row) => sum + row.count, 0)
+
+        setResult(toVoteResultData(election, tally, totalVotes))
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setResult(null)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  return { result, isLoading }
 }

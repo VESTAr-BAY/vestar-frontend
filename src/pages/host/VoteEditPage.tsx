@@ -129,8 +129,10 @@ export function VoteEditPage() {
         {step === 1 && <StepBasicInfo draft={draft} onUpdate={updateField} initialDraft={initialDraft} />}
         {step === 2 && (
           <StepCandidates
+            electionTitle={draft.electionTitle}
             candidates={draft.candidates}
             sections={draft.sections}
+            onUpdateElectionTitle={(value) => updateField('electionTitle', value)}
             onAdd={addCandidate}
             onRemove={removeCandidate}
             onUpdate={updateCandidate}

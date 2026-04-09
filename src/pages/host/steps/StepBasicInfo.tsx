@@ -25,37 +25,40 @@ export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoPr
 
   return (
     <div className="px-5 py-6 flex flex-col gap-6">
-      {/* Title */}
+      {/* Series name */}
       <div>
         <label htmlFor="vote-title" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
-          투표 제목 <span className="text-[#7140FF]">*</span>
+          시리즈명 <span className="text-[#7140FF]">*</span>
         </label>
         <input
           id="vote-title"
           type="text"
           value={draft.title}
           onChange={(e) => onUpdate('title', e.target.value)}
-          placeholder="예: 이번 주 1위는 누구?"
+          placeholder="예: MAMA 2026"
           maxLength={60}
           className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] placeholder:text-[#C0C4CC] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
         />
         <div className="text-right text-[11px] text-[#707070] mt-1">{draft.title.length}/60</div>
       </div>
 
-      {/* Group */}
+      {/* Organizer */}
       <div>
         <label htmlFor="vote-org" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
-          주최 <span className="text-[#7140FF]">*</span>
+          주최사
         </label>
         <input
           id="vote-org"
           type="text"
           value={draft.group}
-          onChange={(e) => onUpdate('group', e.target.value)}
-          placeholder="예: MAMA 2026 (선택사항)"
+          readOnly
+          placeholder="검증된 주최사 정보를 불러오는 중입니다."
           maxLength={40}
-          className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] placeholder:text-[#C0C4CC] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
+          className="w-full bg-[#F7F8FA] border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] placeholder:text-[#C0C4CC] outline-none"
         />
+        <div className="text-[11px] text-[#707070] mt-1">
+          현재 연결된 지갑 주소로 조회한 verified organizer 정보를 표시합니다.
+        </div>
       </div>
 
       {/* Banner Image */}

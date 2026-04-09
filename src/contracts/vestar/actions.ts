@@ -12,7 +12,6 @@ import {
 } from 'viem'
 import { vestarStatusTestnetChain } from './chain'
 import {
-  mockUsdtAbi,
   vestarContractAddresses,
   vestarElectionAbi,
   vestarElectionFactoryAbi,
@@ -23,6 +22,7 @@ import {
 import type {
   CancellationSummary,
   CandidateGroupBindingInput,
+  CreateElectionInput,
   ElectionConfig,
   ElectionConfigInput,
   ElectionSnapshot,
@@ -84,8 +84,12 @@ export function toVestarUnixTime(value: TimestampInput = Date.now()): bigint {
     return value
   }
 
-  // sungje : JS number timestamp는 Date.now()처럼 ms가 들어올 수 있어서 초 단위로 정규화
-  return BigInt(Math.floor(value >= 1_000_000_000_000 ? value / 1000 : value))
+  // JS callers often pass Date.now() in milliseconds. Normalize large numbers to unix seconds.
+  if (value > 1_000_000_000_000) {
+    return BigInt(Math.floor(value / 1000))
+  }
+
+  return BigInt(Math.floor(value))
 }
 
 export async function waitForVestarTransactionReceipt(hash: Hash): Promise<TransactionReceipt> {
@@ -250,16 +254,33 @@ export async function getOrganizerSnapshot(organizerAddress: Address): Promise<O
 
 export async function createElection(
   walletClient: WalletClient,
+  input: CreateElectionInput,
+): Promise<Hash>
+export async function createElection(
+  walletClient: WalletClient,
   config: ElectionConfigInput,
-  initialCandidateHashes: Hex[],
+  initialCandidateHashes: readonly Hex[],
+): Promise<Hash>
+export async function createElection(
+  walletClient: WalletClient,
+  inputOrConfig: CreateElectionInput | ElectionConfigInput,
+  maybeInitialCandidateHashes?: readonly Hex[],
 ): Promise<Hash> {
+  const input: CreateElectionInput =
+    maybeInitialCandidateHashes === undefined
+      ? (inputOrConfig as CreateElectionInput)
+      : {
+          config: inputOrConfig as ElectionConfigInput,
+          initialCandidateHashes: [...maybeInitialCandidateHashes],
+        }
+
   return writeVestarContract({
     walletClient,
     abi: vestarElectionFactoryAbi,
     address: vestarContractAddresses.electionFactory,
-    functionName: "createElection",
-    args: [config, initialCandidateHashes],
-  });
+    functionName: 'createElection',
+    args: [input.config, input.initialCandidateHashes],
+  })
 }
 
 export async function getElectionAddress(electionId: Hex): Promise<Address> {
@@ -412,34 +433,6 @@ export async function quoteElectionPayment(
     address: electionAddress,
     functionName: 'quotePayment',
     args: [ballotCount],
-  })
-}
-
-export async function getErc20Allowance(
-  tokenAddress: Address,
-  owner: Address,
-  spender: Address,
-): Promise<bigint> {
-  return readVestarContract<bigint>({
-    abi: mockUsdtAbi,
-    address: tokenAddress,
-    functionName: 'allowance',
-    args: [owner, spender],
-  })
-}
-
-export async function approveErc20Spending(
-  walletClient: WalletClient,
-  tokenAddress: Address,
-  spender: Address,
-  amount: bigint,
-): Promise<Hash> {
-  return writeVestarContract({
-    walletClient,
-    abi: mockUsdtAbi,
-    address: tokenAddress,
-    functionName: 'approve',
-    args: [spender, amount],
   })
 }
 
