@@ -16,6 +16,5 @@ export const wagmiConfig = createConfig({
     [vestarStatusTestnetChain.id]: http(vestarStatusTestnetChain.rpcUrls.default.http[0]),
     [mainnet.id]: http(),
     [sepolia.id]: http(),
-    [vestarStatusTestnetChain.id]: http(vestarStatusTestnet.rpcUrl),
   },
 })

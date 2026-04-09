@@ -23,8 +23,8 @@ import {
 import type {
   CancellationSummary,
   CandidateGroupBindingInput,
-  CreateElectionInput,
   ElectionConfig,
+  ElectionConfigInput,
   ElectionSnapshot,
   ElectionVoterSnapshot,
   GroupDefinition,

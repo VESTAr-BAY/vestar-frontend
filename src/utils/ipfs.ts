@@ -19,6 +19,8 @@ export async function uploadJsonToPinata(jsonData: any): Promise<string> {
     console.error('Failed to upload to Pinata:', error)
     throw new Error('Failed to upload to Pinata IPFS')
   }
+}
+
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/'
 
 /**
