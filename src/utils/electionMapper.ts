@@ -6,6 +6,10 @@ import {
   findLocalOpenElectionMetadata,
   type LocalOpenElectionMetadata,
 } from './localOpenElectionMetadata'
+import {
+  getCandidateManifestSeriesPreimage,
+  getCandidateManifestTitle,
+} from './candidateManifest'
 
 export function mapApiStateToBadge(state: ApiElectionState): BadgeVariant {
   switch (state) {
@@ -133,10 +137,8 @@ function withLocalOpenMetadata(election: ApiElection) {
   const local = findLocalMetadata(election)
 
   if (!local) {
-    return {
-      ...election,
-      electionCandidates: [],
-    }
+    // sungje : draft/로컬 메타데이터가 없어도 manifest에서 채운 후보 목록은 그대로 유지해야 한다.
+    return election
   }
 
   return {
@@ -159,15 +161,27 @@ export function applyManifestToElection(
   rawElection: ApiElection,
   manifest: CandidateManifest | null,
 ): ApiElection {
+  const manifestTitle = getCandidateManifestTitle(manifest)
+  const manifestSeriesPreimage = getCandidateManifestSeriesPreimage(manifest)
+
   return {
     ...rawElection,
+    title: rawElection.title ?? (manifestTitle || null),
     coverImageUrl: manifest?.election?.coverImageUrl ?? rawElection.coverImageUrl,
     series: rawElection.series
       ? {
           ...rawElection.series,
+          seriesPreimage: rawElection.series.seriesPreimage || manifestSeriesPreimage,
           coverImageUrl: manifest?.series?.coverImageUrl ?? rawElection.series.coverImageUrl,
         }
-      : rawElection.series,
+      : manifestSeriesPreimage || manifest?.series?.coverImageUrl
+        ? {
+            id: `manifest-${rawElection.onchainElectionId}`,
+            onchainSeriesId: rawElection.onchainSeriesId,
+            seriesPreimage: manifestSeriesPreimage || 'Unknown series',
+            coverImageUrl: manifest?.series?.coverImageUrl ?? null,
+          }
+        : rawElection.series,
     electionCandidates: resolveElectionCandidates(rawElection, manifest),
   }
 }
