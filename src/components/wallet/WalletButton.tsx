@@ -1,5 +1,5 @@
 import { useConnect } from 'wagmi'
-import walletIcon from '../../assets/account_balance_wallet.svg'
+import connectWalletIcon from '../../assets/account_connect_wallet.svg'
 
 interface WalletButtonProps {
   onConnected?: () => void
@@ -24,7 +24,7 @@ export function WalletButton({ onConnected }: WalletButtonProps) {
       disabled={isPending}
       className="flex items-center gap-2 rounded-full bg-[#7140FD] px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
     >
-      <img src={walletIcon} alt="" className="size-5 brightness-0 invert" />
+      <img src={connectWalletIcon} alt="" className="size-5" />
       {isPending ? 'Connecting…' : 'Connect Wallet'}
     </button>
   )

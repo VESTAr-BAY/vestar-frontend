@@ -3,7 +3,7 @@ import { useAccount, useConnect } from "wagmi";
 import keyboardArrowLeft from "../../assets/keyboard_arrow_left.svg";
 import searchIcon from "../../assets/search_button.svg";
 import accountCircleIcon from "../../assets/account_circle.svg";
-import walletIcon from "../../assets/account_balance_wallet.svg";
+import connectWalletIcon from "../../assets/account_connect_wallet.svg";
 import complete_vote from "../../assets/complete_vote.svg";
 import { useLanguage } from "../../providers/LanguageProvider";
 import type { ScrollState } from "../../hooks/useScrollDirection";
@@ -112,7 +112,7 @@ export function Header({
             disabled={isPending}
             className="bg-[#7140FF] text-white rounded-2xl px-[13px] py-[6px] text-[12px] font-semibold hover:opacity-85 transition-opacity disabled:opacity-50 flex-shrink-0 flex items-center gap-1"
           >
-            <img src={walletIcon} alt="" className="w-4 h-4 invert" />
+            <img src={connectWalletIcon} alt="" className="w-4 h-4" />
             {t("btn_connect")}
           </button>
         )}

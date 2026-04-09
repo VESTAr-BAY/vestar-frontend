@@ -3,7 +3,14 @@ import { useNavigate } from 'react-router'
 import { formatUnits } from 'viem'
 import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain, useWalletClient } from 'wagmi'
 import accountCircleIcon from '../../assets/account_circle.svg'
-import walletIcon from '../../assets/account_balance_wallet.svg'
+import connectWalletIcon from '../../assets/account_connect_wallet.svg'
+import disconnectWalletIcon from '../../assets/account_disconnect_wallet.svg'
+import completeVoteIcon from '../../assets/complete_vote.svg'
+import karmaIcon from '../../assets/karma.svg'
+import languageIcon from '../../assets/language.svg'
+import libraryAddIcon from '../../assets/library_add.svg'
+import mockUsdtIcon from '../../assets/mock_usdt.svg'
+import sttStakingIcon from '../../assets/stt_staking.svg'
 import verifiedIcon from '../../assets/verified.svg'
 import {
   getMockUsdtBalance,
@@ -40,21 +47,21 @@ const MENU_ITEMS: MenuItem[] = [
   {
     kind: 'internal',
     labelKey: 'pp_my_votes',
-    icon: '🗳️',
+    icon: completeVoteIcon,
     bg: '#F0EDFF',
     to: '/mypage?tab=votes',
   },
   {
     kind: 'internal',
     labelKey: 'pp_karma_history',
-    icon: '⚡',
+    icon: karmaIcon,
     bg: '#E8FFF0',
     to: '/mypage?tab=karma',
   },
   {
     kind: 'external',
     labelKey: 'pp_stt_staking',
-    icon: '🪙',
+    icon: sttStakingIcon,
     bg: '#FFF5E8',
     href: 'https://hub.status.network/stake',
   },
@@ -90,6 +97,10 @@ function formatMockUsdtBalance(balance: bigint): string {
   const trimmedFraction = fraction.replace(/0+$/, '').slice(0, 2)
 
   return trimmedFraction ? `${wholeWithCommas}.${trimmedFraction}` : wholeWithCommas
+}
+
+function ActionIcon({ src, alt }: { src: string; alt: string }) {
+  return <img src={src} alt={alt} className="w-6 h-6" />
 }
 
 export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
@@ -305,7 +316,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
                     className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0"
                     style={{ background: item.bg }}
                   >
-                    {item.icon}
+                    <ActionIcon src={item.icon} alt="" />
                   </span>
                   <span className="text-[14px] font-medium text-[#090A0B]">{t(item.labelKey)}</span>
                   <span className="ml-auto text-[#707070]">
@@ -380,7 +391,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
               className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-default"
             >
               <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#FFF5E8]">
-                🪙
+                <ActionIcon src={mockUsdtIcon} alt="" />
               </span>
               <span className="text-[14px] font-medium text-[#090A0B]">
                 {isMintingMockUsdt ? t('pp_mint_mock_usdt_loading') : t('pp_mint_mock_usdt')}
@@ -416,7 +427,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
               className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-default"
             >
               <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#F0EDFF]">
-                ✨
+                <ActionIcon src={libraryAddIcon} alt="" />
               </span>
               <span className="text-[14px] font-medium text-[#090A0B]">{t('pp_host_page')}</span>
               <span className="ml-auto text-[#707070]">
@@ -441,7 +452,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
             {/* Language toggle */}
             <div className="flex items-center gap-3 px-3 py-3">
               <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#E8F0FF]">
-                🌐
+                <ActionIcon src={languageIcon} alt="" />
               </span>
               <span className="text-[14px] font-medium text-[#090A0B] flex-1">
                 {t('pp_language')}
@@ -482,16 +493,12 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
                   background: isDisconnectAction ? 'rgba(220,38,38,0.10)' : 'rgba(113,64,255,0.14)',
                 }}
               >
-                {isDisconnectAction ? (
-                  '🔌'
-                ) : (
-                  <img
-                    src={walletIcon}
-                    alt=""
-                    className="w-[18px] h-[18px] brightness-0 saturate-100"
-                    style={{ filter: 'invert(27%) sepia(76%) saturate(3697%) hue-rotate(245deg) brightness(102%) contrast(101%)' }}
-                  />
-                )}
+                {/* sungje : 업로드한 connect / disconnect 전용 아이콘을 상태에 맞게 분기해서 사용한다. */}
+                <img
+                  src={isDisconnectAction ? disconnectWalletIcon : connectWalletIcon}
+                  alt=""
+                  className="w-[18px] h-[18px]"
+                />
               </span>
               <span
                 className="text-[14px] font-medium"
