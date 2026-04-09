@@ -26,9 +26,6 @@ function VoteHeroPreview({ title, bannerImage }: { title: string; bannerImage: s
         <div className="relative flex min-h-[296px] flex-col justify-end">
           <div className="mb-2 text-[11px] font-mono text-white/76">SERIES</div>
           <h2 className="text-[22px] font-bold text-white leading-tight mb-4">{previewTitle}</h2>
-          <div className="inline-flex self-start rounded-full bg-white/12 px-4 py-2 text-[12px] font-semibold text-white/88 backdrop-blur-sm">
-            4 votes
-          </div>
         </div>
       </div>
     </div>
