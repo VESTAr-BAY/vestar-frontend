@@ -52,10 +52,10 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 const STATE_CLASSES: Record<ScrollState, string> = {
-  default: 'bottom-0 w-full max-w-[430px] h-16 bg-[#13141A] border-t border-white/[0.07]',
-  hidden: '-bottom-[74px] w-full max-w-[430px] h-16 bg-[#13141A] border-t border-white/[0.07]',
+  default: 'bottom-0 w-full max-w-[430px] h-[var(--footer-h)] pb-[var(--safe-bottom)] bg-[#13141A] border-t border-white/[0.07]',
+  hidden: '-bottom-[var(--footer-h)] w-full max-w-[430px] h-[var(--footer-h)] pb-[var(--safe-bottom)] bg-[#13141A] border-t border-white/[0.07]',
   floating:
-    'bottom-[10px] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-[52px] rounded-2xl bg-[#1C2033] border border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.35),0_-2px_8px_rgba(0,0,0,0.25)]',
+    'bottom-[calc(var(--safe-bottom)+10px)] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-[52px] rounded-2xl bg-[#1C2033] border border-white/10 shadow-[0_-8px_32px_rgba(0,0,0,0.35),0_-2px_8px_rgba(0,0,0,0.25)]',
 }
 
 interface FooterNavProps {

@@ -15,10 +15,10 @@ interface HeaderProps {
 }
 
 const STATE_CLASSES: Record<ScrollState, string> = {
-  default: 'top-0 w-full max-w-[430px] h-14 bg-[#13141A] px-5',
-  hidden: '-top-[66px] w-full max-w-[430px] h-14 bg-[#13141A] px-5',
+  default: 'top-0 w-full max-w-[430px] h-[var(--header-h)] pt-[var(--safe-top)] bg-[#13141A] px-5',
+  hidden: '-top-[var(--header-h)] w-full max-w-[430px] h-[var(--header-h)] pt-[var(--safe-top)] bg-[#13141A] px-5',
   floating:
-    'top-[10px] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-12 rounded-2xl bg-[#1C2033] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.35),0_2px_8px_rgba(0,0,0,0.25)] px-4',
+    'top-[calc(var(--safe-top)+10px)] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-12 rounded-2xl bg-[#1C2033] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.35),0_2px_8px_rgba(0,0,0,0.25)] px-4',
 }
 
 function truncateAddress(address: string): string {

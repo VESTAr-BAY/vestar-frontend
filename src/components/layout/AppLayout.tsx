@@ -20,7 +20,7 @@ export function AppLayout() {
       />
 
       <main
-        className="h-screen overflow-y-auto pt-14 pb-20 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-transparent"
+        className="h-screen overflow-y-auto pt-[var(--header-h)] pb-[calc(var(--footer-h)+1rem)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-transparent"
         onScroll={onScroll}
       >
         <Outlet />

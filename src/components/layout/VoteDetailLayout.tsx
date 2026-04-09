@@ -25,7 +25,7 @@ export function VoteDetailLayout() {
         />
 
         <main
-          className="h-screen overflow-y-auto pt-14 pb-28 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="h-screen overflow-y-auto pt-[var(--header-h)] pb-[calc(7rem+var(--safe-bottom))] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           onScroll={onScroll}
         >
           <Outlet />
