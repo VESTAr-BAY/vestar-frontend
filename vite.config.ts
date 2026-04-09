@@ -10,6 +10,7 @@ export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), '')
   // sungje : dev 서버에서는 루트 경로로 바로 열리게 하고, 배포 빌드에서만 /vote/ base를 유지한다.
   const baseUrl = command === 'serve' ? '/' : '/vote/'
+  const verificationPortalPort = Number(process.env.VERIFICATION_PORTAL_DEV_PORT ?? '4174')
 
   return {
     base: baseUrl,
@@ -71,6 +72,24 @@ export default defineConfig(({ mode, command }) => {
         },
       }),
     ],
+    server:
+      command === 'serve'
+        ? {
+            proxy: {
+              '/verification': {
+                target: `http://127.0.0.1:${verificationPortalPort}`,
+                changeOrigin: true,
+                ws: true,
+              },
+              '/vote/verification': {
+                target: `http://127.0.0.1:${verificationPortalPort}`,
+                changeOrigin: true,
+                ws: true,
+                rewrite: (pathname) => pathname.replace(/^\/vote/, ''),
+              },
+            },
+          }
+        : undefined,
     test: {
       environment: 'jsdom',
       globals: true,

@@ -118,6 +118,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   const karma = isConnected ? 2480 : 0
   const votes = isConnected ? 14 : 0
   const tier = getKarmaTier(karma)
+  const verificationPortalPath = `${import.meta.env.BASE_URL}verification/`
 
   useEffect(() => {
     let cancelled = false
@@ -426,6 +427,37 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
                 <ActionIcon src={libraryAddIcon} alt="" />
               </span>
               <span className="text-[14px] font-medium text-[#090A0B]">{t('pp_host_page')}</span>
+              <span className="ml-auto text-[#707070]">
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onClose()
+                window.location.assign(verificationPortalPath)
+              }}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors cursor-pointer text-left"
+            >
+              <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#E8F0FF]">
+                <ActionIcon src={completeVoteIcon} alt="" />
+              </span>
+              <span className="text-[14px] font-medium text-[#090A0B]">
+                {t('mp_verification_cta')}
+              </span>
               <span className="ml-auto text-[#707070]">
                 <svg
                   aria-hidden="true"

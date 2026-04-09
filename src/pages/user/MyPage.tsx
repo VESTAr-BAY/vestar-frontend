@@ -13,33 +13,6 @@ import type {
   MyVoteItem,
 } from "../../types/user";
 
-function VerificationPortalSection() {
-  const { t } = useLanguage();
-  const verificationPortalPath = `${import.meta.env.BASE_URL}verification/`;
-
-  return (
-    <div className="px-4 pt-4">
-      <div className="rounded-[28px] border border-[#E7E9ED] bg-white p-5 shadow-[0_12px_30px_rgba(9,10,11,0.04)]">
-        <div className="text-[11px] font-mono uppercase tracking-[1px] text-[#7140FF]">
-          {t("pp_host_page")}
-        </div>
-        <div className="mt-2 text-[18px] font-semibold leading-tight text-[#090A0B]">
-          {t("mp_verification_title")}
-        </div>
-        <div className="mt-2 text-[13px] leading-relaxed text-[#707070]">
-          {t("mp_verification_sub")}
-        </div>
-        <a
-          href={verificationPortalPath}
-          className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-[#7140FF] px-4 py-3 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          {t("mp_verification_cta")}
-        </a>
-      </div>
-    </div>
-  );
-}
-
 function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
@@ -258,9 +231,6 @@ export function MyPage() {
           {tier.label} · {total.toLocaleString()}
         </div>
       </div>
-
-      <VerificationPortalSection />
-
       {/* Tab bar */}
       {/* karma history 지워주기 */}
       {/* emoji들 다 지우고 default image setting한 걸 불러오거나 그냥 contract에서 내가 참여한 vote들 목록 불러오기를 하면 될 듯 */}
