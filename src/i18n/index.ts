@@ -157,6 +157,7 @@ const STRINGS = {
   mp_total_karma: { en: 'Total Karma', ko: '총 Karma' },
   mp_tab_votes: { en: 'Vote History', ko: '투표 내역' },
   mp_tab_karma: { en: 'Karma History', ko: 'Karma 내역' },
+  common_loading: { en: 'Loading...', ko: '불러오는 중...' },
   mp_no_votes: { en: 'No votes yet', ko: '아직 참여한 투표가 없어요' },
   mp_no_karma: { en: 'No Karma earned yet', ko: '아직 획득한 Karma가 없어요' },
   mp_total_karma_stat: { en: 'Total Karma', ko: '총 보유 Karma' },

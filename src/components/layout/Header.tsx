@@ -32,9 +32,9 @@ export function Header({ scrollState, onOpenPanel, onOpenSearch }: HeaderProps) 
   const navigate = useNavigate()
   const { t } = useLanguage()
 
-  const isHome = pathname === '/vote'
-  const showBack = !isHome
-  const showLogo = isHome || pathname === '/mypage'
+  const isHomeLike = pathname === '/vote' || pathname === '/mypage'
+  const showBack = !isHomeLike
+  const showLogo = isHomeLike
 
   const handleConnect = () => {
     const injectedConnector = connectors.find((c) => c.id === 'injected') ?? connectors[0]

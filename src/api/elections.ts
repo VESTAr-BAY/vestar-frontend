@@ -5,6 +5,7 @@ import type {
   ApiElectionResultSummary,
   ApiFinalizedTallyRow,
   ApiLiveTallyRow,
+  ApiVoteHistoryItem,
   ApiVoteSubmissionStatus,
   ApiVisibilityMode,
   PreparePrivateElectionRequest,
@@ -15,6 +16,7 @@ export interface FetchElectionsParams {
   seriesId?: string
   onchainElectionId?: string
   onchainElectionAddress?: string
+  organizerWalletAddress?: string
   syncState?: string
   onchainState?: string
   visibilityMode?: ApiVisibilityMode
@@ -39,6 +41,7 @@ export function fetchElections(params: FetchElectionsParams = {}): Promise<ApiEl
       seriesId: params.seriesId,
       onchainElectionId: params.onchainElectionId,
       onchainElectionAddress: params.onchainElectionAddress,
+      organizerWalletAddress: params.organizerWalletAddress,
       syncState: params.syncState,
       onchainState: params.onchainState,
       visibilityMode: params.visibilityMode,
@@ -54,6 +57,7 @@ export function fetchElectionMetadata(
       seriesId: params.seriesId,
       onchainElectionId: params.onchainElectionId,
       onchainElectionAddress: params.onchainElectionAddress,
+      organizerWalletAddress: params.organizerWalletAddress,
       syncState: params.syncState,
       visibilityMode: params.visibilityMode,
     })}`,
@@ -81,6 +85,12 @@ export function fetchVoteSubmissionByTxHash(
 ): Promise<ApiVoteSubmissionStatus | null> {
   return apiFetch<ApiVoteSubmissionStatus | null>(
     `/vote-submissions/by-tx-hash${buildQuery({ txHash })}`,
+  )
+}
+
+export function fetchVoteHistory(voterAddress: string): Promise<ApiVoteHistoryItem[]> {
+  return apiFetch<ApiVoteHistoryItem[]>(
+    `/vote-submissions/history${buildQuery({ voterAddress })}`,
   )
 }
 

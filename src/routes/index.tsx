@@ -3,12 +3,15 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { VoteDetailLayout } from '../components/layout/VoteDetailLayout'
 import { WalletGuard } from '../guards/WalletGuard'
 import { HostDashboardPage } from '../pages/host/HostDashboardPage'
+import { HostLiveTallyPage } from '../pages/host/HostLiveTallyPage'
 import { VoteCreatePage } from '../pages/host/VoteCreatePage'
 import { VoteEditPage } from '../pages/host/VoteEditPage'
 import { VoteManagePage } from '../pages/host/VoteManagePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { UnauthorizedPage } from '../pages/UnauthorizedPage'
 import { MyPage } from '../pages/user/MyPage'
+import { VerifiedAdminPage } from '../pages/verified/VerifiedAdminPage'
+import { VerifiedRequestPage } from '../pages/verified/VerifiedRequestPage'
 import { VoteDetailPage } from '../pages/vote/VoteDetailPage'
 import { VoteListPage } from '../pages/vote/VoteListPage'
 import { VoteResultPage } from '../pages/vote/VoteResultPage'
@@ -39,8 +42,16 @@ export const router = createBrowserRouter([
         element: <MyPage />,
       },
       {
+        path: '/verified/admin',
+        element: <VerifiedAdminPage />,
+      },
+      {
         element: <WalletGuard />,
         children: [
+          {
+            path: '/verified',
+            element: <VerifiedRequestPage />,
+          },
           {
             path: '/host',
             element: <HostDashboardPage />,
@@ -66,6 +77,10 @@ export const router = createBrowserRouter([
           {
             path: '/host/manage/:id',
             element: <VoteManagePage />,
+          },
+          {
+            path: '/host/:id/live',
+            element: <HostLiveTallyPage />,
           },
         ],
       },

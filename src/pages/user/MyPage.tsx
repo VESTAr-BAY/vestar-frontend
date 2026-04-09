@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { useAccount } from "wagmi";
 // import keyboardArrowLeft from "../../assets/keyboard_arrow_left.svg";
 import { useLanguage } from "../../providers/LanguageProvider";
@@ -53,14 +53,30 @@ const KARMA_TYPE_STYLES: Record<KarmaEventType, { bg: string; text: string }> =
     streak: { bg: "#E8F0FF", text: "#2563eb" },
   };
 
-function VoteHistoryList({ votes }: { votes: MyVoteItem[] }) {
+function VoteHistoryList({
+  votes,
+  isLoading,
+}: {
+  votes: MyVoteItem[]
+  isLoading: boolean
+}) {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const badgeLabel: Record<BadgeVariant, string> = {
     live: "● LIVE",
     hot: "🔥 HOT",
     new: "NEW",
     end: lang === "ko" ? "종료" : "END",
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <span className="text-5xl">⏳</span>
+        <p className="text-[14px] text-[#707070]">{t("common_loading")}</p>
+      </div>
+    );
+  }
 
   if (votes.length === 0) {
     return (
@@ -74,9 +90,11 @@ function VoteHistoryList({ votes }: { votes: MyVoteItem[] }) {
   return (
     <div className="flex flex-col gap-[10px] px-4 py-4">
       {votes.map((item) => (
-        <div
+        <button
+          type="button"
           key={item.id}
-          className="bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px]"
+          onClick={() => navigate(`/vote/${item.voteId}`)}
+          className="bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px] text-left transition-colors hover:border-[#d9ddf3]"
         >
           <div
             className="w-[48px] h-[48px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
@@ -109,7 +127,7 @@ function VoteHistoryList({ votes }: { votes: MyVoteItem[] }) {
               +{item.karmaEarned} ⚡
             </span>
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -191,7 +209,7 @@ export function MyPage() {
   const tab = searchParams.get("tab") === "karma" ? "karma" : "votes";
   const { t } = useLanguage();
 
-  const { votes } = useMyVotes();
+  const { votes, isLoading: isVotesLoading } = useMyVotes();
   const { events, total } = useMyKarma();
   const tier = getKarmaTier(total);
 
@@ -202,24 +220,14 @@ export function MyPage() {
       <div className="h-80 relative px-5 pb-6 pt-[calc(56px+20px)] -mt-14 bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] overflow-hidden">
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7140FF] to-transparent" />
 
-        <div className="text-[10px] font-semibold text-[#7140FF] tracking-[1.2px] uppercase font-mono mb-1.5">
+        <div className="text-[10px] font-semibold text-violet-600 tracking-[1.2px] uppercase font-mono mb-1.5">
           My Page
         </div>
-        <div className="text-[20px] font-semibold text-[#090A0B] leading-tight truncate">
-          {isConnected && address
-            ? truncateAddress(address)
-            : t("pp_not_connected")}
+        <div className="text-[22px] font-semibold text-violet-600 leading-tight mb-1">
+          {isConnected && address ? truncateAddress(address) : t("pp_not_connected")}
         </div>
-        <div className="flex items-center gap-2 mt-[4px]">
-          <span
-            className="text-[15px] font-bold font-mono"
-            style={{ color: tier.color }}
-          >
-            {tier.label}
-          </span>
-          <span className="text-[12px] text-[#13141A]/40 font-mono">
-            {total.toLocaleString()} ⚡
-          </span>
+        <div className="text-[13px] text-violet-600/60">
+          {tier.label} · {total.toLocaleString()} ⚡
         </div>
       </div>
 
@@ -254,7 +262,7 @@ export function MyPage() {
       {/* Tab content */}
       <div className="bg-[#ffffff] min-h-screen">
         {tab === "votes" ? (
-          <VoteHistoryList votes={votes} />
+          <VoteHistoryList votes={votes} isLoading={isVotesLoading} />
         ) : (
           <KarmaHistoryList events={events} total={total} />
         )}
