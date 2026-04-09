@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Address, Hash, Hex } from 'viem'
-import { decodeEventLog, keccak256, parseUnits, toHex, zeroAddress, zeroHash } from 'viem'
+import { decodeEventLog, encodePacked, keccak256, parseUnits, toHex, zeroAddress, zeroHash } from 'viem'
 import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { preparePrivateElection } from '../../api/elections'
 import { fetchVerifiedOrganizerByWallet } from '../../api/verifiedOrganizers'
@@ -600,6 +600,9 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     if (!walletClient) {
       throw new Error('Status Network Testnet에 연결된 지갑이 필요합니다.')
     }
+    if (!address) {
+      throw new Error('시리즈 식별자를 만들려면 지갑 주소가 필요합니다.')
+    }
 
     if (!validateStep(3, draft)) {
       throw new Error('투표 입력값이 아직 완성되지 않았습니다.')
@@ -716,8 +719,10 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
           candidateManifestURI = buildManifestUriFallback(localManifestArtifact.rawJson)
         }
 
-        // sungje : manifest hash는 백엔드 prepare 응답이 아니라 프론트가 실제로 업로드한 json bytes 기준으로 고정한다.
-        const seriesId = keccak256(toHex(draft.title.trim()))
+        // sungje : seriesId는 같은 시리즈명을 다른 organizer가 써도 안 섞이게 organizer address + series title을 함께 해시한다.
+        const seriesId = keccak256(
+          encodePacked(['address', 'string'], [address, draft.title.trim()]),
+        )
         const titleHash = keccak256(toHex(electionDraft.title))
         const candidateManifestHash = localManifestArtifact.hash
         const initialCandidateHashes = buildCandidateHashes(electionDraft.candidates)
@@ -839,7 +844,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         currentTitle: null,
       })
     }
-  }, [chainId, draft, lang, switchChainAsync, walletClient])
+  }, [address, chainId, draft, lang, switchChainAsync, walletClient])
 
   return {
     draft,
