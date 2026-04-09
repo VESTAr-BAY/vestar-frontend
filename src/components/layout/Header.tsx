@@ -36,15 +36,10 @@ export function Header({
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-<<<<<<< Updated upstream
   const isHomeLike = pathname === '/vote' || pathname === '/mypage'
   const showBack = !isHomeLike
   const showLogo = isHomeLike
-=======
-  const isHome = pathname === "/vote";
-  const showBack = !isHome;
-  const showLogo = isHome || pathname === "/mypage";
->>>>>>> Stashed changes
+
 
   const handleConnect = () => {
     const injectedConnector =
