@@ -16,6 +16,7 @@ export interface VoteListItem {
   seriesKey?: string
   sortKey?: number
   seriesImageUrl?: string
+  visibilityMode?: 'OPEN' | 'PRIVATE'
   emoji: string
   emojiColor: string
   org: string
@@ -68,6 +69,7 @@ export interface VoteSection {
 export interface VoteDetailData {
   id: string
   onchainElectionId?: string
+  onchainState?: string
   title: string
   org: string
   host: string

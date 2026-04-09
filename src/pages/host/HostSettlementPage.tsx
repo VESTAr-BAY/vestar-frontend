@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { formatEther, type Address } from 'viem'
+import { formatUnits, type Address } from 'viem'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import {
   getElectionSnapshot,
@@ -21,8 +21,8 @@ function LoadingSkeleton() {
   )
 }
 
-function formatTokenAmount(value: bigint) {
-  return formatEther(value)
+function formatTokenAmount(value: bigint, decimals = 6) {
+  return formatUnits(value, decimals)
 }
 
 function formatSettlementError(error: unknown) {
@@ -101,26 +101,31 @@ export function HostSettlementPage() {
   const settlement = snapshot?.settlementSummary
   const isSettled = settlement?.settled ?? false
   const canSettle = Boolean(vote?.electionAddress && settlement && !isSettled)
+  const totalCollectedAmount = snapshot?.totalCollectedAmount ?? 0n
+  const platformShareBps = BigInt(snapshot?.platformShareBps ?? 0)
+  const organizerShareBps = BigInt(snapshot?.organizerShareBps ?? 0)
+  const bpsDenominator = 10_000n
+  const platformRevenueAmount =
+    totalCollectedAmount > 0n ? (totalCollectedAmount * platformShareBps) / bpsDenominator : 0n
+  const organizerRevenueAmount =
+    totalCollectedAmount > 0n ? (totalCollectedAmount * organizerShareBps) / bpsDenominator : 0n
 
   const cards = useMemo(
-    () =>
-      settlement
-        ? [
-            {
-              label: '총 수익',
-              value: `${formatTokenAmount(settlement.totalRevenueAmount)}`,
-            },
-            {
-              label: '플랫폼 수수료',
-              value: `${formatTokenAmount(settlement.platformRevenueAmount)}`,
-            },
-            {
-              label: '주최자 정산액',
-              value: `${formatTokenAmount(settlement.organizerRevenueAmount)}`,
-            },
-          ]
-        : [],
-    [settlement],
+    () => [
+      {
+        label: '총 수익',
+        value: `${formatTokenAmount(totalCollectedAmount)}`,
+      },
+      {
+        label: '플랫폼 수수료',
+        value: `${formatTokenAmount(platformRevenueAmount)}`,
+      },
+      {
+        label: '주최자 정산액',
+        value: `${formatTokenAmount(organizerRevenueAmount)}`,
+      },
+    ],
+    [organizerRevenueAmount, platformRevenueAmount, totalCollectedAmount],
   )
 
   const handleSettle = async () => {
@@ -188,9 +193,13 @@ export function HostSettlementPage() {
         <div className="text-[11px] font-semibold uppercase tracking-[1px] text-[#7140FF] font-mono">
           Settlement
         </div>
-        <div className="mt-2 text-[15px] font-semibold text-[#090A0B]">정산 실행</div>
+        <div className="mt-2 text-[15px] font-semibold text-[#090A0B]">
+          {isSettled ? '정산 결과' : '정산 실행'}
+        </div>
         <div className="mt-1 text-[13px] text-[#707070]">
-          finalize 이후 정산 가능한 수익을 온체인에서 처리합니다.
+          {isSettled
+            ? '온체인 정산이 완료되었고, 아래에서 정산 결과를 확인할 수 있습니다.'
+            : 'finalize 이후 정산 가능한 수익을 온체인에서 처리합니다.'}
         </div>
       </div>
 
@@ -228,7 +237,7 @@ export function HostSettlementPage() {
           onClick={handleSettle}
           className="w-full bg-[#090A0B] text-white rounded-2xl py-4 text-[15px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:cursor-default hover:enabled:opacity-85 transition-opacity active:enabled:scale-[0.99]"
         >
-          {isSettling ? '정산 진행 중...' : isSettled ? '정산 완료' : '정산 실행'}
+          {isSettling ? '정산 진행 중...' : isSettled ? '정산 결과 확인 완료' : '정산 실행'}
         </button>
       </div>
     </>

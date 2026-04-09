@@ -156,6 +156,9 @@ export interface ElectionSnapshot {
   state: VestarElectionState
   visibilityMode: VestarVisibilityMode
   paymentMode: VestarPaymentMode
+  totalCollectedAmount: bigint
+  platformShareBps: number
+  organizerShareBps: number
   resultSummary: ResultSummary
   cancellationSummary: CancellationSummary
   settlementSummary: SettlementSummary

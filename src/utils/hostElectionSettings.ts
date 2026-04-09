@@ -1,7 +1,7 @@
 import type { ElectionSettingsDraft } from '../types/host'
 
 export const FIXED_PAID_COST_PER_BALLOT = '100'
-export const UNLIMITED_PAID_COST_PER_BALLOT = '0.066'
+export const UNLIMITED_PAID_COST_PER_BALLOT = '100'
 
 export function normalizeElectionSettingsDraft<T extends ElectionSettingsDraft>(settings: T): T {
   const isOpenVote = settings.visibilityMode === 'OPEN'

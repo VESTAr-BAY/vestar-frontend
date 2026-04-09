@@ -215,6 +215,7 @@ export function mapToVoteListItem(rawElection: ApiElection, index = 0): VoteList
     seriesKey,
     sortKey: Number.isFinite(parsedId) ? parsedId : 0,
     seriesImageUrl: election.series?.coverImageUrl ?? election.coverImageUrl ?? undefined,
+    visibilityMode: election.visibilityMode,
     emoji: HOT_EMOJIS[index % HOT_EMOJIS.length],
     emojiColor: EMOJI_COLORS[index % 7],
     org: election.series?.seriesPreimage ?? 'Unknown series',
@@ -272,6 +273,7 @@ export function mapToVoteDetail(
   return {
     id: election.id,
     onchainElectionId: election.onchainElectionId,
+    onchainState: election.onchainState,
     title: election.title ?? 'Untitled election',
     org: election.series?.seriesPreimage ?? 'Unknown series',
     host: election.organizer?.organizationName ?? election.organizerWalletAddress,

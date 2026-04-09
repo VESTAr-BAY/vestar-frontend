@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { keccak256, toHex, type Address } from 'viem'
 import {
   finalizeElectionResults,
+  getElectionSnapshot,
   waitForVestarTransactionReceipt,
 } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
@@ -24,12 +25,13 @@ function LoadingSkeleton() {
 
 function getFinalizeBlockingMessage(params: {
   visibilityMode?: 'OPEN' | 'PRIVATE'
+  onchainState?: string
   electionAddress?: string
   onchainElectionId?: string
   isReady: boolean
 }) {
-  if (params.visibilityMode !== 'PRIVATE') {
-    return 'Finalize는 비공개 투표에서만 사용할 수 있습니다.'
+  if (params.onchainState === 'FINALIZED') {
+    return '이미 finalize가 완료된 투표입니다.'
   }
 
   if (!params.electionAddress || !params.onchainElectionId) {
@@ -37,7 +39,9 @@ function getFinalizeBlockingMessage(params: {
   }
 
   if (!params.isReady) {
-    return '아직 finalize 가능한 단계가 아닙니다. 키 공개 이후 다시 시도해 주세요.'
+    return params.visibilityMode === 'PRIVATE'
+      ? '아직 finalize 가능한 단계가 아닙니다. 키 공개 이후 다시 시도해 주세요.'
+      : '아직 finalize 가능한 단계가 아닙니다. 투표 종료 이후 다시 시도해 주세요.'
   }
 
   return null
@@ -82,26 +86,54 @@ export function VoteManagePage() {
   const { switchChainAsync } = useSwitchChain()
 
   const [isFinalizing, setIsFinalizing] = useState(false)
+  const [isSettlementSettled, setIsSettlementSettled] = useState(false)
+
+  useEffect(() => {
+    if (!vote?.electionAddress) {
+      setIsSettlementSettled(false)
+      return
+    }
+
+    let cancelled = false
+
+    getElectionSnapshot(vote.electionAddress as Address)
+      .then((snapshot) => {
+        if (!cancelled) {
+          setIsSettlementSettled(snapshot.settlementSummary.settled)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIsSettlementSettled(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [vote?.electionAddress])
 
   if (isLoading || !vote || !result) return <LoadingSkeleton />
 
   const isFinalizeReady = Boolean(
-    vote.visibilityMode === 'PRIVATE' &&
-      vote.electionAddress &&
-      liveVote?.badge === 'end' &&
-      vote.onchainElectionId,
+    vote.electionAddress &&
+      vote.onchainElectionId &&
+      vote.onchainState !== 'FINALIZED' &&
+      (vote.visibilityMode === 'OPEN'
+        ? liveVote?.badge === 'end'
+        : vote.visibilityMode === 'PRIVATE' && liveVote?.badge === 'end'),
   )
+  const finalizeBlockingMessage = getFinalizeBlockingMessage({
+    visibilityMode: vote.visibilityMode,
+    onchainState: vote.onchainState,
+    electionAddress: vote.electionAddress,
+    onchainElectionId: vote.onchainElectionId,
+    isReady: isFinalizeReady,
+  })
   const isLiveTallyAvailable = vote.badge !== 'end'
   const handleFinalize = async () => {
-    const blockingMessage = getFinalizeBlockingMessage({
-      visibilityMode: vote.visibilityMode,
-      electionAddress: vote.electionAddress,
-      onchainElectionId: vote.onchainElectionId,
-      isReady: isFinalizeReady,
-    })
-
-    if (blockingMessage) {
-      addToast({ type: 'info', message: blockingMessage })
+    if (finalizeBlockingMessage) {
+      addToast({ type: 'info', message: finalizeBlockingMessage })
       return
     }
 
@@ -186,11 +218,17 @@ export function VoteManagePage() {
         </button>
         <button
           type="button"
-          disabled={isFinalizing}
-          onClick={handleFinalize}
+          disabled={isSettlementSettled ? false : Boolean(finalizeBlockingMessage) || isFinalizing}
+          onClick={
+            isSettlementSettled ? () => navigate(`/host/${id}/settlement`) : handleFinalize
+          }
           className="w-full bg-[#090A0B] text-white rounded-2xl py-4 text-[15px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:cursor-default hover:enabled:opacity-85 transition-opacity active:enabled:scale-[0.99] flex items-center justify-center gap-2"
         >
-          {isFinalizing ? 'Finalize 진행 중...' : 'Finalize 실행'}
+          {isSettlementSettled
+            ? '정산 결과'
+            : isFinalizing
+              ? 'Finalize 진행 중...'
+              : 'Finalize 실행'}
         </button>
       </div>
     </>

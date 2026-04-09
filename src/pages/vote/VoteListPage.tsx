@@ -314,6 +314,9 @@ function SeriesVoteCard({
 export function VoteListPage() {
   const [activeFilter, setActiveFilter] = useState(0)
   const [seriesTab, setSeriesTab] = useState<'active' | 'ended'>('active')
+  const [activeVisibilityFilter, setActiveVisibilityFilter] = useState<'all' | 'OPEN' | 'PRIVATE'>(
+    'all',
+  )
   const navigate = useNavigate()
   const { isVoted } = useVotedVotes()
   const { isLoading: isHotLoading, hotVotes } = useVoteList()
@@ -328,6 +331,11 @@ export function VoteListPage() {
   const { t, lang } = useLanguage()
   const currentFilter = FILTER_CHIPS[activeFilter].filter
   const heroCopy = getHeroCopy(currentFilter, lang)
+  const activeVisibilityChips = [
+    { key: 'all' as const, label: lang === 'ko' ? '전체' : 'All' },
+    { key: 'OPEN' as const, label: 'OPEN' },
+    { key: 'PRIVATE' as const, label: 'PRIVATE' },
+  ]
 
   const handleHotNavigate = (vote: HotVote) => {
     navigate(vote.badge === 'end' ? `/vote/${vote.id}/result` : `/vote/${vote.id}`)
@@ -351,10 +359,18 @@ export function VoteListPage() {
     })
   }
 
-  const visibleGroupedItems = groupVoteItemsBySeries(items)
+  const visibleVoteItems =
+    seriesTab === 'active' && activeVisibilityFilter !== 'all'
+      ? items.filter((item) => item.visibilityMode === activeVisibilityFilter)
+      : items
+  const allVoteItems =
+    seriesTab === 'active' && activeVisibilityFilter !== 'all'
+      ? allItems.filter((item) => item.visibilityMode === activeVisibilityFilter)
+      : allItems
+  const visibleGroupedItems = groupVoteItemsBySeries(visibleVoteItems)
   const visibleActiveGroups = visibleGroupedItems.filter((group) => !isVoteSeriesEnded(group))
   const visibleEndedGroups = visibleGroupedItems.filter((group) => isVoteSeriesEnded(group))
-  const allGroupedItems = groupVoteItemsBySeries(allItems)
+  const allGroupedItems = groupVoteItemsBySeries(allVoteItems)
   const allActiveGroups = allGroupedItems.filter((group) => !isVoteSeriesEnded(group))
   const allEndedGroups = allGroupedItems.filter((group) => isVoteSeriesEnded(group))
   const totalGroups = seriesTab === 'active' ? allActiveGroups : allEndedGroups
@@ -414,31 +430,53 @@ export function VoteListPage() {
         ) : null}
 
         <div className="flex items-center justify-between gap-3 px-5 pt-[20px] pb-[10px]">
-          <div className="inline-flex rounded-full bg-[#F4F5F7] p-1">
-            <button
-              type="button"
-              onClick={() => setSeriesTab('active')}
-              className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
-                seriesTab === 'active'
-                  ? 'bg-white text-[#090A0B] shadow-[0_4px_12px_rgba(15,23,42,0.08)]'
-                  : 'text-[#707070]'
-              }`}
-            >
-              {t('vl_active_section')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setSeriesTab('ended')}
-              className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
-                seriesTab === 'ended'
-                  ? 'bg-white text-[#090A0B] shadow-[0_4px_12px_rgba(15,23,42,0.08)]'
-                  : 'text-[#707070]'
-              }`}
-            >
-              {t('vl_ended_section')}
-            </button>
+          <div className="flex flex-col gap-2">
+            <div className="inline-flex rounded-full bg-[#F4F5F7] p-1">
+              <button
+                type="button"
+                onClick={() => setSeriesTab('active')}
+                className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+                  seriesTab === 'active'
+                    ? 'bg-white text-[#090A0B] shadow-[0_4px_12px_rgba(15,23,42,0.08)]'
+                    : 'text-[#707070]'
+                }`}
+              >
+                {t('vl_active_section')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSeriesTab('ended')}
+                className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+                  seriesTab === 'ended'
+                    ? 'bg-white text-[#090A0B] shadow-[0_4px_12px_rgba(15,23,42,0.08)]'
+                    : 'text-[#707070]'
+                }`}
+              >
+                {t('vl_ended_section')}
+              </button>
+            </div>
+            {seriesTab === 'active' ? (
+              <div className="flex items-center gap-2">
+                {activeVisibilityChips.map((chip) => (
+                  <button
+                    key={chip.key}
+                    type="button"
+                    onClick={() => setActiveVisibilityFilter(chip.key)}
+                    className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
+                      activeVisibilityFilter === chip.key
+                        ? 'border-[#7140FF] bg-[#F0EDFF] text-[#7140FF]'
+                        : 'border-[#E7E9ED] bg-white text-[#707070]'
+                    }`}
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
-          <span className="text-[12px] text-[#7140FF] cursor-pointer">{t('vl_sort_latest')}</span>
+          <span className="text-[12px] text-[#7140FF]">
+            {lang === 'ko' ? '시리즈 최신순' : 'Latest series first'}
+          </span>
         </div>
         <div className="px-5 flex flex-col gap-4 pb-2">
           {isItemsLoading ? (

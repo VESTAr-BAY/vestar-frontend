@@ -398,6 +398,30 @@ export async function getElectionSettlementSummary(
   })
 }
 
+export async function getElectionTotalCollectedAmount(electionAddress: Address): Promise<bigint> {
+  return readVestarContract<bigint>({
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: 'totalCollectedAmount',
+  })
+}
+
+export async function getElectionPlatformShareBps(electionAddress: Address): Promise<number> {
+  return readVestarContract<number>({
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: 'platformShareBps',
+  })
+}
+
+export async function getElectionOrganizerShareBps(electionAddress: Address): Promise<number> {
+  return readVestarContract<number>({
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: 'organizerShareBps',
+  })
+}
+
 export async function getElectionCancellationSummary(
   electionAddress: Address,
 ): Promise<CancellationSummary> {
@@ -517,6 +541,9 @@ export async function getElectionSnapshot(electionAddress: Address): Promise<Ele
     state,
     visibilityMode,
     paymentMode,
+    totalCollectedAmount,
+    platformShareBps,
+    organizerShareBps,
     resultSummary,
     cancellationSummary,
     settlementSummary,
@@ -527,6 +554,9 @@ export async function getElectionSnapshot(electionAddress: Address): Promise<Ele
     getElectionState(electionAddress),
     getElectionVisibilityMode(electionAddress),
     getElectionPaymentMode(electionAddress),
+    getElectionTotalCollectedAmount(electionAddress),
+    getElectionPlatformShareBps(electionAddress),
+    getElectionOrganizerShareBps(electionAddress),
     getElectionResultSummary(electionAddress),
     getElectionCancellationSummary(electionAddress),
     getElectionSettlementSummary(electionAddress),
@@ -540,6 +570,9 @@ export async function getElectionSnapshot(electionAddress: Address): Promise<Ele
     state,
     visibilityMode,
     paymentMode,
+    totalCollectedAmount,
+    platformShareBps,
+    organizerShareBps,
     resultSummary,
     cancellationSummary,
     settlementSummary,
