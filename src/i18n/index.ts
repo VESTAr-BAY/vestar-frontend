@@ -10,11 +10,11 @@ const STRINGS = {
   btn_close: { en: 'Close', ko: '닫기' },
   btn_cancel: { en: 'Cancel', ko: '취소' },
   btn_vote_now: { en: 'Vote Now', ko: '투표하기' },
-  btn_back: { en: 'Back', ko: '뒤로' },
   btn_search: { en: 'Search', ko: '검색' },
   btn_profile: { en: 'Profile', ko: '프로필' },
   btn_share: { en: 'Share', ko: '공유' },
-  btn_hold: { en: 'Hold', ko: '주최하기' },
+  btn_hold: { en: 'Create poll', ko: '투표 생성' },
+  btn_update_version: { en: 'Update Version', ko: '버전 업데이트' },
 
   // ── Search overlay ──────────────────────────────────────────────────────────
   search_placeholder: { en: 'Search votes…', ko: '투표 검색…' },
@@ -151,6 +151,20 @@ const STRINGS = {
   pp_host_page: { en: 'Hold', ko: '주최하기' },
   pp_disconnect: { en: 'Disconnect Wallet', ko: '지갑 연결 해제' },
   pp_language: { en: 'Language', ko: '언어' },
+
+  // ── PWA update ─────────────────────────────────────────────────────────────
+  pwa_update_ready: {
+    en: 'A new version is ready.',
+    ko: '새 버전이 준비됐어요.',
+  },
+  pwa_update_desc: {
+    en: 'Tap the button to refresh and use the latest app.',
+    ko: '버튼을 누르면 최신 버전으로 새로고침됩니다.',
+  },
+  pwa_update_loading: {
+    en: 'Updating…',
+    ko: '업데이트 중…',
+  },
 
   // ── My Page ─────────────────────────────────────────────────────────────────
   mp_back: { en: 'Home', ko: '홈으로' },

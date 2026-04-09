@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PwaUpdatePrompt } from './components/shared/PwaUpdatePrompt'
 import { RouterProvider } from 'react-router'
 import { SplashScreen } from './components/shared/SplashScreen'
 import { router } from './routes'
@@ -10,6 +11,7 @@ function App() {
     <>
       {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       <RouterProvider router={router} />
+      <PwaUpdatePrompt />
     </>
   )
 }

@@ -78,9 +78,6 @@ export function Header({
               className="min-w-0 max-w-[100px] flex items-center gap-[5px] bg-white/[0.06] border border-white/[0.10] rounded-[20px] px-[10px] py-[5px] text-[11px] font-medium whitespace-nowrap hover:bg-white/[0.10] transition-colors cursor-pointer"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_#22C55E] animate-pulse flex-shrink-0" />
-              <span className="text-[#7140FF] font-semibold flex-shrink-0">
-                2,480
-              </span>
               <span className="text-white/60 truncate min-w-0">
                 {truncateAddress(address)}
               </span>
