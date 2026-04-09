@@ -36,21 +36,23 @@ function CandidateCard({
   onRemove,
   onUpdate,
   isEditMode,
-  initialCandidates
+  initialCandidates,
 }: {
   candidate: CandidateDraft
   index: number
   canRemove: boolean
   onRemove: () => void
-  onUpdate: (field: keyof Omit<CandidateDraft, 'id'>, value: CandidateDraft[keyof Omit<CandidateDraft, 'id'>]) => void
+  onUpdate: (
+    field: keyof Omit<CandidateDraft, 'id'>,
+    value: CandidateDraft[keyof Omit<CandidateDraft, 'id'>],
+  ) => void
   isEditMode: boolean
   initialCandidates?: VoteCreateDraft['candidates']
 }) {
-  const initialCandidate = initialCandidates?.find(c => c.id === candidate.id)
-  const isCandidateChanged = initialCandidate && (
-    initialCandidate.name !== candidate.name ||
-    initialCandidate.image !== candidate.image
-  )
+  const initialCandidate = initialCandidates?.find((c) => c.id === candidate.id)
+  const isCandidateChanged =
+    initialCandidate &&
+    (initialCandidate.name !== candidate.name || initialCandidate.image !== candidate.image)
 
   return (
     <div className="bg-white border border-[#E7E9ED] rounded-2xl p-4">
@@ -99,7 +101,7 @@ function CandidateCard({
       />
 
       {/* Image Upload */}
-      <div 
+      <div
         onClick={() => document.getElementById(`file-upload-${candidate.id}`)?.click()}
         className="w-24 h-24 rounded-xl border-2 border-dashed border-[#E7E9ED] bg-[#F7F8FA] hover:border-[#7140FF]/50 transition-colors flex flex-col items-center justify-center cursor-pointer overflow-hidden relative"
       >
@@ -107,18 +109,28 @@ function CandidateCard({
           <img src={candidate.image} alt="후보 이미지" className="w-full h-full object-cover" />
         ) : (
           <>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C0C4CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-1">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#C0C4CC"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mb-1"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
             </svg>
             <span className="text-[10px] text-[#C0C4CC] font-medium">사진 업로드</span>
           </>
         )}
-        <input 
+        <input
           id={`file-upload-${candidate.id}`}
-          type="file" 
-          accept="image/*" 
+          type="file"
+          accept="image/*"
           onChange={(e) => {
             if (e.target.files && e.target.files[0]) {
               const file = e.target.files[0]
@@ -126,8 +138,8 @@ function CandidateCard({
               onUpdate('image', url)
               onUpdate('imageFile', file)
             }
-          }} 
-          className="hidden" 
+          }}
+          className="hidden"
         />
       </div>
     </div>
@@ -144,7 +156,7 @@ function SectionCard({
   onRemoveCandidate,
   onUpdateCandidate,
   isEditMode,
-  initialCandidates
+  initialCandidates,
 }: {
   section: SectionDraft
   sectionIndex: number
@@ -257,7 +269,7 @@ export function StepCandidates({
   onRemoveCandidateFromSection,
   onUpdateSectionCandidate,
   onClearSections,
-  initialCandidates
+  initialCandidates,
 }: StepCandidatesProps) {
   const isEditMode = !!initialCandidates
   const useSections = sections.length > 0
@@ -300,7 +312,10 @@ export function StepCandidates({
 
       {!useSections && (
         <div className="bg-white border border-[#E7E9ED] rounded-2xl px-4 py-4 mb-4">
-          <label htmlFor="election-title" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+          <label
+            htmlFor="election-title"
+            className="block text-[13px] font-semibold text-[#090A0B] mb-2"
+          >
             투표 이름 <span className="text-[#7140FF]">*</span>
           </label>
           <input
@@ -322,10 +337,9 @@ export function StepCandidates({
             각 섹션 이름이 개별 투표 이름으로 사용됩니다.
           </div>
           <div className="text-[12px] text-[#707070] mb-4">
-            {isEditMode 
-              ? "수정 모드에서는 후보의 삭제 및 추가가 제한됩니다." 
-              : "후보는 각 섹션에 최소 2명 이상 등록하세요."
-            }
+            {isEditMode
+              ? '수정 모드에서는 후보의 삭제 및 추가가 제한됩니다.'
+              : '후보는 각 섹션에 최소 2명 이상 등록하세요.'}
           </div>
 
           <div className="flex flex-col gap-5">
@@ -374,10 +388,9 @@ export function StepCandidates({
         // ── Flat mode (existing UI) ────────────────────────────────────────
         <>
           <div className="text-[12px] text-[#707070] mb-4">
-            {isEditMode 
-              ? "수정 모드에서는 후보의 삭제 및 추가가 제한됩니다." 
-              : `최소 2명, 최대 ${MAX_CANDIDATES}명까지 등록할 수 있습니다.`
-            }
+            {isEditMode
+              ? '수정 모드에서는 후보의 삭제 및 추가가 제한됩니다.'
+              : `최소 2명, 최대 ${MAX_CANDIDATES}명까지 등록할 수 있습니다.`}
           </div>
 
           <div className="flex flex-col gap-4">

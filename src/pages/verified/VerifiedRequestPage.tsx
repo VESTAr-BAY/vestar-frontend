@@ -14,9 +14,7 @@ function StatusBadge({ status }: { status: ApiVerifiedOrganizer['status'] }) {
         ? 'bg-[#FEF2F2] text-[#dc2626]'
         : 'bg-[#F0EDFF] text-[#7140FF]'
 
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${style}`}>{status}</span>
-  )
+  return <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${style}`}>{status}</span>
 }
 
 export function VerifiedRequestPage() {
@@ -128,9 +126,7 @@ export function VerifiedRequestPage() {
 
         <div className="mt-6 space-y-4">
           <div>
-            <label className="mb-2 block text-[13px] font-semibold text-[#090A0B]">
-              이메일
-            </label>
+            <label className="mb-2 block text-[13px] font-semibold text-[#090A0B]">이메일</label>
             <input
               type="email"
               value={contactEmail}
@@ -141,9 +137,7 @@ export function VerifiedRequestPage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-[13px] font-semibold text-[#090A0B]">
-              회사명
-            </label>
+            <label className="mb-2 block text-[13px] font-semibold text-[#090A0B]">회사명</label>
             <input
               type="text"
               value={organizationName}

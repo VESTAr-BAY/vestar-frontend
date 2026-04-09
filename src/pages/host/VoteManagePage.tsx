@@ -1,9 +1,11 @@
-import { useContext, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { keccak256, toHex, type Address } from 'viem'
-import { VoteDetailHeaderContext } from '../../components/layout/VoteDetailLayout'
-import { finalizeElectionResults, waitForVestarTransactionReceipt } from '../../contracts/vestar/actions'
+import {
+  finalizeElectionResults,
+  waitForVestarTransactionReceipt,
+} from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useVoteManage } from '../../hooks/host/useVoteManage'
 import { useHostLiveTally } from '../../hooks/host/useHostLiveTally'
@@ -74,7 +76,6 @@ export function VoteManagePage() {
     totalSubmissions,
     totalInvalidVotes,
   } = useHostLiveTally(id)
-  const { setConfig } = useContext(VoteDetailHeaderContext)
   const { addToast } = useToast()
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient({ chainId: vestarStatusTestnetChain.id })
@@ -82,25 +83,13 @@ export function VoteManagePage() {
 
   const [isFinalizing, setIsFinalizing] = useState(false)
 
-  useEffect(() => {
-    if (!vote) return
-    setConfig({
-      title: `${vote.title} — 관리`,
-      onShare: () => {
-        if (navigator.share) {
-          navigator.share({ title: vote.title, url: window.location.href }).catch(() => {})
-        }
-      },
-    })
-  }, [vote, setConfig])
-
   if (isLoading || !vote || !result) return <LoadingSkeleton />
 
   const isFinalizeReady = Boolean(
     vote.visibilityMode === 'PRIVATE' &&
-    vote.electionAddress &&
-    liveVote?.badge === 'end' &&
-    vote.onchainElectionId,
+      vote.electionAddress &&
+      liveVote?.badge === 'end' &&
+      vote.onchainElectionId,
   )
   const isLiveTallyAvailable = vote.badge !== 'end'
   const handleFinalize = async () => {
@@ -117,7 +106,10 @@ export function VoteManagePage() {
     }
 
     if (!vote.electionAddress || !vote.onchainElectionId) {
-      addToast({ type: 'error', message: '온체인 election 주소가 없어 finalize를 진행할 수 없습니다.' })
+      addToast({
+        type: 'error',
+        message: '온체인 election 주소가 없어 finalize를 진행할 수 없습니다.',
+      })
       return
     }
 
@@ -136,21 +128,20 @@ export function VoteManagePage() {
       const resultManifestURI = `frontend://vestar/finalize/${vote.onchainElectionId}`
       const resultManifestHash = keccak256(toHex(resultManifestURI))
 
-      const txHash = await finalizeElectionResults(
-        walletClient,
-        vote.electionAddress as Address,
-        {
-          resultManifestHash,
-          resultManifestURI,
-          totalSubmissions,
-          totalValidVotes: totalVotes,
-          totalInvalidVotes,
-        },
-      )
+      const txHash = await finalizeElectionResults(walletClient, vote.electionAddress as Address, {
+        resultManifestHash,
+        resultManifestURI,
+        totalSubmissions,
+        totalValidVotes: totalVotes,
+        totalInvalidVotes,
+      })
 
       addToast({ type: 'info', message: `Finalize 트랜잭션 제출됨: ${txHash}` })
       await waitForVestarTransactionReceipt(txHash)
-      addToast({ type: 'success', message: '온체인 finalize가 완료되었습니다. 인덱서 반영을 기다리는 중입니다.' })
+      addToast({
+        type: 'success',
+        message: '온체인 finalize가 완료되었습니다. 인덱서 반영을 기다리는 중입니다.',
+      })
     } catch (error) {
       addToast({
         type: 'info',
@@ -172,16 +163,16 @@ export function VoteManagePage() {
         <div className="text-[11px] font-semibold uppercase tracking-[1px] text-[#7140FF] font-mono">
           Host Detail
         </div>
-        <div className="mt-2 text-[15px] font-semibold text-[#090A0B]">
-          생성자 전용 상세 화면
-        </div>
+        <div className="mt-2 text-[15px] font-semibold text-[#090A0B]">생성자 전용 상세 화면</div>
         <div className="mt-1 text-[13px] text-[#707070]">
           진행 중 집계 확인과 finalize를 여기서 이어서 처리할 수 있습니다.
         </div>
       </div>
 
       {/* 현재 투표 현황 */}
-      <VoteResultRankings rankedCandidates={rankedCandidates.length > 0 ? rankedCandidates : result.rankedCandidates} />
+      <VoteResultRankings
+        rankedCandidates={rankedCandidates.length > 0 ? rankedCandidates : result.rankedCandidates}
+      />
 
       <div className="px-5 py-6 bg-[#F7F8FA] flex flex-col gap-3">
         <button

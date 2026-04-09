@@ -44,8 +44,7 @@ import { resolveIpfsUrl } from '../utils/ipfs'
 
 const FACTORY_ADDRESS = getAddress(vestarContractAddresses.electionFactory)
 const LOG_BLOCK_CHUNK_SIZE = 4_000n
-const ZERO_HASH =
-  '0x0000000000000000000000000000000000000000000000000000000000000000' as const
+const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000' as const
 const ONCHAIN_INDEX_CACHE_KEY = `vestar:onchain:index:v1:${FACTORY_ADDRESS.toLowerCase()}`
 const ONCHAIN_DETAIL_CACHE_PREFIX = `vestar:onchain:detail:v2:${FACTORY_ADDRESS.toLowerCase()}:`
 const ONCHAIN_MANIFEST_CACHE_PREFIX = `vestar:onchain:manifest:v2:`
@@ -396,7 +395,9 @@ function readFreshDetailCache(electionAddress: Address) {
   return cached.election
 }
 
-export async function fetchOnchainElectionSubmissionCount(electionAddress: Address): Promise<number> {
+export async function fetchOnchainElectionSubmissionCount(
+  electionAddress: Address,
+): Promise<number> {
   const normalizedAddress = electionAddress.toLowerCase()
   const cached = readStoredItem<StoredOnchainSubmissionCount>(
     `${ONCHAIN_SUBMISSION_COUNT_CACHE_PREFIX}${normalizedAddress}`,
@@ -429,7 +430,8 @@ export async function fetchOnchainElectionSubmissionCount(electionAddress: Addre
       }),
     ])
 
-    const totalSubmissions = (cached?.totalSubmissions ?? 0) + openLogs.length + encryptedLogs.length
+    const totalSubmissions =
+      (cached?.totalSubmissions ?? 0) + openLogs.length + encryptedLogs.length
 
     writeStoredItem(`${ONCHAIN_SUBMISSION_COUNT_CACHE_PREFIX}${normalizedAddress}`, {
       lastSyncedBlock: `${latestBlock}`,
@@ -475,7 +477,10 @@ export async function fetchOnchainElectionDetail(id: string): Promise<ApiElectio
       getElectionResultSummary(entry.electionAddress),
       fetchOnchainElectionSubmissionCount(entry.electionAddress),
     ])
-    const manifest = await readCandidateManifest(config.candidateManifestURI, config.candidateManifestHash)
+    const manifest = await readCandidateManifest(
+      config.candidateManifestURI,
+      config.candidateManifestHash,
+    )
     // sungje : finalize 전 getResultSummary().totalSubmissions 는 0일 수 있어서 제출 이벤트 개수로 live 참여수 보강
     const totalSubmissions = Math.max(Number(resultSummary.totalSubmissions), liveSubmissionCount)
 
@@ -484,7 +489,9 @@ export async function fetchOnchainElectionDetail(id: string): Promise<ApiElectio
       onchain_election_id: entry.electionId,
       onchain_election_address: entry.electionAddress,
       onchain_state: mapContractState(state),
-      title: getCandidateManifestTitle(manifest) || buildFallbackTitle(entry.electionId, entry.electionAddress),
+      title:
+        getCandidateManifestTitle(manifest) ||
+        buildFallbackTitle(entry.electionId, entry.electionAddress),
       cover_image_url: getCandidateManifestCoverImageUrl(manifest),
       series_preimage: getCandidateManifestSeriesPreimage(manifest) || buildFallbackSeries(entry),
       organizer_wallet_address: entry.organizer,
@@ -518,11 +525,9 @@ export async function fetchOnchainElectionDetail(id: string): Promise<ApiElectio
   }
 }
 
-export async function fetchOnchainElectionList(params: {
-  state?: string
-  page?: number
-  pageSize?: number
-} = {}): Promise<ApiElectionListResponse> {
+export async function fetchOnchainElectionList(
+  params: { state?: string; page?: number; pageSize?: number } = {},
+): Promise<ApiElectionListResponse> {
   const requestCacheKey = JSON.stringify({
     state: params.state ?? 'ALL',
     page: params.page ?? 1,

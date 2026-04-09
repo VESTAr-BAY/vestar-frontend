@@ -182,7 +182,11 @@ export function VoteCreatePage() {
               </span>
             </>
           ) : step === 3 ? (
-            (draft.sections.length > 0 ? `투표 만들기 (${draft.sections.length}건)` : '투표 만들기 완료')
+            draft.sections.length > 0 ? (
+              `투표 만들기 (${draft.sections.length}건)`
+            ) : (
+              '투표 만들기 완료'
+            )
           ) : (
             <>
               다음 단계

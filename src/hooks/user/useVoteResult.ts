@@ -30,14 +30,12 @@ function mergeLocalMetadata(election: ApiElection): ApiElection {
     ...election,
     title: election.title ?? local.title,
     coverImageUrl: election.coverImageUrl ?? local.coverImageUrl ?? null,
-    series:
-      election.series ??
-      {
-        id: `local-${local.seriesId}`,
-        seriesPreimage: local.series.seriesPreimage,
-        onchainSeriesId: local.seriesId,
-        coverImageUrl: local.series.coverImageUrl ?? null,
-      },
+    series: election.series ?? {
+      id: `local-${local.seriesId}`,
+      seriesPreimage: local.series.seriesPreimage,
+      onchainSeriesId: local.seriesId,
+      coverImageUrl: local.series.coverImageUrl ?? null,
+    },
     electionCandidates:
       election.electionCandidates.length > 0
         ? election.electionCandidates
@@ -50,7 +48,11 @@ function mergeLocalMetadata(election: ApiElection): ApiElection {
   }
 }
 
-function toVoteResultData(election: ApiElection, tally: TallyRow[], totalVotes: number): VoteResultData {
+function toVoteResultData(
+  election: ApiElection,
+  tally: TallyRow[],
+  totalVotes: number,
+): VoteResultData {
   const tallyMap = new Map(tally.map((row) => [row.candidateKey, row]))
 
   const rankedCandidates: RankedCandidate[] = election.electionCandidates
@@ -121,8 +123,7 @@ export function useVoteResult(id: string): UseVoteResultResult {
         if (cancelled) return
 
         const totalVotes =
-          summaries[0]?.totalValidVotes ??
-          tally.reduce((sum, row) => sum + row.count, 0)
+          summaries[0]?.totalValidVotes ?? tally.reduce((sum, row) => sum + row.count, 0)
 
         setResult(toVoteResultData(election, tally, totalVotes))
       })

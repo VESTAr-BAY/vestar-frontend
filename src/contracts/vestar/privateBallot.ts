@@ -136,13 +136,9 @@ export async function encryptPrivateBallot({
     256,
   )
   const aesKeyBytes = new Uint8Array(await cryptoApi.subtle.digest('SHA-256', sharedSecret))
-  const aesKey = await cryptoApi.subtle.importKey(
-    'raw',
-    aesKeyBytes,
-    { name: 'AES-GCM' },
-    false,
-    ['encrypt'],
-  )
+  const aesKey = await cryptoApi.subtle.importKey('raw', aesKeyBytes, { name: 'AES-GCM' }, false, [
+    'encrypt',
+  ])
 
   const iv = cryptoApi.getRandomValues(new Uint8Array(12))
   const payload = serializeCanonicalBallotPayload({

@@ -67,7 +67,7 @@ function validateStep(step: CreateStep, draft: VoteCreateDraft): boolean {
 
 export function useEditVoteDraft(id: string) {
   const { vote, isLoading } = useVoteDetail(id)
-  
+
   const [initialDraft, setInitialDraft] = useState<VoteCreateDraft | null>(null)
   const [draft, setDraft] = useState<VoteCreateDraft>(INITIAL_DRAFT)
   const [step, setStep] = useState<CreateStep>(1)
@@ -83,7 +83,7 @@ export function useEditVoteDraft(id: string) {
         bannerImageFile: null,
         category: '음악방송',
         visibilityMode: vote.visibilityMode ?? 'PRIVATE',
-        candidates: vote.candidates.map(c => ({
+        candidates: vote.candidates.map((c) => ({
           id: c.id,
           name: c.name,
           image: '',

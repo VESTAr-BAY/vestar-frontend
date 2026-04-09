@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Address, Hash, Hex } from 'viem'
-import { decodeEventLog, encodePacked, keccak256, parseUnits, toHex, zeroAddress, zeroHash } from 'viem'
+import {
+  decodeEventLog,
+  encodePacked,
+  keccak256,
+  parseUnits,
+  toHex,
+  zeroAddress,
+  zeroHash,
+} from 'viem'
 import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { preparePrivateElection } from '../../api/elections'
 import { fetchVerifiedOrganizerByWallet } from '../../api/verifiedOrganizers'
@@ -30,10 +38,7 @@ import {
   getEffectiveResultRevealAt,
   normalizeElectionSettingsDraft,
 } from '../../utils/hostElectionSettings'
-import {
-  uploadFileToPinata,
-  uploadJsonArtifactToPinata,
-} from '../../utils/ipfs'
+import { uploadFileToPinata, uploadJsonArtifactToPinata } from '../../utils/ipfs'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
 type SubmitVoteResult = {
@@ -690,7 +695,10 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
           electionDraft.title,
           index + 1,
         )
-        const uploadedManifestArtifact = await uploadJsonArtifactToPinata(manifestFileName, manifest)
+        const uploadedManifestArtifact = await uploadJsonArtifactToPinata(
+          manifestFileName,
+          manifest,
+        )
         const candidateManifestURI = uploadedManifestArtifact.uri
 
         // sungje : seriesId는 같은 시리즈명을 다른 organizer가 써도 안 섞이게 organizer address + series title을 함께 해시한다.
@@ -793,7 +801,9 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
           electionPublicKey,
           privateKeyCommitmentHash,
           keySchemeVersion:
-            normalizedSettings.visibilityMode === 'PRIVATE' ? PRIVATE_ELECTION_KEY_SCHEME_VERSION : 0,
+            normalizedSettings.visibilityMode === 'PRIVATE'
+              ? PRIVATE_ELECTION_KEY_SCHEME_VERSION
+              : 0,
         }
 
         const txHash = await vestarFactory.createElection(

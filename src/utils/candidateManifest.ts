@@ -1,8 +1,4 @@
-import type {
-  VoteBallotPolicy,
-  VotePaymentMode,
-  VoteVisibilityMode,
-} from '../types/host'
+import type { VoteBallotPolicy, VotePaymentMode, VoteVisibilityMode } from '../types/host'
 
 export const CANDIDATE_MANIFEST_SCHEMA = 'vestar.candidate-manifest'
 export const CANDIDATE_MANIFEST_VERSION = 1 as const

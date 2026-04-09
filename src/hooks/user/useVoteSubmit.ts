@@ -53,7 +53,9 @@ export function useVoteSubmit(): VoteSubmitResult {
 
         if (chainId !== vestarStatusTestnetChain.id) {
           await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
-          throw new Error('네트워크를 Status testnet으로 변경했습니다. 다시 한 번 투표를 눌러주세요.')
+          throw new Error(
+            '네트워크를 Status testnet으로 변경했습니다. 다시 한 번 투표를 눌러주세요.',
+          )
         }
 
         const canSubmit = await canAccountSubmitBallot(

@@ -126,7 +126,9 @@ export function VoteEditPage() {
 
       {/* Scrollable content */}
       <main className="h-screen overflow-y-auto pt-14 pb-24 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {step === 1 && <StepBasicInfo draft={draft} onUpdate={updateField} initialDraft={initialDraft} />}
+        {step === 1 && (
+          <StepBasicInfo draft={draft} onUpdate={updateField} initialDraft={initialDraft} />
+        )}
         {step === 2 && (
           <StepCandidates
             electionTitle={draft.electionTitle}

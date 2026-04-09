@@ -91,9 +91,7 @@ export function fetchVoteSubmissionByTxHash(
 }
 
 export function fetchVoteHistory(voterAddress: string): Promise<ApiVoteHistoryItem[]> {
-  return apiFetch<ApiVoteHistoryItem[]>(
-    `/vote-submissions/history${buildQuery({ voterAddress })}`,
-  )
+  return apiFetch<ApiVoteHistoryItem[]>(`/vote-submissions/history${buildQuery({ voterAddress })}`)
 }
 
 export function preparePrivateElection(

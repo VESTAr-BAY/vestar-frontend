@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router";
 import { useAccount, useConnect } from "wagmi";
 import keyboardArrowLeft from "../../assets/keyboard_arrow_left.svg";
-import searchIcon from "../../assets/search_button.svg";
+import { requestWalletConnection } from '../../utils/walletConnection'
 import accountCircleIcon from "../../assets/account_circle.svg";
 import connectWalletIcon from "../../assets/account_connect_wallet.svg";
 import complete_vote from "../../assets/complete_vote.svg";
@@ -15,10 +15,12 @@ interface HeaderProps {
 }
 
 const STATE_CLASSES: Record<ScrollState, string> = {
-  default: "top-0 w-full max-w-[430px] h-14 bg-[#13141A] px-5",
-  hidden: "-top-[66px] w-full max-w-[430px] h-14 bg-[#13141A] px-5",
+  default:
+    "top-0 w-full max-w-[430px] h-[var(--header-h)] pt-[var(--safe-top)] bg-[#13141A] px-5",
+  hidden:
+    "-top-[var(--header-h)] w-full max-w-[430px] h-[var(--header-h)] pt-[var(--safe-top)] bg-[#13141A] px-5",
   floating:
-    "top-[10px] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-12 rounded-2xl bg-[#1C2033] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.35),0_2px_8px_rgba(0,0,0,0.25)] px-4",
+    "top-[calc(var(--safe-top)+10px)] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-12 rounded-2xl bg-[#1C2033] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.35),0_2px_8px_rgba(0,0,0,0.25)] px-4",
 };
 
 function truncateAddress(address: string): string {
@@ -28,7 +30,7 @@ function truncateAddress(address: string): string {
 export function Header({
   scrollState,
   onOpenPanel,
-  onOpenSearch,
+  
 }: HeaderProps) {
   const { isConnected, address } = useAccount();
   const { connect, connectors, isPending } = useConnect();
@@ -41,12 +43,8 @@ export function Header({
   const showLogo = isHomeLike;
 
   const handleConnect = () => {
-    const injectedConnector =
-      connectors.find((c) => c.id === "injected") ?? connectors[0];
-    if (injectedConnector) {
-      connect({ connector: injectedConnector });
-    }
-  };
+    requestWalletConnection({ connect, connectors })
+  }
 
   return (
     <header
@@ -72,15 +70,6 @@ export function Header({
       <div className="flex-1 min-w-0" />
 
       <div className="flex items-center gap-2 min-w-0 flex-shrink">
-        <button
-          type="button"
-          aria-label={t("btn_search")}
-          onClick={onOpenSearch}
-          className="flex items-center justify-center w-8 h-8 flex-shrink-0"
-        >
-          <img src={searchIcon} alt="" className="w-[18px] h-[18px] invert" />
-        </button>
-
         {isConnected && address ? (
           <>
             <button
@@ -89,9 +78,6 @@ export function Header({
               className="min-w-0 max-w-[100px] flex items-center gap-[5px] bg-white/[0.06] border border-white/[0.10] rounded-[20px] px-[10px] py-[5px] text-[11px] font-medium whitespace-nowrap hover:bg-white/[0.10] transition-colors cursor-pointer"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_#22C55E] animate-pulse flex-shrink-0" />
-              <span className="text-[#7140FF] font-semibold flex-shrink-0">
-                2,480
-              </span>
               <span className="text-white/60 truncate min-w-0">
                 {truncateAddress(address)}
               </span>

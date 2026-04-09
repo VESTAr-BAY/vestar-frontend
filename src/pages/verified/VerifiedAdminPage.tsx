@@ -14,9 +14,7 @@ function StatusBadge({ status }: { status: ApiVerifiedOrganizer['status'] }) {
         ? 'bg-[#FEF2F2] text-[#dc2626]'
         : 'bg-[#F0EDFF] text-[#7140FF]'
 
-  return (
-    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${style}`}>{status}</span>
-  )
+  return <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${style}`}>{status}</span>
 }
 
 export function VerifiedAdminPage() {

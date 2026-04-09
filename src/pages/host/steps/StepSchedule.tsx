@@ -88,7 +88,9 @@ function SettingsEditor({
       {title ? (
         <div className="rounded-2xl border border-[#E7E9ED] bg-white px-4 py-4">
           <div className="text-[14px] font-semibold text-[#090A0B]">{title}</div>
-          {description ? <div className="mt-1 text-[12px] text-[#707070]">{description}</div> : null}
+          {description ? (
+            <div className="mt-1 text-[12px] text-[#707070]">{description}</div>
+          ) : null}
         </div>
       ) : null}
 
@@ -189,7 +191,10 @@ function SettingsEditor({
             <select
               value={settings.resetIntervalUnit}
               onChange={(event) =>
-                onUpdate('resetIntervalUnit', event.target.value as ElectionSettingsDraft['resetIntervalUnit'])
+                onUpdate(
+                  'resetIntervalUnit',
+                  event.target.value as ElectionSettingsDraft['resetIntervalUnit'],
+                )
               }
               className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
             >
@@ -332,10 +337,13 @@ export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepSche
   }, [activeSectionId, draft.sections, usesSections])
 
   if (usesSections) {
-    const activeSection = draft.sections.find((section) => section.id === activeSectionId) ?? draft.sections[0]
+    const activeSection =
+      draft.sections.find((section) => section.id === activeSectionId) ?? draft.sections[0]
     if (!activeSection) return null
 
-    const activeSectionIndex = draft.sections.findIndex((section) => section.id === activeSection.id)
+    const activeSectionIndex = draft.sections.findIndex(
+      (section) => section.id === activeSection.id,
+    )
 
     return (
       <div className="px-5 py-6 flex flex-col gap-6">

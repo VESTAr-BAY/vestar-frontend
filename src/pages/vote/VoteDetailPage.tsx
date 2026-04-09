@@ -152,7 +152,7 @@ export function VoteDetailPage() {
   const [hasVoted, setHasVoted] = useState(() => isVoted(id))
   const [canSubmitByEligibility, setCanSubmitByEligibility] = useState(true)
 
-  const { setConfig, scrollState } = useContext(VoteDetailHeaderContext)
+  const { scrollState } = useContext(VoteDetailHeaderContext)
   const chainId = useChainId()
   const { switchChainAsync } = useSwitchChain()
   const { addToast } = useToast()
@@ -222,18 +222,6 @@ export function VoteDetailPage() {
   const votedSectionCount = votedCandidateIds?.size ?? 0
   const activeCanSubmit =
     (isGrouped ? sectionSelection.canSubmit : canSubmit) && canSubmitByEligibility
-
-  useEffect(() => {
-    if (!vote) return
-    setConfig({
-      title: vote.title,
-      onShare: () => {
-        if (navigator.share) {
-          navigator.share({ title: vote.title, url: window.location.href }).catch(() => {})
-        }
-      },
-    })
-  }, [vote, setConfig])
 
   useEffect(() => {
     let cancelled = false
@@ -409,7 +397,7 @@ export function VoteDetailPage() {
 
       {/* Vote action bar */}
       <div
-        className={`fixed left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[90] px-5 pt-4 pb-6 bg-[#F7F8FA] border-t border-[#E7E9ED] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`fixed left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[90] px-5 pt-4 pb-[calc(1.5rem+var(--safe-bottom))] bg-[#F7F8FA] border-t border-[#E7E9ED] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           scrollState === 'hidden' ? 'translate-y-full bottom-0' : 'translate-y-0 bottom-0'
         }`}
       >

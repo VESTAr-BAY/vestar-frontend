@@ -69,9 +69,7 @@ function getPinataJwt() {
 }
 
 function getConfiguredPinataGateways() {
-  const configured = __PINATA_GATEWAYS__.split(',')
-    .map(normalizeGatewayUrl)
-    .filter(Boolean)
+  const configured = __PINATA_GATEWAYS__.split(',').map(normalizeGatewayUrl).filter(Boolean)
 
   if (configured.length > 0) {
     return configured
@@ -103,7 +101,9 @@ function extractPinataCid(payload: PinataFileUploadResponse) {
 function toPinataUploadError(error: unknown) {
   if (axios.isAxiosError(error)) {
     if (error.response?.status === 403) {
-      return new Error('Pinata 업로드 권한이 거부되었습니다. PINATA_JWT 권한과 업로드 설정을 확인해 주세요.')
+      return new Error(
+        'Pinata 업로드 권한이 거부되었습니다. PINATA_JWT 권한과 업로드 설정을 확인해 주세요.',
+      )
     }
 
     if (typeof error.response?.data === 'string' && error.response.data.trim()) {

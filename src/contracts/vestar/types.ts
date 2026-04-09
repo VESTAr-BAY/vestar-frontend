@@ -53,26 +53,26 @@ export interface OrganizerProfile {
 }
 
 export interface ElectionConfigInput {
-  seriesId: Hex;
-  visibilityMode: VestarVisibilityMode;
-  titleHash: Hex;
-  candidateManifestHash: Hex;
-  candidateManifestURI: string;
-  startAt: IntegerLike;
-  endAt: IntegerLike;
-  resultRevealAt: IntegerLike;
-  minKarmaTier: number;
-  ballotPolicy: VestarBallotPolicy;
-  resetInterval: IntegerLike;
-  paymentMode: VestarPaymentMode;
-  costPerBallot: IntegerLike;
-  allowMultipleChoice: boolean;
-  maxSelectionsPerSubmission: number;
-  timezoneWindowOffset: number;
-  paymentToken: Address;
-  electionPublicKey: Hex;
-  privateKeyCommitmentHash: Hex;
-  keySchemeVersion: number;
+  seriesId: Hex
+  visibilityMode: VestarVisibilityMode
+  titleHash: Hex
+  candidateManifestHash: Hex
+  candidateManifestURI: string
+  startAt: IntegerLike
+  endAt: IntegerLike
+  resultRevealAt: IntegerLike
+  minKarmaTier: number
+  ballotPolicy: VestarBallotPolicy
+  resetInterval: IntegerLike
+  paymentMode: VestarPaymentMode
+  costPerBallot: IntegerLike
+  allowMultipleChoice: boolean
+  maxSelectionsPerSubmission: number
+  timezoneWindowOffset: number
+  paymentToken: Address
+  electionPublicKey: Hex
+  privateKeyCommitmentHash: Hex
+  keySchemeVersion: number
 }
 
 export interface ElectionConfig extends ElectionConfigInput {

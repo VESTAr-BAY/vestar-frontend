@@ -1,11 +1,10 @@
 import babel from '@rolldown/plugin-babel'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
-import { defineConfig } from 'vitest/config'
-import { loadEnv } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
+import { loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { defineConfig } from 'vitest/config'
 
-// https://vite.dev/config/
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), '')
   // sungje : dev 서버에서는 루트 경로로 바로 열리게 하고, 배포 빌드에서만 /vote/ base를 유지한다.
@@ -53,6 +52,7 @@ export default defineConfig(({ mode, command }) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,woff2}'],
           navigateFallback: '/index.html',
+          navigateFallbackAllowlist: [/^(?!\/__).*/],
           navigateFallbackDenylist: [/^\/api/],
           runtimeCaching: [
             {

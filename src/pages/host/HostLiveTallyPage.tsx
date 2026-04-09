@@ -1,6 +1,4 @@
-import { useContext, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { VoteDetailHeaderContext } from '../../components/layout/VoteDetailLayout'
 import { useHostLiveTally } from '../../hooks/host/useHostLiveTally'
 import { VoteHero } from '../user/VoteHero'
 import { VoteInfoSection } from '../user/VoteInfoSection'
@@ -29,20 +27,6 @@ export function HostLiveTallyPage() {
   const { id = '1' } = useParams()
   const navigate = useNavigate()
   const { vote, rankedCandidates, totalVotes, isLoading } = useHostLiveTally(id)
-  const { setConfig } = useContext(VoteDetailHeaderContext)
-
-  useEffect(() => {
-    if (!vote) return
-
-    setConfig({
-      title: `${vote.title} — 실시간 집계`,
-      onShare: () => {
-        if (navigator.share) {
-          navigator.share({ title: vote.title, url: window.location.href }).catch(() => {})
-        }
-      },
-    })
-  }, [setConfig, vote])
 
   if (isLoading || !vote) {
     return <LoadingSkeleton />
@@ -65,7 +49,11 @@ export function HostLiveTallyPage() {
         </div>
       </div>
 
-      {rankedCandidates.length > 0 ? <VoteResultRankings rankedCandidates={rankedCandidates} /> : <EmptyState />}
+      {rankedCandidates.length > 0 ? (
+        <VoteResultRankings rankedCandidates={rankedCandidates} />
+      ) : (
+        <EmptyState />
+      )}
 
       <div className="px-5 pb-8">
         <button
