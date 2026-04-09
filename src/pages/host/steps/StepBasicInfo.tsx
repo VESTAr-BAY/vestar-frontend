@@ -59,6 +59,58 @@ export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoPr
     <div className="px-5 py-6 flex flex-col gap-6">
       <VoteHeroPreview title={draft.title} bannerImage={draft.bannerImage} />
 
+      {/* Banner Image */}
+      <div>
+        <label
+          htmlFor="vote-banner-image"
+          className="flex items-center gap-1.5 text-[13px] font-semibold text-[#090A0B] mb-2"
+        >
+          <span>배너 이미지</span>
+          {isBannerChanged && (
+            <span className="text-[10px] font-bold text-[#7140FF] bg-[#7140FF]/10 px-1.5 py-0.5 rounded-md">
+              수정됨
+            </span>
+          )}
+        </label>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full aspect-[21/9] rounded-xl border-2 border-dashed border-[#E7E9ED] bg-[#F7F8FA] hover:border-[#7140FF]/50 transition-colors flex items-center justify-center cursor-pointer overflow-hidden relative"
+        >
+          {draft.bannerImage ? (
+            <img src={draft.bannerImage} alt="배너 이미지" className="w-full h-full object-cover" />
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-[#C0C4CC]">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <title>이미지 업로드</title>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <span className="text-[13px] font-medium">이미지 업로드</span>
+            </div>
+          )}
+          <input
+            id="vote-banner-image"
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+        </button>
+      </div>
+
       {/* Series name */}
       <div>
         <label htmlFor="vote-title" className="block text-[13px] font-semibold text-[#090A0B] mb-2">

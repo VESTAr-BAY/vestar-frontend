@@ -252,7 +252,6 @@ function buildCandidateManifestCandidates(
   candidateImageUrls: Map<string, string>,
 ): CandidateManifestCandidate[] {
   return candidates.map((candidate, index) => ({
-    candidateKey: candidate.candidateKey,
     displayName: candidate.candidateKey,
     groupLabel: null,
     displayOrder: index + 1,
@@ -280,30 +279,15 @@ function buildCandidateHashes(candidates: FlattenedCandidate[]) {
 
 function buildManifestPayload(
   draft: VoteCreateDraft,
-  electionTitle: string,
-  normalizedSettings: ElectionSettingsDraft,
   candidates: FlattenedCandidate[],
   candidateImageUrls: Map<string, string>,
   bannerImageUrl: string | null,
 ) {
-  const normalizedAllowMultipleChoice =
-    normalizedSettings.ballotPolicy === 'UNLIMITED_PAID' ? false : normalizedSettings.maxChoices > 1
-  const normalizedMaxSelectionsPerSubmission = normalizedAllowMultipleChoice
-    ? Math.max(2, normalizedSettings.maxChoices)
-    : 1
-
-  // sungje : 카테고리도 manifest에 같이 싣고 ipfs uri만으로 화면 메타를 다시 그릴 수 있게 유지한다.
+  // sungje : 제목/설정 같은 중복값은 manifest에서 빼되, 백엔드가 바로 안 주는 대표 이미지와 후보 이미지는 ipfs uri를 그대로 남겨서 화면 복원이 가능하게 한다.
   return buildCandidateManifest({
-    seriesPreimage: draft.title.trim(),
-    seriesCoverImageUrl: bannerImageUrl,
-    electionTitle,
     category: draft.category,
+    seriesCoverImageUrl: bannerImageUrl,
     electionCoverImageUrl: bannerImageUrl,
-    visibilityMode: normalizedSettings.visibilityMode,
-    paymentMode: normalizedSettings.paymentMode,
-    ballotPolicy: normalizedSettings.ballotPolicy,
-    allowMultipleChoice: normalizedAllowMultipleChoice,
-    maxSelectionsPerSubmission: normalizedMaxSelectionsPerSubmission,
     candidates: buildCandidateManifestCandidates(candidates, candidateImageUrls),
   })
 }
@@ -702,8 +686,6 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
 
         const manifest = buildManifestPayload(
           draft,
-          electionDraft.title,
-          normalizedSettings,
           electionDraft.candidates,
           candidateImageUrls,
           bannerImageUrl,

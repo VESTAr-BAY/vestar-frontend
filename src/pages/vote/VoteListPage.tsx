@@ -174,7 +174,22 @@ function SeriesVoteCard({
               <span className="truncate font-medium">{group.host}</span>
             </div>
           ) : null}
-          <div className="text-[22px] font-semibold leading-tight text-white">{group.title}</div>
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 text-[22px] font-semibold leading-tight text-white">
+              {group.title}
+            </div>
+            {group.verified ? (
+              <img
+                src={verifiedIcon}
+                alt="verified series"
+                className="h-5 w-5 flex-shrink-0"
+                style={{
+                  filter:
+                    'brightness(0) saturate(100%) invert(76%) sepia(13%) saturate(2082%) hue-rotate(90deg) brightness(91%) contrast(89%)',
+                }}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
 
