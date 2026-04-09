@@ -37,6 +37,10 @@ async function ensurePortalDependencies() {
 
 async function main() {
   await ensurePortalDependencies()
+  const frontendArgs = process.argv.slice(2)
+  const normalizedFrontendArgs = frontendArgs.includes('--strictPort')
+    ? frontendArgs
+    : [...frontendArgs, '--strictPort']
 
   const portalProcess = spawnVite({
     cwd: portalRoot,
@@ -46,7 +50,7 @@ async function main() {
   // sungje : 메인 프론트 dev 서버는 verification portal dev 서버를 같은 origin 아래로 프록시한다.
   const frontendProcess = spawnVite({
     cwd: frontendRoot,
-    args: process.argv.slice(2),
+    args: normalizedFrontendArgs,
     env: {
       ...process.env,
       VERIFICATION_PORTAL_DEV_PORT: portalPort,
