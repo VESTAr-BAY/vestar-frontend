@@ -21,6 +21,10 @@ export function buildVoteSeriesTargetPath(group: VoteSeriesGroup): string {
   return `/vote/series/${encodeURIComponent(group.key)}`
 }
 
+export function isVoteSeriesEnded(group: VoteSeriesGroup): boolean {
+  return group.items.every((item) => item.badge === 'end')
+}
+
 export function groupVoteItemsBySeries(items: VoteListItem[]): VoteSeriesGroup[] {
   const groups = items.reduce<VoteSeriesGroup[]>((accumulator, item) => {
     const resolvedSeriesKey = item.seriesKey ?? `series:${item.org}`
@@ -29,7 +33,7 @@ export function groupVoteItemsBySeries(items: VoteListItem[]): VoteSeriesGroup[]
     if (existingGroup) {
       existingGroup.items.push(item)
       existingGroup.host = existingGroup.host ?? item.host
-      existingGroup.verified = existingGroup.verified ?? item.verified
+      existingGroup.verified = Boolean(existingGroup.verified || item.verified)
       existingGroup.imageUrl = existingGroup.imageUrl ?? item.seriesImageUrl ?? item.imageUrl
       return accumulator
     }
@@ -38,7 +42,7 @@ export function groupVoteItemsBySeries(items: VoteListItem[]): VoteSeriesGroup[]
       key: resolvedSeriesKey,
       title: item.org,
       host: item.host,
-      verified: item.verified,
+      verified: Boolean(item.verified),
       imageUrl: item.seriesImageUrl ?? item.imageUrl,
       items: [item],
     })

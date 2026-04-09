@@ -14,6 +14,7 @@ import { resolveIpfsUrl } from '../../utils/ipfs'
 import {
   buildVoteSeriesTargetPath,
   groupVoteItemsBySeries,
+  isVoteSeriesEnded,
   type VoteSeriesGroup,
 } from '../../utils/voteSeries'
 
@@ -95,6 +96,7 @@ function SeriesVoteCard({
   hasVoted: boolean
 }) {
   const { lang } = useLanguage()
+  const isEndedSeries = isVoteSeriesEnded(group)
   const previewLabel =
     group.items.length === 1
       ? group.items[0].name
@@ -104,53 +106,87 @@ function SeriesVoteCard({
           .join(' · ')
   const descriptionLabel =
     group.items.length === 1
+      ? isEndedSeries
+        ? lang === 'ko'
+          ? `${group.items[0].count}명 참여`
+          : `${group.items[0].count} participated`
+        : lang === 'ko'
+          ? `${group.items[0].count}명 참여 중`
+          : `${group.items[0].count} participating`
+      : isEndedSeries
+        ? lang === 'ko'
+          ? `${group.items.length}개의 마감된 투표`
+          : `${group.items.length} ended votes`
+        : lang === 'ko'
+          ? `${group.items.length}개의 투표`
+          : `${group.items.length} votes`
+  const ctaLabel = isEndedSeries
+    ? group.items.length === 1
       ? lang === 'ko'
-        ? `${group.items[0].count}명 참여 중`
-        : `${group.items[0].count} participating`
+        ? '결과 보기'
+        : 'View results'
       : lang === 'ko'
-        ? `${group.items.length}개의 투표`
-        : `${group.items.length} votes`
-  const ctaLabel =
-    group.items.length === 1
+        ? `${group.items.length}개 보기`
+        : `View ${group.items.length}`
+    : group.items.length === 1
       ? lang === 'ko'
         ? '바로 입장'
         : 'Open now'
       : lang === 'ko'
         ? `${group.items.length}개 보기`
         : `View ${group.items.length}`
+  const cardClass = isEndedSeries
+    ? 'w-full overflow-hidden rounded-[26px] border border-[#D8DEE6] bg-[#F4F6F8] text-left transition-[transform,box-shadow,border-color] duration-[180ms] hover:-translate-y-0.5 hover:border-[#C4CCD6] hover:shadow-[0_10px_26px_rgba(15,23,42,0.08)] active:scale-[0.99]'
+    : 'w-full overflow-hidden rounded-[26px] border border-[#E7E9ED] bg-white text-left transition-[transform,box-shadow,border-color] duration-[180ms] hover:-translate-y-0.5 hover:border-[rgba(113,64,255,0.25)] hover:shadow-[0_10px_30px_rgba(113,64,255,0.12)] active:scale-[0.99]'
+  const bannerClass = isEndedSeries
+    ? 'relative h-[148px] overflow-hidden bg-gradient-to-br from-[#EEF1F4] via-[#E5E7EB] to-[#D3D8DF]'
+    : 'relative h-[148px] overflow-hidden bg-gradient-to-br from-[#EBFBFA] via-[#F2E9FB] to-[#FFF4D6]'
+  const bannerFallbackClass = isEndedSeries
+    ? 'absolute inset-0 bg-[radial-gradient(circle_at_top_left,#ffffff_0%,rgba(255,255,255,0.28)_24%,transparent_52%),linear-gradient(135deg,#EDF1F5_0%,#E3E7ED_55%,#CDD3DB_100%)]'
+    : 'absolute inset-0 bg-[radial-gradient(circle_at_top_left,#ffffff_0%,rgba(255,255,255,0.18)_28%,transparent_56%),linear-gradient(135deg,#DFF8F5_0%,#EDE9FE_52%,#FDE68A_100%)]'
+  const overlayClass = isEndedSeries
+    ? 'absolute inset-0 bg-gradient-to-t from-[#1F2937]/78 via-[#4B5563]/34 to-transparent'
+    : 'absolute inset-0 bg-gradient-to-t from-[#090A0B]/78 via-[#090A0B]/28 to-transparent'
+  const titleVerifiedFilter = isEndedSeries
+    ? 'grayscale(1) brightness(1.15)'
+    : 'brightness(0) saturate(100%) invert(76%) sepia(13%) saturate(2082%) hue-rotate(90deg) brightness(91%) contrast(89%)'
+  const ctaClass = isEndedSeries
+    ? 'inline-flex flex-shrink-0 rounded-full bg-[#E1E5EA] px-3 py-1.5 text-[11px] font-semibold text-[#5B6470]'
+    : 'inline-flex flex-shrink-0 rounded-full bg-[#F0EDFF] px-3 py-1.5 text-[11px] font-semibold text-[#7140FF]'
 
   return (
-    <button
-      type="button"
-      onClick={() => onNavigate(group)}
-      className="w-full overflow-hidden rounded-[26px] border border-[#E7E9ED] bg-white text-left transition-[transform,box-shadow,border-color] duration-[180ms] hover:-translate-y-0.5 hover:border-[rgba(113,64,255,0.25)] hover:shadow-[0_10px_30px_rgba(113,64,255,0.12)] active:scale-[0.99]"
-    >
-      <div className="relative h-[148px] overflow-hidden bg-gradient-to-br from-[#EBFBFA] via-[#F2E9FB] to-[#FFF4D6]">
+    <button type="button" onClick={() => onNavigate(group)} className={cardClass}>
+      <div className={bannerClass}>
         {group.imageUrl ? (
           <img
             src={resolveIpfsUrl(group.imageUrl)}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className={`absolute inset-0 h-full w-full object-cover ${isEndedSeries ? 'grayscale' : ''}`}
           />
         ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,#ffffff_0%,rgba(255,255,255,0.18)_28%,transparent_56%),linear-gradient(135deg,#DFF8F5_0%,#EDE9FE_52%,#FDE68A_100%)]" />
+          <div className={bannerFallbackClass} />
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-[#090A0B]/78 via-[#090A0B]/28 to-transparent" />
+        <div className={overlayClass} />
 
         <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
           <span className="inline-flex rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-bold font-mono tracking-[0.5px] text-[#090A0B]">
             {descriptionLabel}
           </span>
           {hasVoted ? (
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(34,197,94,0.14)] backdrop-blur-sm">
+            <span
+              className={`inline-flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm ${
+                isEndedSeries ? 'bg-white/16' : 'bg-[rgba(34,197,94,0.14)]'
+              }`}
+            >
               <img
                 src={completeVoteIcon}
                 alt=""
                 className="h-4 w-4"
                 style={{
-                  filter:
-                    'brightness(0) saturate(100%) invert(33%) sepia(98%) saturate(400%) hue-rotate(93deg) brightness(95%) contrast(97%)',
+                  filter: isEndedSeries
+                    ? 'grayscale(1) brightness(1.2)'
+                    : 'brightness(0) saturate(100%) invert(33%) sepia(98%) saturate(400%) hue-rotate(93deg) brightness(95%) contrast(97%)',
                 }}
               />
             </span>
@@ -166,8 +202,7 @@ function SeriesVoteCard({
                   alt="verified organizer"
                   className="h-4 w-4 flex-shrink-0"
                   style={{
-                    filter:
-                      'brightness(0) saturate(100%) invert(76%) sepia(13%) saturate(2082%) hue-rotate(90deg) brightness(91%) contrast(89%)',
+                    filter: titleVerifiedFilter,
                   }}
                 />
               ) : null}
@@ -184,8 +219,7 @@ function SeriesVoteCard({
                 alt="verified series"
                 className="h-5 w-5 flex-shrink-0"
                 style={{
-                  filter:
-                    'brightness(0) saturate(100%) invert(76%) sepia(13%) saturate(2082%) hue-rotate(90deg) brightness(91%) contrast(89%)',
+                  filter: titleVerifiedFilter,
                 }}
               />
             ) : null}
@@ -195,12 +229,18 @@ function SeriesVoteCard({
 
       <div className="flex items-center gap-3 px-4 py-3.5">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[14px] font-medium text-[#090A0B]">{previewLabel}</div>
-          <div className="mt-1 text-[12px] text-[#707070]">{descriptionLabel}</div>
+          <div
+            className={`truncate text-[14px] font-medium ${isEndedSeries ? 'text-[#3F4752]' : 'text-[#090A0B]'}`}
+          >
+            {previewLabel}
+          </div>
+          <div
+            className={`mt-1 text-[12px] ${isEndedSeries ? 'text-[#6B7280]' : 'text-[#707070]'}`}
+          >
+            {descriptionLabel}
+          </div>
         </div>
-        <span className="inline-flex flex-shrink-0 rounded-full bg-[#F0EDFF] px-3 py-1.5 text-[11px] font-semibold text-[#7140FF]">
-          {ctaLabel}
-        </span>
+        <span className={ctaClass}>{ctaLabel}</span>
       </div>
     </button>
   )
@@ -208,6 +248,7 @@ function SeriesVoteCard({
 
 export function VoteListPage() {
   const [activeFilter, setActiveFilter] = useState(0)
+  const [seriesTab, setSeriesTab] = useState<'active' | 'ended'>('active')
   const navigate = useNavigate()
   const { isVoted } = useVotedVotes()
   const { isLoading: isHotLoading, hotVotes } = useVoteList()
@@ -245,8 +286,12 @@ export function VoteListPage() {
 
   const visibleSeriesCount = groupVoteItemsBySeries(items).length
   const allGroupedItems = groupVoteItemsBySeries(allItems)
-  const groupedItems = allGroupedItems.slice(0, visibleSeriesCount)
-  const hasMoreSeries = groupedItems.length < allGroupedItems.length
+  const allActiveGroups = allGroupedItems.filter((group) => !isVoteSeriesEnded(group))
+  const allEndedGroups = allGroupedItems.filter((group) => isVoteSeriesEnded(group))
+  const totalGroups = seriesTab === 'active' ? allActiveGroups : allEndedGroups
+  const groupedItems = totalGroups.slice(0, visibleSeriesCount)
+  const hasMoreSeries = groupedItems.length < totalGroups.length
+  const shouldShowEmptyState = !isItemsLoading && groupedItems.length === 0 && !hasMoreSeries
 
   return (
     <>
@@ -296,24 +341,53 @@ export function VoteListPage() {
 
         <div className="border-t border-[#E7E9ED] mt-5" />
 
-        <div className="flex items-center justify-between px-5 pt-[20px] pb-[10px]">
-          <span className="text-[15px] font-semibold text-[#090A0B]">{t('vl_active_section')}</span>
+        <div className="flex items-center justify-between gap-3 px-5 pt-[20px] pb-[10px]">
+          <div className="inline-flex rounded-full bg-[#F4F5F7] p-1">
+            <button
+              type="button"
+              onClick={() => setSeriesTab('active')}
+              className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+                seriesTab === 'active'
+                  ? 'bg-white text-[#090A0B] shadow-[0_4px_12px_rgba(15,23,42,0.08)]'
+                  : 'text-[#707070]'
+              }`}
+            >
+              {t('vl_active_section')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSeriesTab('ended')}
+              className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+                seriesTab === 'ended'
+                  ? 'bg-white text-[#090A0B] shadow-[0_4px_12px_rgba(15,23,42,0.08)]'
+                  : 'text-[#707070]'
+              }`}
+            >
+              {t('vl_ended_section')}
+            </button>
+          </div>
           <span className="text-[12px] text-[#7140FF] cursor-pointer">{t('vl_sort_latest')}</span>
         </div>
         <div className="px-5 flex flex-col gap-4 pb-2">
-          {isItemsLoading
-            ? Array.from({ length: 6 }, (_, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders have no stable id
-                <VoteCardSkeleton key={i} />
-              ))
-            : groupedItems.map((group) => (
-                <SeriesVoteCard
-                  key={group.key}
-                  group={group}
-                  onNavigate={handleSeriesNavigate}
-                  hasVoted={group.items.some((item) => isVoted(item.id))}
-                />
-              ))}
+          {isItemsLoading ? (
+            Array.from({ length: 6 }, (_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders have no stable id
+              <VoteCardSkeleton key={i} />
+            ))
+          ) : groupedItems.length > 0 ? (
+            groupedItems.map((group) => (
+              <SeriesVoteCard
+                key={group.key}
+                group={group}
+                onNavigate={handleSeriesNavigate}
+                hasVoted={group.items.some((item) => isVoted(item.id))}
+              />
+            ))
+          ) : shouldShowEmptyState ? (
+            <div className="rounded-2xl border border-[#E7E9ED] bg-white px-4 py-5 text-[14px] text-[#707070]">
+              {t(seriesTab === 'active' ? 'vl_empty_active' : 'vl_empty_ended')}
+            </div>
+          ) : null}
         </div>
 
         {!isItemsLoading && (

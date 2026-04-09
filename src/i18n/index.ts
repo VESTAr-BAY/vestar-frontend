@@ -35,12 +35,18 @@ const STRINGS = {
   vl_hot_section: { en: 'HOT Votes', ko: 'HOT 투표' },
   vl_see_all: { en: 'See all', ko: '전체 보기' },
   vl_active_section: { en: 'Active Votes', ko: '진행 중인 투표' },
+  vl_ended_section: { en: 'Ended Votes', ko: '마감된 투표' },
   vl_sort: { en: 'Sort ▾', ko: '정렬 ▾' },
   vl_sort_latest: { en: 'Newest first', ko: '최신 생성순' },
   vl_participating: { en: 'participating', ko: '참여 중' },
   vl_ended_badge: { en: 'Ended', ko: '종료됨' },
   vl_vote_btn: { en: 'Vote', ko: '투표하기' },
   vl_voted_alt: { en: 'Voted', ko: '투표 완료' },
+  vl_empty_active: {
+    en: 'There are no active vote series yet.',
+    ko: '아직 진행 중인 투표가 없어요',
+  },
+  vl_empty_ended: { en: 'There are no ended vote series yet.', ko: '아직 마감된 투표가 없어요' },
 
   // ── Vote List filter chips ──────────────────────────────────────────────────
   filter_all: { en: 'All', ko: '전체' },
