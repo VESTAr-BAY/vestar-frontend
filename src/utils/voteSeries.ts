@@ -5,11 +5,20 @@ export interface VoteSeriesGroup {
   title: string
   host?: string
   verified?: boolean
+  imageUrl?: string
   items: VoteListItem[]
 }
 
 export function buildVoteTargetPath(item: VoteListItem): string {
   return item.badge === 'end' ? `/vote/${item.id}/result` : `/vote/${item.id}`
+}
+
+export function buildVoteSeriesTargetPath(group: VoteSeriesGroup): string {
+  if (group.items.length === 1) {
+    return buildVoteTargetPath(group.items[0])
+  }
+
+  return `/vote/series/${encodeURIComponent(group.key)}`
 }
 
 export function groupVoteItemsBySeries(items: VoteListItem[]): VoteSeriesGroup[] {
@@ -21,6 +30,7 @@ export function groupVoteItemsBySeries(items: VoteListItem[]): VoteSeriesGroup[]
       existingGroup.items.push(item)
       existingGroup.host = existingGroup.host ?? item.host
       existingGroup.verified = existingGroup.verified ?? item.verified
+      existingGroup.imageUrl = existingGroup.imageUrl ?? item.seriesImageUrl ?? item.imageUrl
       return accumulator
     }
 
@@ -29,6 +39,7 @@ export function groupVoteItemsBySeries(items: VoteListItem[]): VoteSeriesGroup[]
       title: item.org,
       host: item.host,
       verified: item.verified,
+      imageUrl: item.seriesImageUrl ?? item.imageUrl,
       items: [item],
     })
     return accumulator

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { fetchCandidateManifest } from '../../api/candidateManifest'
 import {
   fetchElectionDetail,
   fetchFinalizedTally,
@@ -6,14 +7,19 @@ import {
   fetchResultSummaries,
 } from '../../api/elections'
 import type { ApiElection, ApiFinalizedTallyRow, ApiLiveTallyRow } from '../../api/types'
-import { formatVoteDate } from '../../utils/electionMapper'
+import {
+  applyManifestToElection,
+  formatVoteDate,
+  resolveElectionCandidates,
+} from '../../utils/electionMapper'
 import { findLocalOpenElectionMetadata } from '../../utils/localOpenElectionMetadata'
+import type { CandidateManifest } from '../../utils/candidateManifest'
 import type { RankedCandidate, VoteResultData } from '../../types/vote'
 
 type TallyRow = ApiLiveTallyRow | ApiFinalizedTallyRow
 
 function mergeLocalMetadata(election: ApiElection): ApiElection {
-  if (election.title && election.series && election.electionCandidates.length > 0) {
+  if (election.title && election.series) {
     return election
   }
 
@@ -38,22 +44,25 @@ function mergeLocalMetadata(election: ApiElection): ApiElection {
         onchainSeriesId: local.seriesId,
         coverImageUrl: local.series.coverImageUrl ?? null,
       },
-    electionCandidates:
-      election.electionCandidates.length > 0
-        ? election.electionCandidates
-        : local.electionCandidates.map((candidate, index) => ({
-            id: `local-${election.id}-${index + 1}`,
-            candidateKey: candidate.candidateKey,
-            imageUrl: candidate.imageUrl ?? null,
-            displayOrder: candidate.displayOrder,
-          })),
+    electionCandidates: local.electionCandidates.map((candidate, index) => ({
+      id: `local-${election.id}-${index + 1}`,
+      candidateKey: candidate.candidateKey,
+      imageUrl: candidate.imageUrl ?? null,
+      displayOrder: candidate.displayOrder,
+    })),
   }
 }
 
-function toVoteResultData(election: ApiElection, tally: TallyRow[], totalVotes: number): VoteResultData {
+function toVoteResultData(
+  election: ApiElection,
+  tally: TallyRow[],
+  totalVotes: number,
+  manifest: CandidateManifest | null,
+): VoteResultData {
   const tallyMap = new Map(tally.map((row) => [row.candidateKey, row]))
+  const candidates = resolveElectionCandidates(election, manifest)
 
-  const rankedCandidates: RankedCandidate[] = election.electionCandidates
+  const rankedCandidates: RankedCandidate[] = candidates
     .slice()
     .sort((left, right) => left.displayOrder - right.displayOrder)
     .map((candidate) => {
@@ -63,8 +72,12 @@ function toVoteResultData(election: ApiElection, tally: TallyRow[], totalVotes: 
 
       return {
         id: candidate.candidateKey,
-        name: candidate.candidateKey,
-        group: '',
+        name:
+          manifest?.candidates.find((manifestCandidate) => manifestCandidate.candidateKey === candidate.candidateKey)
+            ?.displayName ?? candidate.candidateKey,
+        group:
+          manifest?.candidates.find((manifestCandidate) => manifestCandidate.candidateKey === candidate.candidateKey)
+            ?.groupLabel ?? '',
         emoji: '🎤',
         emojiColor: '#F0EDFF',
         imageUrl: candidate.imageUrl ?? undefined,
@@ -108,7 +121,11 @@ export function useVoteResult(id: string): UseVoteResultResult {
       .then(async (rawElection) => {
         if (cancelled) return
 
-        const election = mergeLocalMetadata(rawElection)
+        const manifest = await fetchCandidateManifest(
+          rawElection.candidateManifestUri,
+          rawElection.candidateManifestHash,
+        )
+        const election = mergeLocalMetadata(applyManifestToElection(rawElection, manifest))
         const [summaries, tally] = await Promise.all([
           fetchResultSummaries(id),
           election.onchainState === 'FINALIZED'
@@ -124,7 +141,7 @@ export function useVoteResult(id: string): UseVoteResultResult {
           summaries[0]?.totalValidVotes ??
           tally.reduce((sum, row) => sum + row.count, 0)
 
-        setResult(toVoteResultData(election, tally, totalVotes))
+        setResult(toVoteResultData(election, tally, totalVotes, manifest))
       })
       .catch(() => {
         if (!cancelled) {

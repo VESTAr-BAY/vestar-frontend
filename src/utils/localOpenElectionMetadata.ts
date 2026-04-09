@@ -10,6 +10,7 @@ export type LocalOpenElectionMetadata = {
   }
   electionCandidates: Array<{
     candidateKey: string
+    displayName?: string | null
     imageUrl?: string | null
     displayOrder: number
   }>

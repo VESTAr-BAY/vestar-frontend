@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { fetchCandidateManifest } from '../../api/candidateManifest'
 import { fetchElections } from '../../api/elections'
 import { HOT_VOTES } from '../../data/mockVotes'
-import { mapToHotVote } from '../../utils/electionMapper'
+import { applyManifestToElection, mapToHotVote } from '../../utils/electionMapper'
 import type { HotVote } from '../../types/vote'
 
 function hotMockFallback(): HotVote[] {
@@ -27,6 +28,20 @@ export function useVoteList(): UseVoteListResult {
     fetchElections({ onchainState: 'ACTIVE', sortBy: 'HOT' })
       .then((elections) => {
         if (cancelled) return
+        return Promise.all(
+          elections.map(async (election) =>
+            applyManifestToElection(
+              election,
+              await fetchCandidateManifest(
+                election.candidateManifestUri,
+                election.candidateManifestHash,
+              ),
+            ),
+          ),
+        )
+      })
+      .then((elections) => {
+        if (cancelled || !elections) return
         const hot = elections
           .sort(
             (left, right) =>

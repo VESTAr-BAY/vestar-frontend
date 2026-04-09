@@ -6,6 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_', 'PINATA_JWT', 'PINATA_GATEWAYS'],
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset()] }),

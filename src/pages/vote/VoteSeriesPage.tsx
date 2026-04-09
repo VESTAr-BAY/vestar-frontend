@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 import verifiedIcon from '../../assets/verified.svg'
+import { fetchCandidateManifest } from '../../api/candidateManifest'
 import { fetchElections } from '../../api/elections'
 import { VoteListItemCard } from '../../components/vote/VoteListItemCard'
 import { VoteCardSkeleton } from '../../components/shared/VoteCardSkeleton'
 import { useVotedVotes } from '../../hooks/useVotedVotes'
 import { VOTE_ITEMS } from '../../data/mockVotes'
 import type { VoteListItem } from '../../types/vote'
-import { mapToVoteListItem } from '../../utils/electionMapper'
+import { applyManifestToElection, mapToVoteListItem } from '../../utils/electionMapper'
 import { buildVoteTargetPath, groupVoteItemsBySeries, type VoteSeriesGroup } from '../../utils/voteSeries'
 
 type SeriesLocationState = {
@@ -30,6 +31,19 @@ export function VoteSeriesPage() {
     let cancelled = false
 
     fetchElections()
+      .then((elections) =>
+        Promise.all(
+          elections.map(async (election) =>
+            applyManifestToElection(
+              election,
+              await fetchCandidateManifest(
+                election.candidateManifestUri,
+                election.candidateManifestHash,
+              ),
+            ),
+          ),
+        ),
+      )
       .then((elections) => {
         if (cancelled) return
         setItems(elections.map((election, index) => mapToVoteListItem(election, index)))

@@ -1,7 +1,11 @@
 import { VESTAR_ELECTION_STATE } from '../contracts/vestar/types'
 import type { ApiElection, ApiElectionState } from '../api/types'
 import type { BadgeVariant, Candidate, HotVote, VoteDetailData, VoteListItem } from '../types/vote'
-import { findLocalOpenElectionMetadata } from './localOpenElectionMetadata'
+import type { CandidateManifest } from './candidateManifest'
+import {
+  findLocalOpenElectionMetadata,
+  type LocalOpenElectionMetadata,
+} from './localOpenElectionMetadata'
 
 export function mapApiStateToBadge(state: ApiElectionState): BadgeVariant {
   switch (state) {
@@ -82,18 +86,55 @@ const EMOJI_COLORS: Record<number, string> = {
   6: '#fef3c7',
 }
 
-function withLocalOpenMetadata(election: ApiElection) {
-  if (election.title && election.series && election.electionCandidates.length > 0) {
-    return election
-  }
+function toLocalElectionCandidates(local: LocalOpenElectionMetadata) {
+  return local.electionCandidates.map((candidate, index) => ({
+    id: `local-${local.onchainElectionId}-${index + 1}`,
+    candidateKey: candidate.candidateKey,
+    imageUrl: candidate.imageUrl ?? null,
+    displayOrder: candidate.displayOrder,
+  }))
+}
 
-  const local = findLocalOpenElectionMetadata({
+function findLocalMetadata(election: Pick<ApiElection, 'onchainElectionId' | 'onchainElectionAddress'>) {
+  return findLocalOpenElectionMetadata({
     onchainElectionId: election.onchainElectionId,
     onchainElectionAddress: election.onchainElectionAddress,
   })
+}
+
+export function resolveElectionCandidates(
+  election: Pick<ApiElection, 'onchainElectionId' | 'onchainElectionAddress'>,
+  manifest: CandidateManifest | null,
+) {
+  if (manifest?.candidates.length) {
+    return manifest.candidates.map((candidate, index) => ({
+      id: `${election.onchainElectionId}-${index + 1}`,
+      candidateKey: candidate.candidateKey,
+      imageUrl: candidate.imageUrl ?? null,
+      displayOrder: candidate.displayOrder,
+    }))
+  }
+
+  const local = findLocalMetadata(election)
+  if (local) {
+    return toLocalElectionCandidates(local)
+  }
+
+  return []
+}
+
+function withLocalOpenMetadata(election: ApiElection) {
+  if (election.title && election.series) {
+    return election
+  }
+
+  const local = findLocalMetadata(election)
 
   if (!local) {
-    return election
+    return {
+      ...election,
+      electionCandidates: [],
+    }
   }
 
   return {
@@ -108,8 +149,24 @@ function withLocalOpenMetadata(election: ApiElection) {
         onchainSeriesId: local.seriesId,
         coverImageUrl: local.series.coverImageUrl ?? null,
       } as ApiElection['series']),
-    electionCandidates:
-      election.electionCandidates.length > 0 ? election.electionCandidates : local.electionCandidates,
+    electionCandidates: toLocalElectionCandidates(local),
+  }
+}
+
+export function applyManifestToElection(
+  rawElection: ApiElection,
+  manifest: CandidateManifest | null,
+): ApiElection {
+  return {
+    ...rawElection,
+    coverImageUrl: manifest?.election.coverImageUrl ?? rawElection.coverImageUrl,
+    series: rawElection.series
+      ? {
+          ...rawElection.series,
+          coverImageUrl: manifest?.series.coverImageUrl ?? rawElection.series.coverImageUrl,
+        }
+      : rawElection.series,
+    electionCandidates: resolveElectionCandidates(rawElection, manifest),
   }
 }
 
@@ -141,6 +198,7 @@ export function mapToVoteListItem(rawElection: ApiElection, index = 0): VoteList
     id: election.id,
     seriesKey,
     sortKey: Number.isFinite(parsedId) ? parsedId : 0,
+    seriesImageUrl: election.series?.coverImageUrl ?? election.coverImageUrl ?? undefined,
     emoji: HOT_EMOJIS[index % HOT_EMOJIS.length],
     emojiColor: EMOJI_COLORS[index % 7],
     org: election.series?.seriesPreimage ?? 'Unknown series',
@@ -160,8 +218,9 @@ export function mapToVoteDetail(
   contractState?: number,
   contractTotalSubmissions?: bigint,
   candidateVotes?: Map<string, bigint>,
+  manifest?: CandidateManifest | null,
 ): VoteDetailData {
-  const election = withLocalOpenMetadata(rawElection)
+  const election = withLocalOpenMetadata(applyManifestToElection(rawElection, manifest ?? null))
   const badge =
     contractState !== undefined
       ? mapContractStateToBadge(contractState)
@@ -175,18 +234,24 @@ export function mapToVoteDetail(
   const candidates: Candidate[] = election.electionCandidates
     .slice()
     .sort((left, right) => left.displayOrder - right.displayOrder)
-    .map((candidate): Candidate => ({
-      id: candidate.candidateKey,
-      name: candidate.candidateKey,
-      group: '',
-      emoji: '🎤',
-      emojiColor: '#F0EDFF',
-      imageUrl: candidate.imageUrl ?? undefined,
-      votes:
-        candidateVotes && candidateVotes.has(candidate.candidateKey)
-          ? Number(candidateVotes.get(candidate.candidateKey))
-          : undefined,
-    }))
+    .map((candidate): Candidate => {
+      const manifestCandidate = manifest?.candidates.find(
+        (item) => item.candidateKey === candidate.candidateKey,
+      )
+
+      return {
+        id: candidate.candidateKey,
+        name: manifestCandidate?.displayName ?? candidate.candidateKey,
+        group: manifestCandidate?.groupLabel ?? '',
+        emoji: '🎤',
+        emojiColor: '#F0EDFF',
+        imageUrl: candidate.imageUrl ?? undefined,
+        votes:
+          candidateVotes && candidateVotes.has(candidate.candidateKey)
+            ? Number(candidateVotes.get(candidate.candidateKey))
+            : undefined,
+      }
+    })
 
   return {
     id: election.id,

@@ -3,10 +3,14 @@ import { mainnet, sepolia } from 'wagmi/chains'
 import { injected, walletConnect } from 'wagmi/connectors'
 import { vestarStatusTestnetChain } from '../contracts/vestar/chain'
 
-const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID as string | undefined
+const projectId =
+  (import.meta.env.VITE_WALLETCONNECT_PROJECT_ID as string | undefined) ||
+  (import.meta.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID as string | undefined)
 
 if (!projectId) {
-  console.warn('VITE_WALLETCONNECT_PROJECT_ID is not configured — WalletConnect will be disabled')
+  console.warn(
+    'VITE_WALLETCONNECT_PROJECT_ID/NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is not configured — WalletConnect will be disabled',
+  )
 }
 
 export const wagmiConfig = createConfig({

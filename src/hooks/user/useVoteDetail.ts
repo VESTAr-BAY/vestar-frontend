@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Address } from 'viem'
+import { fetchCandidateManifest } from '../../api/candidateManifest'
 import { fetchElectionDetail } from '../../api/elections'
 import {
   getElectionResultSummary,
   getElectionState,
   getTotalVotesForCandidate,
 } from '../../contracts/vestar/actions'
-import { mapToVoteDetail } from '../../utils/electionMapper'
+import { mapToVoteDetail, resolveElectionCandidates } from '../../utils/electionMapper'
 import type { VoteDetailData } from '../../types/vote'
 
 async function fetchContractState(electionAddress: Address) {
@@ -60,15 +61,20 @@ export function useVoteDetail(id: string): UseVoteDetailResult {
         let contractState: number | undefined
         let contractTotalSubmissions: bigint | undefined
         let candidateVotes: Map<string, bigint> | undefined
+        const manifest = await fetchCandidateManifest(
+          election.candidateManifestUri,
+          election.candidateManifestHash,
+        )
 
         if (election.onchainElectionAddress) {
           const address = election.onchainElectionAddress as Address
+          const resolvedCandidates = resolveElectionCandidates(election, manifest)
           const contractDataPromise = fetchContractState(address)
           const candidateVotesPromise =
             election.visibilityMode === 'OPEN'
               ? fetchCandidateVotes(
                   address,
-                  election.electionCandidates.map((candidate) => candidate.candidateKey),
+                  resolvedCandidates.map((candidate) => candidate.candidateKey),
                 )
               : Promise.resolve(undefined)
 
@@ -89,6 +95,7 @@ export function useVoteDetail(id: string): UseVoteDetailResult {
           contractState,
           contractTotalSubmissions,
           candidateVotes,
+          manifest,
         )
         setVote(mapped)
         setParticipantCount(mapped.participantCount)

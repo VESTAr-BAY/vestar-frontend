@@ -52,11 +52,6 @@ export function VoteHero({ vote }: VoteHeroProps) {
         </div>
       )}
 
-      {/* Org icon */}
-      <div className="w-16 h-16 bg-white/60 border border-[#E7E9ED] rounded-[18px] flex items-center justify-center text-[32px] mb-4">
-        {vote.emoji}
-      </div>
-
       {/* Org row */}
       <div className="flex items-center gap-1 mb-2">
         <span className="text-[11px] text-[#707070] font-mono">{vote.org}</span>

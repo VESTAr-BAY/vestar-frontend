@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Address, Hash, Hex } from 'viem'
-import { decodeEventLog, keccak256, parseUnits, toHex, zeroAddress, zeroHash } from 'viem'
+import {
+  decodeEventLog,
+  encodePacked,
+  keccak256,
+  parseUnits,
+  toHex,
+  zeroAddress,
+  zeroHash,
+} from 'viem'
 import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { preparePrivateElection } from '../../api/elections'
 import { fetchVerifiedOrganizerByWallet } from '../../api/verifiedOrganizers'
@@ -15,6 +23,7 @@ import {
   VESTAR_VISIBILITY_MODE,
 } from '../../contracts/vestar/types'
 import { useLanguage } from '../../providers/LanguageProvider'
+import { useToast } from '../../providers/ToastProvider'
 import type {
   CandidateDraft,
   CreateStep,
@@ -225,8 +234,12 @@ function validateStep(step: CreateStep, draft: VoteCreateDraft): boolean {
 }
 
 async function uploadImageToIpfs(file: File): Promise<string | null> {
-  const uploaded = await uploadFileToPinata(file)
-  return uploaded?.uri ?? null
+  try {
+    const uploaded = await uploadFileToPinata(file)
+    return uploaded?.uri ?? null
+  } catch {
+    return null
+  }
 }
 
 function convertResetIntervalToSeconds(value: string, unit: VoteCreateDraft['resetIntervalUnit']) {
@@ -307,19 +320,6 @@ function buildManifestPayload(
   })
 }
 
-function buildCandidateManifestPreimage(
-  candidates: FlattenedCandidate[],
-  candidateImageUrls: Map<string, string>,
-) {
-  return {
-    candidates: candidates.map((candidate, index) => ({
-      candidateKey: candidate.candidateKey,
-      displayOrder: index + 1,
-      imageUrl: candidateImageUrls.get(candidate.id) ?? null,
-    })),
-  }
-}
-
 async function parseElectionAddress(txHash: Hash): Promise<Address> {
   const receipt = await vestarUtils.waitForReceipt(txHash)
 
@@ -398,6 +398,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
   const { data: walletClient } = useWalletClient()
   const { switchChainAsync } = useSwitchChain()
   const { lang } = useLanguage()
+  const { addToast } = useToast()
 
   const isCurrentStepValid = validateStep(step, draft)
 
@@ -601,6 +602,10 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
       throw new Error('Status Network Testnet에 연결된 지갑이 필요합니다.')
     }
 
+    if (!address) {
+      throw new Error('지갑 주소를 확인할 수 없습니다.')
+    }
+
     if (!validateStep(3, draft)) {
       throw new Error('투표 입력값이 아직 완성되지 않았습니다.')
     }
@@ -608,6 +613,8 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     setIsSubmitting(true)
 
     try {
+      const organizerAddress = address
+
       if (chainId !== vestarStatusTestnetChain.id) {
         await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
       }
@@ -642,6 +649,22 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
       const candidateImageUrls = new Map<string, string>(
         candidateImageEntries.filter((entry): entry is [string, string] => entry[1] !== null),
       )
+      const requestedCandidateImageCount = allCandidates.filter(
+        (candidate) => candidate.imageFile !== null,
+      ).length
+      const uploadedCandidateImageCount = candidateImageUrls.size
+      const bannerUploadMissing = Boolean(draft.bannerImageFile && !bannerImageUrl)
+      const candidateUploadsMissing = requestedCandidateImageCount > uploadedCandidateImageCount
+
+      if (bannerUploadMissing || candidateUploadsMissing) {
+        addToast({
+          type: 'info',
+          message:
+            lang === 'ko'
+              ? '일부 이미지 업로드에 실패해 이미지 없이 생성됩니다.'
+              : 'Some image uploads failed. The vote will be created without those images.',
+        })
+      }
 
       const electionDrafts: SubmissionUnit[] =
         draft.sections.length > 0
@@ -717,7 +740,9 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         }
 
         // sungje : manifest hash는 백엔드 prepare 응답이 아니라 프론트가 실제로 업로드한 json bytes 기준으로 고정한다.
-        const seriesId = keccak256(toHex(draft.title.trim()))
+        const seriesId = keccak256(
+          encodePacked(['address', 'string'], [organizerAddress, draft.title.trim()]),
+        )
         const titleHash = keccak256(toHex(electionDraft.title))
         const candidateManifestHash = localManifestArtifact.hash
         const initialCandidateHashes = buildCandidateHashes(electionDraft.candidates)
@@ -732,10 +757,6 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
             seriesCoverImageUrl: bannerImageUrl,
             title: electionDraft.title,
             coverImageUrl: bannerImageUrl,
-            candidateManifestPreimage: buildCandidateManifestPreimage(
-              electionDraft.candidates,
-              candidateImageUrls,
-            ),
           })
 
           electionPublicKey = toHex(extractPublicKeyValue(prepareResponse.publicKey))
