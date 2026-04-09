@@ -10,7 +10,6 @@ export function PwaUpdatePrompt() {
   useEffect(() => {
     if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return
 
-    let registrationRef: ServiceWorkerRegistration | null = null
     let intervalId: number | null = null
 
     const handleControllerChange = () => {
@@ -32,7 +31,6 @@ export function PwaUpdatePrompt() {
     const registerServiceWorker = async () => {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js')
-        registrationRef = registration
 
         if (registration.waiting && navigator.serviceWorker.controller) {
           setNeedRefresh(true)
@@ -60,7 +58,6 @@ export function PwaUpdatePrompt() {
       if (intervalId !== null) {
         window.clearInterval(intervalId)
       }
-      registrationRef = null
     }
   }, [])
 
