@@ -40,6 +40,10 @@ body {
   height: 100%;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   font-family: var(--font-sans);
   background: #E8E8E8;
@@ -51,4 +55,12 @@ body {
 #root {
   width: 100%;
   max-width: 430px;
+}
+
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }

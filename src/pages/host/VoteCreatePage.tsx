@@ -101,7 +101,7 @@ export function VoteCreatePage() {
   return (
     <div className="relative mx-auto h-screen w-full max-w-[430px] overflow-hidden bg-[#F7F8FA] shadow-[0_0_60px_rgba(0,0,0,0.12)]">
       {/* Header */}
-      <header className="fixed left-1/2 -translate-x-1/2 z-[100] w-full max-w-[430px] h-14 bg-[#13141A] flex items-center px-4 gap-3">
+      <header className="fixed left-1/2 top-0 z-[100] flex h-[var(--header-h)] w-full max-w-[430px] -translate-x-1/2 items-center gap-3 bg-[#13141A] px-4 pt-[var(--safe-top)]">
         <button
           type="button"
           aria-label="뒤로가기"
@@ -131,7 +131,7 @@ export function VoteCreatePage() {
       </header>
 
       {/* Scrollable content */}
-      <main className="h-screen overflow-y-auto pt-14 pb-24 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <main className="h-screen overflow-y-auto px-[var(--safe-left)] pr-[var(--safe-right)] pt-[var(--header-h)] pb-[var(--footer-h)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {step === 1 && <StepBasicInfo draft={draft} onUpdate={updateField} />}
         {step === 2 && (
           <StepCandidates
@@ -161,7 +161,7 @@ export function VoteCreatePage() {
       </main>
 
       {/* Bottom action bar */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-[#E7E9ED] px-5 py-4 z-[100]">
+      <div className="fixed bottom-0 left-1/2 z-[100] w-full max-w-[430px] -translate-x-1/2 border-t border-[#E7E9ED] bg-white px-[calc(1.25rem+var(--safe-left))] py-4 pb-[calc(1rem+var(--safe-bottom))] pr-[calc(1.25rem+var(--safe-right))]">
         <button
           type="button"
           disabled={!isCurrentStepValid || isSubmitting}
