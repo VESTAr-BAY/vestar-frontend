@@ -371,7 +371,7 @@ function buildFallbackSeries(entry: IndexedOnchainElection) {
 function mapManifestCandidates(manifest: CandidateManifest | null): ApiCandidate[] {
   return [...(manifest?.candidates ?? [])]
     .map((candidate, index) => ({
-      candidate_key: candidate.candidateKey,
+      candidate_key: candidate.candidateKey ?? candidate.displayName ?? '',
       display_name: candidate.displayName ?? null,
       group_label: candidate.groupLabel ?? null,
       image_url: candidate.imageUrl ?? null,
