@@ -151,7 +151,7 @@ export function VoteDetailPage() {
   const [hasVoted, setHasVoted] = useState(() => isVoted(id))
   const [canSubmitByEligibility, setCanSubmitByEligibility] = useState(true)
 
-  const { setConfig, scrollState } = useContext(VoteDetailHeaderContext)
+  const { scrollState } = useContext(VoteDetailHeaderContext)
   const chainId = useChainId()
   const { switchChainAsync } = useSwitchChain()
   const { addToast } = useToast()
@@ -222,17 +222,6 @@ export function VoteDetailPage() {
   const activeCanSubmit =
     (isGrouped ? sectionSelection.canSubmit : canSubmit) && canSubmitByEligibility
 
-  useEffect(() => {
-    if (!vote) return
-    setConfig({
-      title: vote.title,
-      onShare: () => {
-        if (navigator.share) {
-          navigator.share({ title: vote.title, url: window.location.href }).catch(() => {})
-        }
-      },
-    })
-  }, [vote, setConfig])
 
   useEffect(() => {
     let cancelled = false

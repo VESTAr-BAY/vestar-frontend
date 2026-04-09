@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
+<<<<<<< HEAD
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), '')
   // sungje : dev 서버에서는 루트 경로로 바로 열리게 하고, 배포 빌드에서만 /vote/ base를 유지한다.
@@ -40,6 +41,52 @@ export default defineConfig(({ mode, command }) => {
               sizes: 'any',
               type: 'image/svg+xml',
               purpose: 'any',
+=======
+export default defineConfig({
+  plugins: [
+    react(),
+    babel({ presets: [reactCompilerPreset()] }),
+    tailwindcss(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.svg", "pwa-icon.svg"],
+      manifest: {
+        name: "VESTAr — K-pop Fan Voting",
+        short_name: "VESTAr",
+        description: "투표로 응원하세요 — K-pop 팬 투표 플랫폼",
+        theme_color: "#7140FF",
+        background_color: "#090A0B",
+        display: "standalone",
+        orientation: "portrait",
+        scope: "/",
+        start_url: "/",
+        icons: [
+          {
+            src: "pwa-icon.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "any",
+          },
+          {
+            src: "pwa-icon.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "maskable",
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,woff2}"],
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api/],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "cdn-fonts",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+>>>>>>> 5a7adf7 (fix : header status)
             },
             {
               src: 'pwa-icon.svg',

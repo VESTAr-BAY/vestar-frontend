@@ -1,8 +1,7 @@
-import { useContext, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { keccak256, toHex, type Address } from 'viem'
-import { VoteDetailHeaderContext } from '../../components/layout/VoteDetailLayout'
 import { finalizeElectionResults, waitForVestarTransactionReceipt } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useVoteManage } from '../../hooks/host/useVoteManage'
@@ -74,7 +73,6 @@ export function VoteManagePage() {
     totalSubmissions,
     totalInvalidVotes,
   } = useHostLiveTally(id)
-  const { setConfig } = useContext(VoteDetailHeaderContext)
   const { addToast } = useToast()
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient({ chainId: vestarStatusTestnetChain.id })
@@ -82,17 +80,6 @@ export function VoteManagePage() {
 
   const [isFinalizing, setIsFinalizing] = useState(false)
 
-  useEffect(() => {
-    if (!vote) return
-    setConfig({
-      title: `${vote.title} — 관리`,
-      onShare: () => {
-        if (navigator.share) {
-          navigator.share({ title: vote.title, url: window.location.href }).catch(() => {})
-        }
-      },
-    })
-  }, [vote, setConfig])
 
   if (isLoading || !vote || !result) return <LoadingSkeleton />
 

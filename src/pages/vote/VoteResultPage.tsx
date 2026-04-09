@@ -1,6 +1,4 @@
-import { useContext, useEffect } from 'react'
 import { useParams } from 'react-router'
-import { VoteDetailHeaderContext } from '../../components/layout/VoteDetailLayout'
 import { useVoteResult } from '../../hooks/user/useVoteResult'
 import { VoteResultRankings } from '../user/VoteResultRankings'
 import { VoteResultWinner } from '../user/VoteResultWinner'
@@ -27,19 +25,6 @@ function EmptyState() {
 export function VoteResultPage() {
   const { id = '1' } = useParams()
   const { result, isLoading } = useVoteResult(id)
-  const { setConfig } = useContext(VoteDetailHeaderContext)
-
-  useEffect(() => {
-    if (!result) return
-    setConfig({
-      title: `${result.title} — 결과`,
-      onShare: () => {
-        if (navigator.share) {
-          navigator.share({ title: result.title, url: window.location.href }).catch(() => {})
-        }
-      },
-    })
-  }, [result, setConfig])
 
   if (isLoading) return <LoadingSkeleton />
   if (!result || result.rankedCandidates.length === 0) return <EmptyState />
