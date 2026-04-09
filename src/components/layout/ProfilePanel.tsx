@@ -199,7 +199,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
         className={`absolute top-0 right-0 bottom-0 w-[82%] bg-white flex flex-col overflow-hidden z-[201] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${open ? 'translate-x-0 shadow-[-8px_0_40px_rgba(0,0,0,0.14)] pointer-events-auto' : 'translate-x-full pointer-events-none'}`}
       >
         {/* Panel header */}
-        <div className="bg-[#13141A] px-5 pt-6 pb-5 flex-shrink-0">
+        <div className="bg-[#13141A] px-5 pt-[calc(var(--safe-top)+1.5rem)] pb-5 flex-shrink-0">
           <div className="flex items-center justify-between mb-5">
             <span className="text-white/50 text-[12px] font-mono tracking-[1px] uppercase">
               My Profile
