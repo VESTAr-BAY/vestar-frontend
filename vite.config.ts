@@ -13,6 +13,7 @@ export default defineConfig(({ mode, command }) => {
 
   return {
     base: baseUrl,
+    envPrefix: ['VITE_', 'NEXT_PUBLIC_', 'PINATA_JWT', 'PINATA_GATEWAYS'],
     define: {
       __PINATA_JWT__: JSON.stringify(env.PINATA_JWT ?? ''),
       __PINATA_GATEWAYS__: JSON.stringify(env.PINATA_GATEWAYS ?? ''),

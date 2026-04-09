@@ -33,6 +33,7 @@ export interface ApiElectionCandidate {
 export interface ApiCandidateManifestPreimage {
   candidates: Array<{
     candidateKey: string
+    displayName?: string | null
     displayOrder: number
     imageUrl?: string | null
   }>
@@ -55,6 +56,8 @@ export interface ApiElection {
   onchainSeriesId: string | null
   onchainElectionId: string
   onchainElectionAddress: `0x${string}` | null
+  candidateManifestHash: string | null
+  candidateManifestUri: string | null
   organizerWalletAddress: `0x${string}`
   organizerVerifiedSnapshot: boolean
   organizer: {
@@ -78,7 +81,6 @@ export interface ApiElection {
   title: string | null
   coverImageUrl: string | null
   syncState: ApiElectionSyncState | null
-  candidateManifestPreimage: ApiCandidateManifestPreimage | null
   series: ApiElectionSeries | null
   electionKey: ApiElectionKey | null
   electionCandidates: ApiElectionCandidate[]
@@ -92,6 +94,8 @@ export interface ApiElectionMetadata {
   onchainSeriesId: string | null
   onchainElectionId: string
   onchainElectionAddress: `0x${string}` | null
+  candidateManifestHash: string | null
+  candidateManifestUri: string | null
   organizer: {
     walletAddress: `0x${string}`
     organizationName: string
@@ -231,7 +235,6 @@ export interface PreparePrivateElectionRequest {
   seriesCoverImageUrl?: string | null
   title: string
   coverImageUrl?: string | null
-  candidateManifestPreimage: ApiCandidateManifestPreimage
 }
 
 export interface PreparePrivateElectionResponse {

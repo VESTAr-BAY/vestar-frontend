@@ -23,6 +23,7 @@ import {
   VESTAR_VISIBILITY_MODE,
 } from '../../contracts/vestar/types'
 import { useLanguage } from '../../providers/LanguageProvider'
+import { useToast } from '../../providers/ToastProvider'
 import type {
   CandidateDraft,
   CreateStep,
@@ -38,7 +39,11 @@ import {
   getEffectiveResultRevealAt,
   normalizeElectionSettingsDraft,
 } from '../../utils/hostElectionSettings'
-import { uploadFileToPinata, uploadJsonArtifactToPinata } from '../../utils/ipfs'
+import {
+  createJsonArtifact,
+  uploadFileToPinata,
+  uploadJsonArtifactToPinata,
+} from '../../utils/ipfs'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
 type SubmitVoteResult = {
@@ -229,8 +234,12 @@ function validateStep(step: CreateStep, draft: VoteCreateDraft): boolean {
 }
 
 async function uploadImageToIpfs(file: File): Promise<string | null> {
-  const uploaded = await uploadFileToPinata(file)
-  return uploaded?.uri ?? null
+  try {
+    const uploaded = await uploadFileToPinata(file)
+    return uploaded?.uri ?? null
+  } catch {
+    return null
+  }
 }
 
 function convertResetIntervalToSeconds(value: string, unit: VoteCreateDraft['resetIntervalUnit']) {
@@ -252,11 +261,16 @@ function buildCandidateManifestCandidates(
   candidateImageUrls: Map<string, string>,
 ): CandidateManifestCandidate[] {
   return candidates.map((candidate, index) => ({
+    candidateKey: candidate.candidateKey,
     displayName: candidate.candidateKey,
     groupLabel: null,
     displayOrder: index + 1,
     imageUrl: candidateImageUrls.get(candidate.id) ?? null,
   }))
+}
+
+function buildManifestUriFallback(rawJson: string): string {
+  return `data:application/json;charset=utf-8,${encodeURIComponent(rawJson)}`
 }
 
 function buildCandidateManifestFileName(seriesTitle: string, electionTitle: string, order: number) {
@@ -283,26 +297,12 @@ function buildManifestPayload(
   candidateImageUrls: Map<string, string>,
   bannerImageUrl: string | null,
 ) {
-  // sungje : 제목/설정 같은 중복값은 manifest에서 빼되, 백엔드가 바로 안 주는 대표 이미지와 후보 이미지는 ipfs uri를 그대로 남겨서 화면 복원이 가능하게 한다.
   return buildCandidateManifest({
-    category: draft.category,
     seriesCoverImageUrl: bannerImageUrl,
+    category: draft.category,
     electionCoverImageUrl: bannerImageUrl,
     candidates: buildCandidateManifestCandidates(candidates, candidateImageUrls),
   })
-}
-
-function buildCandidateManifestPreimage(
-  candidates: FlattenedCandidate[],
-  candidateImageUrls: Map<string, string>,
-) {
-  return {
-    candidates: candidates.map((candidate, index) => ({
-      candidateKey: candidate.candidateKey,
-      displayOrder: index + 1,
-      imageUrl: candidateImageUrls.get(candidate.id) ?? null,
-    })),
-  }
 }
 
 async function parseElectionAddress(txHash: Hash): Promise<Address> {
@@ -337,7 +337,6 @@ export interface UseCreateVoteDraftResult {
     current: number
     total: number
     currentTitle: string | null
-    message: string | null
   }
   updateField: <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => void
   addCandidate: () => void
@@ -378,13 +377,13 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     current: 0,
     total: 0,
     currentTitle: null as string | null,
-    message: null as string | null,
   })
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient()
   const { switchChainAsync } = useSwitchChain()
   const { lang } = useLanguage()
+  const { addToast } = useToast()
 
   const isCurrentStepValid = validateStep(step, draft)
 
@@ -587,8 +586,9 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     if (!walletClient) {
       throw new Error('Status Network Testnet에 연결된 지갑이 필요합니다.')
     }
+
     if (!address) {
-      throw new Error('시리즈 식별자를 만들려면 지갑 주소가 필요합니다.')
+      throw new Error('지갑 주소를 확인할 수 없습니다.')
     }
 
     if (!validateStep(3, draft)) {
@@ -598,6 +598,8 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     setIsSubmitting(true)
 
     try {
+      const organizerAddress = address
+
       if (chainId !== vestarStatusTestnetChain.id) {
         await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
       }
@@ -616,6 +618,38 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
               candidateKey: candidate.name.trim(),
               imageFile: candidate.imageFile ?? null,
             }))
+
+      const [bannerImageUrl, candidateImageEntries] = await Promise.all([
+        draft.bannerImageFile
+          ? uploadImageToIpfs(draft.bannerImageFile)
+          : Promise.resolve<string | null>(null),
+        Promise.all(
+          allCandidates.map(async (candidate) => [
+            candidate.id,
+            candidate.imageFile ? await uploadImageToIpfs(candidate.imageFile) : null,
+          ]),
+        ),
+      ])
+
+      const candidateImageUrls = new Map<string, string>(
+        candidateImageEntries.filter((entry): entry is [string, string] => entry[1] !== null),
+      )
+      const requestedCandidateImageCount = allCandidates.filter(
+        (candidate) => candidate.imageFile !== null,
+      ).length
+      const uploadedCandidateImageCount = candidateImageUrls.size
+      const bannerUploadMissing = Boolean(draft.bannerImageFile && !bannerImageUrl)
+      const candidateUploadsMissing = requestedCandidateImageCount > uploadedCandidateImageCount
+
+      if (bannerUploadMissing || candidateUploadsMissing) {
+        addToast({
+          type: 'info',
+          message:
+            lang === 'ko'
+              ? '일부 이미지 업로드에 실패해 이미지 없이 생성됩니다.'
+              : 'Some image uploads failed. The vote will be created without those images.',
+        })
+      }
 
       const electionDrafts: SubmissionUnit[] =
         draft.sections.length > 0
@@ -646,24 +680,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         current: 0,
         total: electionDrafts.length,
         currentTitle: null,
-        message: 'IPFS 이미지 업로드 확인 중',
       })
-
-      const [bannerImageUrl, candidateImageEntries] = await Promise.all([
-        draft.bannerImageFile
-          ? uploadImageToIpfs(draft.bannerImageFile)
-          : Promise.resolve<string | null>(null),
-        Promise.all(
-          allCandidates.map(async (candidate) => [
-            candidate.id,
-            candidate.imageFile ? await uploadImageToIpfs(candidate.imageFile) : null,
-          ]),
-        ),
-      ])
-
-      const candidateImageUrls = new Map<string, string>(
-        candidateImageEntries.filter((entry): entry is [string, string] => entry[1] !== null),
-      )
 
       for (const [index, electionDraft] of electionDrafts.entries()) {
         const normalizedSettings = normalizeElectionSettingsDraft(electionDraft.settings)
@@ -672,7 +689,6 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
           current: index + 1,
           total: electionDrafts.length,
           currentTitle: electionDraft.title,
-          message: 'IPFS 메타데이터 업로드 확인 중',
         })
 
         if (electionDraft.candidates.length < 2) {
@@ -695,19 +711,26 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
           electionDraft.title,
           index + 1,
         )
-        const uploadedManifestArtifact = await uploadJsonArtifactToPinata(
-          manifestFileName,
-          manifest,
-        )
-        const candidateManifestURI = uploadedManifestArtifact.uri
+        const localManifestArtifact = createJsonArtifact(manifestFileName, manifest)
+        let candidateManifestURI = buildManifestUriFallback(localManifestArtifact.rawJson)
+        try {
+          const uploadedManifestArtifact = await uploadJsonArtifactToPinata(
+            manifestFileName,
+            manifest,
+          )
+          if (uploadedManifestArtifact) {
+            candidateManifestURI = uploadedManifestArtifact.uri
+          }
+        } catch {
+          candidateManifestURI = buildManifestUriFallback(localManifestArtifact.rawJson)
+        }
 
-        // sungje : seriesId는 같은 시리즈명을 다른 organizer가 써도 안 섞이게 organizer address + series title을 함께 해시한다.
+        // sungje : manifest hash는 백엔드 prepare 응답이 아니라 프론트가 실제로 업로드한 json bytes 기준으로 고정한다.
         const seriesId = keccak256(
-          encodePacked(['address', 'string'], [address, draft.title.trim()]),
+          encodePacked(['address', 'string'], [organizerAddress, draft.title.trim()]),
         )
         const titleHash = keccak256(toHex(electionDraft.title))
-        // sungje : 컨트랙트에 넣는 manifest hash는 실제 ipfs 업로드 파일과 같은 직렬화 결과를 기준으로 쓴다.
-        const candidateManifestHash = uploadedManifestArtifact.hash
+        const candidateManifestHash = localManifestArtifact.hash
         const initialCandidateHashes = buildCandidateHashes(electionDraft.candidates)
 
         let electionPublicKey: Hex
@@ -715,22 +738,11 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
 
         if (normalizedSettings.visibilityMode === 'PRIVATE') {
           // sungje : private prepare는 키 생성만 맡기고, 시리즈/타이틀/manifest 해시는 프론트가 직접 계산한 값을 그대로 쓴다.
-          setSubmissionProgress({
-            current: index + 1,
-            total: electionDrafts.length,
-            currentTitle: electionDraft.title,
-            message: '비공개 투표 키 준비 중',
-          })
-
           const prepareResponse = await preparePrivateElection({
             seriesPreimage: draft.title.trim(),
             seriesCoverImageUrl: bannerImageUrl,
             title: electionDraft.title,
             coverImageUrl: bannerImageUrl,
-            candidateManifestPreimage: buildCandidateManifestPreimage(
-              electionDraft.candidates,
-              candidateImageUrls,
-            ),
           })
 
           electionPublicKey = toHex(extractPublicKeyValue(prepareResponse.publicKey))
@@ -748,13 +760,6 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
           ? Math.max(2, normalizedSettings.maxChoices)
           : 1
         const effectiveResultRevealAt = getEffectiveResultRevealAt(normalizedSettings)
-
-        setSubmissionProgress({
-          current: index + 1,
-          total: electionDrafts.length,
-          currentTitle: electionDraft.title,
-          message: '지갑 서명 요청 중',
-        })
 
         const config: ElectionConfigInput = {
           seriesId,
@@ -841,10 +846,9 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         current: 0,
         total: 0,
         currentTitle: null,
-        message: null,
       })
     }
-  }, [address, chainId, draft, lang, switchChainAsync, walletClient])
+  }, [chainId, draft, lang, switchChainAsync, walletClient])
 
   return {
     draft,

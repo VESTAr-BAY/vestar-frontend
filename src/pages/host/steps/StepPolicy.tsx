@@ -1,11 +1,8 @@
-import type { VoteCreateDraft } from "../../../types/host";
+import type { VoteCreateDraft } from '../../../types/host'
 
 interface StepPolicyProps {
-  draft: VoteCreateDraft;
-  onUpdate: <K extends keyof VoteCreateDraft>(
-    key: K,
-    value: VoteCreateDraft[K],
-  ) => void;
+  draft: VoteCreateDraft
+  onUpdate: <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => void
 }
 
 export function StepPolicy({ draft, onUpdate }: StepPolicyProps) {
@@ -15,8 +12,8 @@ export function StepPolicy({ draft, onUpdate }: StepPolicyProps) {
         className="hidden"
         data-step-policy-unused
         data-title={draft.title}
-        onClick={() => onUpdate("title", draft.title)}
+        onClick={() => onUpdate('title', draft.title)}
       />
     </>
-  );
+  )
 }

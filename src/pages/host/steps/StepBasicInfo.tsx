@@ -180,8 +180,6 @@ export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoPr
         </button>
       </div>
 
-      
-
       {/* Category */}
       <div>
         <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">카테고리</span>
