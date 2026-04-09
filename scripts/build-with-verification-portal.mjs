@@ -68,8 +68,23 @@ async function syncRedirects() {
   await writeFile(redirectsPath, `${nextLines.join('\n')}\n`)
 }
 
+async function hasPortal() {
+  try {
+    await access(portalRoot)
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function main() {
   runCommand(npmCommand, ['run', 'build:app'], frontendRoot)
+
+  if (!(await hasPortal())) {
+    console.log('Skipping verification portal build (vestar-verification-portal not found).')
+    return
+  }
+
   await mirrorFrontendBuildUnderVoteBase()
 
   await ensurePortalDependencies()
