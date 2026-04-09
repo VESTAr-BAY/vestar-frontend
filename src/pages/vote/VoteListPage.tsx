@@ -11,6 +11,7 @@ import { VoteCardSkeleton } from '../../components/shared/VoteCardSkeleton'
 import { useInfiniteVotes, type VoteFilter } from '../../hooks/vote/useInfiniteVotes'
 import { useVoteList } from '../../hooks/vote/useVoteList'
 import type { BadgeVariant, HotVote, VoteListItem } from '../../types/vote'
+import { buildVoteTargetPath, groupVoteItemsBySeries } from '../../utils/voteSeries'
 
 const BADGE_STYLES: Record<BadgeVariant, string> = {
   live: 'bg-[rgba(34,197,94,0.12)] text-[#16a34a]',
@@ -86,23 +87,22 @@ function VoteItem({
   isVoted,
 }: {
   item: VoteListItem
-  onNavigate: (id: string) => void
+  onNavigate: (item: VoteListItem) => void
   isVoted: boolean
 }) {
-  const isEnded = item.badge === 'end'
   const { t } = useLanguage()
   const badgeLabel = item.badge === 'end' ? t('badge_end') : BADGE_LABEL[item.badge]
 
   return (
     <button
       type="button"
-      onClick={() => onNavigate(isEnded ? `${item.id}/result` : item.id)}
+      onClick={() => onNavigate(item)}
       className="w-full bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px] cursor-pointer transition-[border-color,background] duration-150 hover:border-[rgba(113,64,255,0.25)] hover:bg-[#F0EDFF] active:scale-[0.99] text-left"
     >
       <div
         className="w-[52px] h-[52px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
         style={{ background: item.emojiColor }}
-      ></div>
+      />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1 mb-1">
           <span className="text-[11px] text-[#707070] font-mono truncate">{item.org}</span>
@@ -155,14 +155,27 @@ function SeriesSection({
   host?: string
   verified?: boolean
   items: VoteListItem[]
-  onNavigate: (id: string) => void
+  onNavigate: (item: VoteListItem) => void
   isVoted: (id: string) => boolean
 }) {
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-[15px] font-semibold text-[#090A0B]">{title}</div>
+          <div className="flex items-center gap-1">
+            <div className="text-[15px] font-semibold text-[#090A0B]">{title}</div>
+            {verified && (
+              <img
+                src={verifiedIcon}
+                alt="verified"
+                className="w-[15px] h-[15px] flex-shrink-0"
+                style={{
+                  filter:
+                    'brightness(0) saturate(100%) invert(48%) sepia(76%) saturate(566%) hue-rotate(88deg) brightness(95%) contrast(93%)',
+                }}
+              />
+            )}
+          </div>
           <div className="text-[12px] text-[#707070]">{items.length}개의 투표</div>
         </div>
         {host ? (
@@ -210,35 +223,9 @@ export function VoteListPage() {
   } = useInfiniteVotes(FILTER_CHIPS[activeFilter].filter)
   const { t } = useLanguage()
 
-  const handleNavigate = (id: string) => navigate(`/vote/${id}`)
-  const groupedItems = items.reduce<
-    Array<{ key: string; title: string; host?: string; verified?: boolean; items: VoteListItem[] }>
-  >(
-    (groups, item) => {
-      const resolvedSeriesKey = item.seriesKey ?? `series:${item.org}`
-      const existing = groups.find((group) => group.key === resolvedSeriesKey)
-      if (existing) {
-        existing.items.push(item)
-        existing.host = existing.host ?? item.host
-        existing.verified = existing.verified ?? item.verified
-        return groups
-      }
-
-      groups.push({
-        key: resolvedSeriesKey,
-        title: item.org,
-        host: item.host,
-        verified: item.verified,
-        items: [item],
-      })
-      return groups
-    },
-    [],
-  )
-
-  groupedItems.forEach((group) => {
-    group.items.sort((a, b) => (b.sortKey ?? Number(b.id)) - (a.sortKey ?? Number(a.id)))
-  })
+  const handleHotNavigate = (id: string) => navigate(`/vote/${id}`)
+  const handleNavigate = (item: VoteListItem) => navigate(buildVoteTargetPath(item))
+  const groupedItems = groupVoteItemsBySeries(items)
 
   return (
     <>
@@ -288,7 +275,7 @@ export function VoteListPage() {
                 // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders have no stable id
                 <HotCardSkeleton key={i} />
               ))
-            : hotVotes.map((v) => <HotVoteCard key={v.id} vote={v} onNavigate={handleNavigate} />)}
+            : hotVotes.map((v) => <HotVoteCard key={v.id} vote={v} onNavigate={handleHotNavigate} />)}
         </div>
 
         <div className="border-t border-[#E7E9ED] mt-5" />

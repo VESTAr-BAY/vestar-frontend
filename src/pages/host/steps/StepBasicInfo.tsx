@@ -41,26 +41,7 @@ export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoPr
         />
         <div className="text-right text-[11px] text-[#707070] mt-1">{draft.title.length}/60</div>
       </div>
-
-      {/* Organizer */}
-      <div>
-        <label htmlFor="vote-org" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
-          주최사
-        </label>
-        <input
-          id="vote-org"
-          type="text"
-          value={draft.group}
-          readOnly
-          placeholder="검증된 주최사 정보를 불러오는 중입니다."
-          maxLength={40}
-          className="w-full bg-[#F7F8FA] border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] placeholder:text-[#C0C4CC] outline-none"
-        />
-        <div className="text-[11px] text-[#707070] mt-1">
-          현재 연결된 지갑 주소로 조회한 verified organizer 정보를 표시합니다.
-        </div>
-      </div>
-
+      
       {/* Banner Image */}
       <div>
         <label className="flex items-center gap-1.5 text-[13px] font-semibold text-[#090A0B] mb-2">

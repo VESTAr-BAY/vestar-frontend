@@ -72,7 +72,7 @@ export function HostDashboardPage() {
   return (
     <>
       {/* Header strip */}
-      <div className="bg-[#13141A] px-5 pt-5 pb-6 relative overflow-hidden">
+      <div className="bg-[#13141A] px-5 pt-[calc(56px+20px)] pb-6 relative overflow-hidden -mt-14">
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7140FF] to-transparent" />
         <div className="text-[10px] font-semibold text-[#7140FF] tracking-[1.2px] uppercase font-mono mb-1.5">
           Host Dashboard

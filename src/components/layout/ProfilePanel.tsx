@@ -1,8 +1,18 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { useAccount, useDisconnect } from 'wagmi'
+import { formatUnits } from 'viem'
+import { useAccount, useChainId, useDisconnect, useSwitchChain, useWalletClient } from 'wagmi'
 import accountCircleIcon from '../../assets/account_circle.svg'
 import verifiedIcon from '../../assets/verified.svg'
+import {
+  getMockUsdtBalance,
+  mintMockUsdt,
+  waitForVestarTransactionReceipt,
+} from '../../contracts/vestar/actions'
+import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useLanguage } from '../../providers/LanguageProvider'
+import { useToast } from '../../providers/ToastProvider'
+import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
 interface ProfilePanelProps {
   open: boolean
@@ -49,6 +59,8 @@ const MENU_ITEMS: MenuItem[] = [
   },
 ]
 
+const MOCK_USDT_MINT_AMOUNT = 1_000n * 10n ** 6n
+
 function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
@@ -71,19 +83,107 @@ function getKarmaTier(karma: number): {
   return { label: '—', emoji: '·', color: '#707070' }
 }
 
+function formatMockUsdtBalance(balance: bigint): string {
+  const [whole, fraction = ''] = formatUnits(balance, 6).split('.')
+  const wholeWithCommas = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  const trimmedFraction = fraction.replace(/0+$/, '').slice(0, 2)
+
+  return trimmedFraction ? `${wholeWithCommas}.${trimmedFraction}` : wholeWithCommas
+}
+
 export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   const { address, isConnected } = useAccount()
+  const chainId = useChainId()
+  const { data: walletClient } = useWalletClient()
+  const { switchChainAsync } = useSwitchChain()
   const { disconnect } = useDisconnect()
   const navigate = useNavigate()
   const { t, lang, toggleLang } = useLanguage()
+  const { addToast } = useToast()
+  const [isMintingMockUsdt, setIsMintingMockUsdt] = useState(false)
+  const [mockUsdtBalance, setMockUsdtBalance] = useState('—')
 
   const karma = isConnected ? 2480 : 0
   const votes = isConnected ? 14 : 0
   const tier = getKarmaTier(karma)
 
+  useEffect(() => {
+    let cancelled = false
+
+    if (!isConnected || !address) {
+      setMockUsdtBalance('—')
+      return
+    }
+
+    getMockUsdtBalance(address)
+      .then((balance) => {
+        if (cancelled) return
+        setMockUsdtBalance(formatMockUsdtBalance(balance))
+      })
+      .catch(() => {
+        if (cancelled) return
+        setMockUsdtBalance('—')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [address, isConnected])
+
   const handleDisconnect = () => {
     disconnect()
     onClose()
+  }
+
+  const handleMintMockUsdt = async () => {
+    if (!isConnected || !address) {
+      addToast({
+        type: 'error',
+        message: lang === 'ko' ? '지갑을 먼저 연결해주세요.' : 'Connect your wallet first.',
+      })
+      return
+    }
+
+    if (!walletClient) {
+      addToast({
+        type: 'error',
+        message:
+          lang === 'ko'
+            ? 'Status Network Testnet에 연결된 지갑이 필요합니다.'
+            : 'A wallet connected to Status Network Testnet is required.',
+      })
+      return
+    }
+
+    setIsMintingMockUsdt(true)
+
+    try {
+      if (chainId !== vestarStatusTestnetChain.id) {
+        await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
+      }
+
+      const hash = await mintMockUsdt(walletClient, address, MOCK_USDT_MINT_AMOUNT)
+      await waitForVestarTransactionReceipt(hash)
+      const balance = await getMockUsdtBalance(address)
+      setMockUsdtBalance(formatMockUsdtBalance(balance))
+
+      addToast({
+        type: 'success',
+        message: lang === 'ko' ? '1,000 MockUSDT가 지급되었습니다.' : '1,000 MockUSDT minted.',
+      })
+    } catch (error) {
+      console.error('[ProfilePanel] failed to mint MockUSDT:', error)
+      addToast({
+        type: 'error',
+        message: getWalletActionErrorMessage(error, {
+          lang,
+          defaultMessage:
+            lang === 'ko' ? 'MockUSDT 민트에 실패했습니다.' : 'Failed to mint MockUSDT.',
+        }),
+      })
+    } finally {
+      setIsMintingMockUsdt(false)
+    }
   }
 
   return (
@@ -156,7 +256,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-[1px] bg-[#E7E9ED] border-b border-[#E7E9ED] flex-shrink-0">
+        <div className="grid grid-cols-3 gap-[1px] bg-[#E7E9ED] border-b border-[#E7E9ED] flex-shrink-0">
           <div className="bg-white px-4 py-[14px]">
             <div className="text-[11px] text-[#707070] mb-1">{t('pp_tier_stat')}</div>
             <div className="flex items-center gap-1.5">
@@ -172,6 +272,12 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
           <div className="bg-white px-4 py-[14px]">
             <div className="text-[11px] text-[#707070] mb-1">{t('pp_votes_stat')}</div>
             <div className="text-[17px] font-bold text-[#090A0B] font-mono">{votes}</div>
+          </div>
+          <div className="bg-white px-4 py-[14px]">
+            <div className="text-[11px] text-[#707070] mb-1">{t('pp_mock_usdt_stat')}</div>
+            <div className="text-[15px] font-bold text-[#090A0B] font-mono truncate">
+              {mockUsdtBalance}
+            </div>
           </div>
         </div>
 
@@ -252,6 +358,69 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
                 </button>
               )
             })}
+
+            <button
+              type="button"
+              onClick={handleMintMockUsdt}
+              disabled={!isConnected || isMintingMockUsdt}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-default"
+            >
+              <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#FFF5E8]">
+                🪙
+              </span>
+              <span className="text-[14px] font-medium text-[#090A0B]">
+                {isMintingMockUsdt ? t('pp_mint_mock_usdt_loading') : t('pp_mint_mock_usdt')}
+              </span>
+              <span className="ml-auto text-[#707070]">
+                {isMintingMockUsdt ? (
+                  <span className="block w-4 h-4 rounded-full border-2 border-[#D1D5DB] border-t-[#7140FF] animate-spin" />
+                ) : (
+                  <svg
+                    aria-hidden="true"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                )}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/host')
+                onClose()
+              }}
+              disabled={!isConnected}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-default"
+            >
+              <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#F0EDFF]">
+                ✨
+              </span>
+              <span className="text-[14px] font-medium text-[#090A0B]">{t('pp_host_page')}</span>
+              <span className="ml-auto text-[#707070]">
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </span>
+            </button>
 
             <div className="h-px bg-[#E7E9ED] my-2" />
 

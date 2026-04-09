@@ -1,5 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { ElectionSettingsDraft, SectionDraft, VoteCreateDraft } from '../../../types/host'
+import {
+  FIXED_PAID_COST_PER_BALLOT,
+  UNLIMITED_PAID_COST_PER_BALLOT,
+} from '../../../utils/hostElectionSettings'
 
 interface StepScheduleProps {
   draft: VoteCreateDraft
@@ -61,6 +65,13 @@ function SettingsEditor({
   const isIntervalPolicy = settings.ballotPolicy === 'ONE_PER_INTERVAL'
   const isUnlimitedPaid = settings.ballotPolicy === 'UNLIMITED_PAID'
   const allowMultipleChoice = settings.maxChoices > 1 && !isUnlimitedPaid
+  const isOpenVote = settings.visibilityMode === 'OPEN'
+  const displayedCostPerBallot =
+    settings.paymentMode === 'FREE'
+      ? '0'
+      : isUnlimitedPaid
+        ? UNLIMITED_PAID_COST_PER_BALLOT
+        : FIXED_PAID_COST_PER_BALLOT
   const maxChoicesOptions = Array.from({ length: Math.max(candidateCount, 1) }, (_, index) => {
     const value = index + 1
     return { value, label: `${value}명` }
@@ -118,20 +129,24 @@ function SettingsEditor({
         />
       </Field>
 
-      <Field label="결과 공개 시각">
-        <input
-          type="datetime-local"
-          value={settings.resultRevealAt}
-          min={settings.endDate}
-          onChange={(event) => onUpdate('resultRevealAt', event.target.value)}
-          className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
-        />
-        <div className="mt-2 text-[12px] text-[#707070]">
-          {settings.visibilityMode === 'OPEN'
-            ? '공개 투표도 result summary/finalize 기준 시점은 별도로 둘 수 있습니다.'
-            : '비공개 투표는 result reveal 시각 이후 key reveal pending 단계로 이동합니다.'}
+      {isOpenVote ? (
+        <div className="rounded-2xl border border-dashed border-[#E7E9ED] bg-white px-4 py-4 text-[12px] text-[#707070]">
+          공개 투표는 종료되면 바로 닫히고, 결과 공개 기준 시각은 따로 입력하지 않습니다.
         </div>
-      </Field>
+      ) : (
+        <Field label="결과 공개 시각">
+          <input
+            type="datetime-local"
+            value={settings.resultRevealAt}
+            min={settings.endDate}
+            onChange={(event) => onUpdate('resultRevealAt', event.target.value)}
+            className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
+          />
+          <div className="mt-2 text-[12px] text-[#707070]">
+            비공개 투표는 result reveal 시각 이후 key reveal pending 단계로 이동합니다.
+          </div>
+        </Field>
+      )}
 
       <div>
         <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">투표 정책</span>
@@ -154,9 +169,6 @@ function SettingsEditor({
             description="결제를 전제로 반복 투표를 허용합니다."
             onClick={() => {
               onUpdate('ballotPolicy', 'UNLIMITED_PAID')
-              onUpdate('paymentMode', 'PAID')
-              onUpdate('costPerBallotEth', '100')
-              onUpdate('maxChoices', 1)
             }}
           />
         </div>
@@ -255,12 +267,19 @@ function SettingsEditor({
             <input
               type="number"
               min="0"
-              step="1"
-              value={settings.costPerBallotEth}
-              disabled={settings.paymentMode === 'FREE'}
-              onChange={(event) => onUpdate('costPerBallotEth', event.target.value)}
+              step={isUnlimitedPaid ? '0.001' : '1'}
+              value={displayedCostPerBallot}
+              disabled
+              readOnly
               className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all disabled:bg-[#F7F8FA] disabled:text-[#C0C4CC]"
             />
+            <div className="mt-2 text-[12px] text-[#707070]">
+              {settings.paymentMode === 'FREE'
+                ? '무료 투표는 비용이 없습니다.'
+                : isUnlimitedPaid
+                  ? '유료 반복 투표는 컨트랙트 규칙상 고정 비용으로 생성됩니다.'
+                  : '일반 유료 투표는 100으로 고정됩니다.'}
+            </div>
           </Field>
         </div>
       </div>
@@ -292,6 +311,7 @@ function SectionScheduleCard({
 
 export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepScheduleProps) {
   const usesSections = draft.sections.length > 0
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
   const handleUpdateSingleField = <K extends keyof ElectionSettingsDraft>(
     key: K,
     value: ElectionSettingsDraft[K],
@@ -299,7 +319,24 @@ export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepSche
     onUpdate(key as keyof VoteCreateDraft, value as VoteCreateDraft[keyof VoteCreateDraft])
   }
 
+  useEffect(() => {
+    if (!usesSections) {
+      setActiveSectionId(null)
+      return
+    }
+
+    // sungje : 섹션별 설정이 길어질 때 현재 편집 중인 섹션만 보이도록 탭 상태를 유지한다.
+    if (!activeSectionId || !draft.sections.some((section) => section.id === activeSectionId)) {
+      setActiveSectionId(draft.sections[0]?.id ?? null)
+    }
+  }, [activeSectionId, draft.sections, usesSections])
+
   if (usesSections) {
+    const activeSection = draft.sections.find((section) => section.id === activeSectionId) ?? draft.sections[0]
+    if (!activeSection) return null
+
+    const activeSectionIndex = draft.sections.findIndex((section) => section.id === activeSection.id)
+
     return (
       <div className="px-5 py-6 flex flex-col gap-6">
         <div className="rounded-2xl border border-[#E7E9ED] bg-white px-4 py-4">
@@ -309,14 +346,33 @@ export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepSche
           </div>
         </div>
 
-        {draft.sections.map((section, index) => (
-          <SectionScheduleCard
-            key={section.id}
-            section={section}
-            index={index}
-            onUpdate={(key, value) => onUpdateSectionField(section.id, key, value)}
-          />
-        ))}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {draft.sections.map((section, index) => {
+            const selected = section.id === activeSection.id
+
+            return (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => setActiveSectionId(section.id)}
+                className={`shrink-0 rounded-full border px-4 py-2 text-[13px] font-semibold transition-all ${
+                  selected
+                    ? 'border-[#7140FF] bg-[#7140FF] text-white'
+                    : 'border-[#E7E9ED] bg-white text-[#707070]'
+                }`}
+              >
+                {`섹션 ${index + 1}`}
+              </button>
+            )
+          })}
+        </div>
+
+        <SectionScheduleCard
+          key={activeSection.id}
+          section={activeSection}
+          index={activeSectionIndex}
+          onUpdate={(key, value) => onUpdateSectionField(activeSection.id, key, value)}
+        />
       </div>
     )
   }

@@ -235,15 +235,10 @@ export interface PreparePrivateElectionRequest {
 }
 
 export interface PreparePrivateElectionResponse {
-  seriesIdHash: `0x${string}`
-  titleHash: `0x${string}`
-  candidateManifestHash: `0x${string}`
-  keySchemeVersion: number
   publicKey: {
     format: 'pem'
     algorithm: 'ECDH-P256'
     value: string
   }
   privateKeyCommitmentHash: `0x${string}`
-  candidateManifestPreimage: ApiCandidateManifestPreimage
 }

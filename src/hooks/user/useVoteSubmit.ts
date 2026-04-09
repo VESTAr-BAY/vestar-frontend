@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
-import { useChainId, useWalletClient, useSwitchChain } from 'wagmi'
 import type { Address } from 'viem'
+import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import {
   canAccountSubmitBallot,
   getElectionRemainingBallots,
@@ -11,10 +11,12 @@ import {
 } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { VESTAR_ELECTION_STATE } from '../../contracts/vestar/types'
+import { useLanguage } from '../../providers/LanguageProvider'
 import type { VoteDetailData } from '../../types/vote'
 import { encryptBallotWithPublicKey, randomNonceHex } from '../../utils/privateBallot'
+import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
-export type SubmitState = 'idle' | 'loading' | 'success'
+export type SubmitState = 'idle' | 'awaiting_signature' | 'confirming' | 'success'
 
 export interface VoteSubmitResult {
   state: SubmitState
@@ -34,10 +36,10 @@ export function useVoteSubmit(): VoteSubmitResult {
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient({ chainId: vestarStatusTestnetChain.id })
   const { switchChainAsync } = useSwitchChain()
+  const { lang } = useLanguage()
 
   const submit = useCallback(
     async (vote: VoteDetailData | null, candidateKeys: string[]) => {
-      setState('loading')
       setErrorMessage(null)
 
       try {
@@ -78,6 +80,8 @@ export function useVoteSubmit(): VoteSubmitResult {
           throw new Error('현재 제출 가능한 투표권이 없습니다.')
         }
 
+        setState('awaiting_signature')
+
         const hash =
           vote.visibilityMode === 'PRIVATE'
             ? await submitEncryptedVote(
@@ -104,16 +108,23 @@ export function useVoteSubmit(): VoteSubmitResult {
               )
             : await submitOpenVote(walletClient, vote.electionAddress as Address, candidateKeys)
 
+        setState('confirming')
         await waitForVestarTransactionReceipt(hash)
         setTxHash(hash)
         setState('success')
       } catch (error) {
         console.error('[useVoteSubmit] failed:', error)
         setState('idle')
-        setErrorMessage(error instanceof Error ? error.message : '투표 제출에 실패했습니다.')
+        setErrorMessage(
+          getWalletActionErrorMessage(error, {
+            lang,
+            defaultMessage:
+              lang === 'ko' ? '투표 제출에 실패했습니다.' : 'Failed to submit the vote.',
+          }),
+        )
       }
     },
-    [chainId, switchChainAsync, walletClient],
+    [chainId, lang, switchChainAsync, walletClient],
   )
 
   const reset = useCallback(() => {

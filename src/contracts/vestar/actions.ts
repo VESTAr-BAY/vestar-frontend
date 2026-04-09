@@ -12,6 +12,7 @@ import {
 } from 'viem'
 import { vestarStatusTestnetChain } from './chain'
 import {
+  mockUsdtAbi,
   vestarContractAddresses,
   vestarElectionAbi,
   vestarElectionFactoryAbi,
@@ -218,6 +219,15 @@ export async function getKarmaBalance(account: Address): Promise<bigint> {
     abi: vestarKarmaRegistryAbi,
     address: vestarContractAddresses.karmaRegistry,
     functionName: 'karmaBalanceOf',
+    args: [account],
+  })
+}
+
+export async function getMockUsdtBalance(account: Address): Promise<bigint> {
+  return readVestarContract<bigint>({
+    abi: mockUsdtAbi,
+    address: vestarContractAddresses.mockUsdt,
+    functionName: 'balanceOf',
     args: [account],
   })
 }
@@ -556,6 +566,20 @@ export async function submitEncryptedVote(
     address: electionAddress,
     functionName: 'submitEncryptedVote',
     args: [encryptedBallot],
+  })
+}
+
+export async function mintMockUsdt(
+  walletClient: WalletClient,
+  to: Address,
+  amount: bigint,
+): Promise<Hash> {
+  return writeVestarContract({
+    walletClient,
+    abi: mockUsdtAbi,
+    address: vestarContractAddresses.mockUsdt,
+    functionName: 'mint',
+    args: [to, amount],
   })
 }
 

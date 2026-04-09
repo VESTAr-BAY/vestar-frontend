@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
-import { decodeEventLog, keccak256, parseUnits, toHex, zeroAddress, zeroHash } from 'viem'
 import type { Address, Hash, Hex } from 'viem'
+import { decodeEventLog, keccak256, parseUnits, toHex, zeroAddress, zeroHash } from 'viem'
+import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
+import { preparePrivateElection } from '../../api/elections'
 import { fetchVerifiedOrganizerByWallet } from '../../api/verifiedOrganizers'
-import { apiClient } from '../../config/api'
-import { vestarFactory, vestarUtils } from '../../contracts/vestar/client'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
+import { vestarFactory, vestarUtils } from '../../contracts/vestar/client'
 import { vestarContractAddresses } from '../../contracts/vestar/generated'
 import { vestarElectionFactoryAbi } from '../../contracts/vestar/generated/vestarElectionFactoryAbi'
 import {
+  type ElectionConfigInput,
   VESTAR_BALLOT_POLICY,
   VESTAR_PAYMENT_MODE,
   VESTAR_VISIBILITY_MODE,
-  type ElectionConfigInput,
 } from '../../contracts/vestar/types'
+import { useLanguage } from '../../providers/LanguageProvider'
 import type {
   CandidateDraft,
   CreateStep,
@@ -21,7 +22,20 @@ import type {
   SectionDraft,
   VoteCreateDraft,
 } from '../../types/host'
-import { uploadJsonToPinata } from '../../utils/ipfs'
+import {
+  buildCandidateManifest,
+  type CandidateManifestCandidate,
+} from '../../utils/candidateManifest'
+import {
+  getEffectiveResultRevealAt,
+  normalizeElectionSettingsDraft,
+} from '../../utils/hostElectionSettings'
+import {
+  createJsonArtifact,
+  uploadFileToPinata,
+  uploadJsonArtifactToPinata,
+} from '../../utils/ipfs'
+import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
 type SubmitVoteResult = {
   txHash: Hash
@@ -31,28 +45,6 @@ type SubmitVoteResult = {
     electionAddress: Address
     title: string
   }>
-}
-
-type PreparePrivateElectionResponse = {
-  seriesIdHash: Hex
-  titleHash: Hex
-  candidateManifestHash: Hex
-  keySchemeVersion: number
-  publicKey:
-    | string
-    | {
-        format?: string
-        algorithm?: string
-        value: string
-      }
-  privateKeyCommitmentHash: Hex
-  candidateManifestPreimage: {
-    candidates: Array<{
-      candidateKey: string
-      displayOrder: number
-      imageUrl?: string | null
-    }>
-  }
 }
 
 type FlattenedCandidate = {
@@ -66,6 +58,8 @@ type SubmissionUnit = {
   settings: ElectionSettingsDraft
   candidates: FlattenedCandidate[]
 }
+
+const PRIVATE_ELECTION_KEY_SCHEME_VERSION = 1
 
 let counter = 3
 
@@ -146,7 +140,9 @@ function isStep1Valid(draft: VoteCreateDraft): boolean {
 function hasDuplicateCandidateNames(draft: VoteCreateDraft) {
   if (draft.sections.length > 0) {
     return draft.sections.some((section) => {
-      const normalized = section.candidates.map((candidate) => candidate.name.trim()).filter(Boolean)
+      const normalized = section.candidates
+        .map((candidate) => candidate.name.trim())
+        .filter(Boolean)
       return new Set(normalized).size !== normalized.length
     })
   }
@@ -170,38 +166,49 @@ function isStep2Valid(draft: VoteCreateDraft): boolean {
   if (draft.electionTitle.trim().length === 0) return false
 
   return (
-    draft.candidates.length >= 2 && draft.candidates.every((candidate) => candidate.name.trim().length > 0)
+    draft.candidates.length >= 2 &&
+    draft.candidates.every((candidate) => candidate.name.trim().length > 0)
   )
 }
 
 function isStep3Valid(draft: VoteCreateDraft): boolean {
   const validateSettings = (settings: ElectionSettingsDraft, candidateCount: number) => {
-    if (!settings.startDate.trim() || !settings.endDate.trim() || !settings.resultRevealAt.trim()) {
+    const normalizedSettings = normalizeElectionSettingsDraft(settings)
+    const effectiveResultRevealAt = getEffectiveResultRevealAt(normalizedSettings)
+
+    if (
+      !normalizedSettings.startDate.trim() ||
+      !normalizedSettings.endDate.trim() ||
+      !effectiveResultRevealAt.trim()
+    ) {
       return false
     }
 
-    const startAt = Date.parse(settings.startDate)
-    const endAt = Date.parse(settings.endDate)
-    const resultRevealAt = Date.parse(settings.resultRevealAt)
+    const startAt = Date.parse(normalizedSettings.startDate)
+    const endAt = Date.parse(normalizedSettings.endDate)
+    const resultRevealAt = Date.parse(effectiveResultRevealAt)
 
     if (!Number.isFinite(startAt) || !Number.isFinite(endAt) || !Number.isFinite(resultRevealAt)) {
       return false
     }
 
     if (startAt >= endAt) return false
-    if (settings.visibilityMode === 'PRIVATE' && resultRevealAt < endAt) return false
+    if (resultRevealAt < endAt) return false
 
-    if (settings.ballotPolicy === 'ONE_PER_INTERVAL') {
-      const interval = Number(settings.resetIntervalValue)
+    if (normalizedSettings.ballotPolicy === 'ONE_PER_INTERVAL') {
+      const interval = Number(normalizedSettings.resetIntervalValue)
       if (!Number.isFinite(interval) || interval <= 0) return false
     }
 
-    if (settings.paymentMode === 'PAID') {
-      const price = Number(settings.costPerBallotEth)
+    if (normalizedSettings.paymentMode === 'PAID') {
+      const price = Number(normalizedSettings.costPerBallotEth)
       if (!Number.isFinite(price) || price <= 0) return false
     }
 
-    return settings.maxChoices >= 1 && settings.maxChoices <= Math.max(candidateCount, 1)
+    return (
+      normalizedSettings.maxChoices >= 1 &&
+      normalizedSettings.maxChoices <= Math.max(candidateCount, 1)
+    )
   }
 
   if (draft.sections.length > 0) {
@@ -217,15 +224,9 @@ function validateStep(step: CreateStep, draft: VoteCreateDraft): boolean {
   return isStep3Valid(draft)
 }
 
-async function uploadImage(file: File): Promise<string> {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  const response = await apiClient.post<{ url: string }>('/uploads/candidate-image', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-
-  return response.data.url
+async function uploadImageToIpfs(file: File): Promise<string | null> {
+  const uploaded = await uploadFileToPinata(file)
+  return uploaded?.uri ?? null
 }
 
 function convertResetIntervalToSeconds(value: string, unit: VoteCreateDraft['resetIntervalUnit']) {
@@ -235,58 +236,96 @@ function convertResetIntervalToSeconds(value: string, unit: VoteCreateDraft['res
     throw new Error('유효한 투표권 갱신 주기를 입력하세요.')
   }
 
-  return unit === 'DAY' ? numericValue * 86_400 : unit === 'HOUR' ? numericValue * 3_600 : numericValue * 60
+  return unit === 'DAY'
+    ? numericValue * 86_400
+    : unit === 'HOUR'
+      ? numericValue * 3_600
+      : numericValue * 60
 }
 
-function buildCanonicalManifest(candidates: FlattenedCandidate[]) {
-  return {
-    candidates: candidates.map((candidate, index) => ({
-      candidateKey: candidate.candidateKey,
-      displayOrder: index + 1,
-    })),
-  }
+function buildCandidateManifestCandidates(
+  candidates: FlattenedCandidate[],
+  candidateImageUrls: Map<string, string>,
+): CandidateManifestCandidate[] {
+  return candidates.map((candidate, index) => ({
+    candidateKey: candidate.candidateKey,
+    displayName: candidate.candidateKey,
+    groupLabel: null,
+    displayOrder: index + 1,
+    imageUrl: candidateImageUrls.get(candidate.id) ?? null,
+  }))
 }
 
-function buildManifestMetadata(
+function buildManifestUriFallback(rawJson: string): string {
+  return `data:application/json;charset=utf-8,${encodeURIComponent(rawJson)}`
+}
+
+function buildCandidateManifestFileName(seriesTitle: string, electionTitle: string, order: number) {
+  const parts = [seriesTitle.trim(), electionTitle.trim()]
+    .filter(Boolean)
+    .join('-')
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+
+  return `vestar-candidate-manifest-${parts || `election-${order}`}.json`
+}
+
+function extractPublicKeyValue(publicKey: { value: string }): string {
+  return publicKey.value
+}
+
+function buildCandidateHashes(candidates: FlattenedCandidate[]) {
+  return candidates.map((candidate) => keccak256(toHex(candidate.candidateKey)))
+}
+
+function buildManifestPayload(
   draft: VoteCreateDraft,
   electionTitle: string,
+  normalizedSettings: ElectionSettingsDraft,
   candidates: FlattenedCandidate[],
   candidateImageUrls: Map<string, string>,
   bannerImageUrl: string | null,
 ) {
-  return {
-    title: electionTitle,
+  const normalizedAllowMultipleChoice =
+    normalizedSettings.ballotPolicy === 'UNLIMITED_PAID' ? false : normalizedSettings.maxChoices > 1
+  const normalizedMaxSelectionsPerSubmission = normalizedAllowMultipleChoice
+    ? Math.max(2, normalizedSettings.maxChoices)
+    : 1
+
+  return buildCandidateManifest({
     seriesPreimage: draft.title.trim(),
+    seriesCoverImageUrl: bannerImageUrl,
+    electionTitle,
     category: draft.category,
-    coverImageUrl: bannerImageUrl,
+    electionCoverImageUrl: bannerImageUrl,
+    visibilityMode: normalizedSettings.visibilityMode,
+    paymentMode: normalizedSettings.paymentMode,
+    ballotPolicy: normalizedSettings.ballotPolicy,
+    allowMultipleChoice: normalizedAllowMultipleChoice,
+    maxSelectionsPerSubmission: normalizedMaxSelectionsPerSubmission,
+    candidates: buildCandidateManifestCandidates(candidates, candidateImageUrls),
+  })
+}
+
+function buildCandidateManifestPreimage(
+  candidates: FlattenedCandidate[],
+  candidateImageUrls: Map<string, string>,
+) {
+  return {
     candidates: candidates.map((candidate, index) => ({
       candidateKey: candidate.candidateKey,
       displayOrder: index + 1,
       imageUrl: candidateImageUrls.get(candidate.id) ?? null,
     })),
-    sections:
-      draft.sections.length > 0
-        ? draft.sections.map((section) => ({
-            name: section.name.trim(),
-            candidates: section.candidates.map((candidate) => candidate.name.trim()),
-          }))
-        : [],
   }
-}
-
-function buildManifestUriFallback(manifest: unknown): string {
-  return `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(manifest))}`
-}
-
-function extractPublicKeyValue(publicKey: PreparePrivateElectionResponse['publicKey']): string {
-  return typeof publicKey === 'string' ? publicKey : publicKey.value
 }
 
 async function parseElectionAddress(txHash: Hash): Promise<Address> {
   const receipt = await vestarUtils.waitForReceipt(txHash)
 
   for (const log of receipt.logs) {
-    if (log.address.toLowerCase() !== vestarContractAddresses.electionFactory.toLowerCase()) continue
+    if (log.address.toLowerCase() !== vestarContractAddresses.electionFactory.toLowerCase())
+      continue
 
     try {
       const parsed = decodeEventLog({
@@ -298,9 +337,7 @@ async function parseElectionAddress(txHash: Hash): Promise<Address> {
       if (parsed.eventName === 'ElectionCreated') {
         return parsed.args.electionAddress as Address
       }
-    } catch {
-      continue
-    }
+    } catch {}
   }
 
   throw new Error('ElectionCreated 이벤트에서 electionAddress를 찾지 못했습니다.')
@@ -360,6 +397,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient()
   const { switchChainAsync } = useSwitchChain()
+  const { lang } = useLanguage()
 
   const isCurrentStepValid = validateStep(step, draft)
 
@@ -388,21 +426,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
 
   const updateField = useCallback(
     <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => {
-      setDraft((prev) => {
-        if (key === 'visibilityMode') {
-          return {
-            ...prev,
-            visibilityMode: value as VoteCreateDraft['visibilityMode'],
-            resultReveal: value === 'OPEN' ? 'immediate' : 'after_end',
-          }
-        }
-
-        if (key === 'paymentMode' && value === 'FREE') {
-          return { ...prev, paymentMode: 'FREE', costPerBallotEth: '0' }
-        }
-
-        return { ...prev, [key]: value }
-      })
+      setDraft((prev) => normalizeElectionSettingsDraft({ ...prev, [key]: value }))
     },
     [],
   )
@@ -462,7 +486,12 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         resultReveal: prev.resultReveal,
       }
 
-      return { ...prev, sections: [...prev.sections, newSection], electionTitle: '' }
+      // sungje : 새 섹션도 단일 생성과 같은 규칙으로 정규화해서 공개투표/유료투표 값이 바로 맞도록 유지한다.
+      return {
+        ...prev,
+        sections: [...prev.sections, normalizeElectionSettingsDraft(newSection)],
+        electionTitle: '',
+      }
     })
   }, [])
 
@@ -493,19 +522,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         sections: prev.sections.map((section) => {
           if (section.id !== sectionId) return section
 
-          if (key === 'visibilityMode') {
-            return {
-              ...section,
-              visibilityMode: value as ElectionSettingsDraft['visibilityMode'],
-              resultReveal: value === 'OPEN' ? 'immediate' : 'after_end',
-            }
-          }
-
-          if (key === 'paymentMode' && value === 'FREE') {
-            return { ...section, paymentMode: 'FREE', costPerBallotEth: '0' }
-          }
-
-          return { ...section, [key]: value }
+          return normalizeElectionSettingsDraft({ ...section, [key]: value })
         }),
       }))
     },
@@ -611,11 +628,13 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
             }))
 
       const [bannerImageUrl, candidateImageEntries] = await Promise.all([
-        draft.bannerImageFile ? uploadImage(draft.bannerImageFile) : Promise.resolve<string | null>(null),
+        draft.bannerImageFile
+          ? uploadImageToIpfs(draft.bannerImageFile)
+          : Promise.resolve<string | null>(null),
         Promise.all(
           allCandidates.map(async (candidate) => [
             candidate.id,
-            candidate.imageFile ? await uploadImage(candidate.imageFile) : null,
+            candidate.imageFile ? await uploadImageToIpfs(candidate.imageFile) : null,
           ]),
         ),
       ])
@@ -656,6 +675,8 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
       })
 
       for (const [index, electionDraft] of electionDrafts.entries()) {
+        const normalizedSettings = normalizeElectionSettingsDraft(electionDraft.settings)
+
         setSubmissionProgress({
           current: index + 1,
           total: electionDrafts.length,
@@ -671,124 +692,121 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
           throw new Error('후보명은 같은 투표 안에서 중복될 수 없습니다.')
         }
 
-        const canonicalManifest = buildCanonicalManifest(electionDraft.candidates)
-        const manifestMetadata = buildManifestMetadata(
+        const manifest = buildManifestPayload(
           draft,
           electionDraft.title,
+          normalizedSettings,
           electionDraft.candidates,
           candidateImageUrls,
           bannerImageUrl,
         )
-
-        let candidateManifestURI = buildManifestUriFallback(manifestMetadata)
+        const manifestFileName = buildCandidateManifestFileName(
+          draft.title,
+          electionDraft.title,
+          index + 1,
+        )
+        const localManifestArtifact = createJsonArtifact(manifestFileName, manifest)
+        let candidateManifestURI = buildManifestUriFallback(localManifestArtifact.rawJson)
         try {
-          const uploadedManifestUri = await uploadJsonToPinata(manifestMetadata)
-          if (uploadedManifestUri) candidateManifestURI = uploadedManifestUri
+          const uploadedManifestArtifact = await uploadJsonArtifactToPinata(manifestFileName, manifest)
+          if (uploadedManifestArtifact) {
+            candidateManifestURI = uploadedManifestArtifact.uri
+          }
         } catch {
-          candidateManifestURI = buildManifestUriFallback(manifestMetadata)
+          candidateManifestURI = buildManifestUriFallback(localManifestArtifact.rawJson)
         }
 
-        let seriesId: Hex
-        let titleHash: Hex
-        let candidateManifestHash: Hex
+        // sungje : manifest hash는 백엔드 prepare 응답이 아니라 프론트가 실제로 업로드한 json bytes 기준으로 고정한다.
+        const seriesId = keccak256(toHex(draft.title.trim()))
+        const titleHash = keccak256(toHex(electionDraft.title))
+        const candidateManifestHash = localManifestArtifact.hash
+        const initialCandidateHashes = buildCandidateHashes(electionDraft.candidates)
+
         let electionPublicKey: Hex
         let privateKeyCommitmentHash: Hex
-        let keySchemeVersion: number
-        let manifestForChain = canonicalManifest.candidates
 
-        if (electionDraft.settings.visibilityMode === 'PRIVATE') {
-          const prepareResponse = await apiClient.post<PreparePrivateElectionResponse>(
-            '/private-elections/prepare',
-            {
-              seriesPreimage: draft.title.trim(),
-              seriesCoverImageUrl: bannerImageUrl,
-              title: electionDraft.title,
-              coverImageUrl: bannerImageUrl,
-              candidateManifestPreimage: {
-                candidates: canonicalManifest.candidates.map((candidate, candidateIndex) => ({
-                  ...candidate,
-                  imageUrl:
-                    candidateImageUrls.get(electionDraft.candidates[candidateIndex].id) ?? null,
-                })),
-              },
-            },
-          )
+        if (normalizedSettings.visibilityMode === 'PRIVATE') {
+          // sungje : private prepare는 키 생성만 맡기고, 시리즈/타이틀/manifest 해시는 프론트가 직접 계산한 값을 그대로 쓴다.
+          const prepareResponse = await preparePrivateElection({
+            seriesPreimage: draft.title.trim(),
+            seriesCoverImageUrl: bannerImageUrl,
+            title: electionDraft.title,
+            coverImageUrl: bannerImageUrl,
+            candidateManifestPreimage: buildCandidateManifestPreimage(
+              electionDraft.candidates,
+              candidateImageUrls,
+            ),
+          })
 
-          seriesId = prepareResponse.data.seriesIdHash
-          titleHash = prepareResponse.data.titleHash
-          candidateManifestHash = prepareResponse.data.candidateManifestHash
-          electionPublicKey = toHex(extractPublicKeyValue(prepareResponse.data.publicKey))
-          privateKeyCommitmentHash = prepareResponse.data.privateKeyCommitmentHash
-          keySchemeVersion = Number(prepareResponse.data.keySchemeVersion)
-          manifestForChain = prepareResponse.data.candidateManifestPreimage.candidates
+          electionPublicKey = toHex(extractPublicKeyValue(prepareResponse.publicKey))
+          privateKeyCommitmentHash = prepareResponse.privateKeyCommitmentHash
         } else {
-          seriesId = keccak256(toHex(draft.title.trim()))
-          titleHash = keccak256(toHex(electionDraft.title))
-          candidateManifestHash = keccak256(toHex(JSON.stringify(canonicalManifest)))
           electionPublicKey = '0x'
           privateKeyCommitmentHash = zeroHash
-          keySchemeVersion = 0
         }
 
         const normalizedAllowMultipleChoice =
-          electionDraft.settings.ballotPolicy === 'UNLIMITED_PAID'
+          normalizedSettings.ballotPolicy === 'UNLIMITED_PAID'
             ? false
-            : electionDraft.settings.maxChoices > 1
+            : normalizedSettings.maxChoices > 1
         const normalizedMaxSelectionsPerSubmission = normalizedAllowMultipleChoice
-          ? Math.max(2, electionDraft.settings.maxChoices)
+          ? Math.max(2, normalizedSettings.maxChoices)
           : 1
+        const effectiveResultRevealAt = getEffectiveResultRevealAt(normalizedSettings)
 
         const config: ElectionConfigInput = {
           seriesId,
           visibilityMode:
-            electionDraft.settings.visibilityMode === 'PRIVATE'
+            normalizedSettings.visibilityMode === 'PRIVATE'
               ? VESTAR_VISIBILITY_MODE.PRIVATE
               : VESTAR_VISIBILITY_MODE.OPEN,
           titleHash,
           candidateManifestHash,
           candidateManifestURI,
-          startAt: Math.floor(Date.parse(electionDraft.settings.startDate) / 1000),
-          endAt: Math.floor(Date.parse(electionDraft.settings.endDate) / 1000),
-          resultRevealAt: Math.floor(Date.parse(electionDraft.settings.resultRevealAt) / 1000),
-          minKarmaTier: Number(electionDraft.settings.minKarmaTier),
+          startAt: Math.floor(Date.parse(normalizedSettings.startDate) / 1000),
+          endAt: Math.floor(Date.parse(normalizedSettings.endDate) / 1000),
+          // sungje : 공개 투표는 화면에서 결과 공개 시각을 숨기지만 컨트랙트 검증상 종료 시각 이상 값이 필요해서 endAt으로 맞춘다.
+          resultRevealAt: Math.floor(Date.parse(effectiveResultRevealAt) / 1000),
+          minKarmaTier: Number(normalizedSettings.minKarmaTier),
           ballotPolicy:
-            electionDraft.settings.ballotPolicy === 'ONE_PER_ELECTION'
+            normalizedSettings.ballotPolicy === 'ONE_PER_ELECTION'
               ? VESTAR_BALLOT_POLICY.ONE_PER_ELECTION
-              : electionDraft.settings.ballotPolicy === 'ONE_PER_INTERVAL'
+              : normalizedSettings.ballotPolicy === 'ONE_PER_INTERVAL'
                 ? VESTAR_BALLOT_POLICY.ONE_PER_INTERVAL
                 : VESTAR_BALLOT_POLICY.UNLIMITED_PAID,
           resetInterval:
-            electionDraft.settings.ballotPolicy === 'ONE_PER_INTERVAL'
+            normalizedSettings.ballotPolicy === 'ONE_PER_INTERVAL'
               ? convertResetIntervalToSeconds(
-                  electionDraft.settings.resetIntervalValue,
-                  electionDraft.settings.resetIntervalUnit,
+                  normalizedSettings.resetIntervalValue,
+                  normalizedSettings.resetIntervalUnit,
                 )
               : 0,
           paymentMode:
-            electionDraft.settings.paymentMode === 'PAID'
+            normalizedSettings.paymentMode === 'PAID'
               ? VESTAR_PAYMENT_MODE.PAID
               : VESTAR_PAYMENT_MODE.FREE,
           costPerBallot:
-            electionDraft.settings.paymentMode === 'PAID'
-              ? parseUnits(electionDraft.settings.costPerBallotEth || '0', 6)
+            normalizedSettings.paymentMode === 'PAID'
+              ? parseUnits(normalizedSettings.costPerBallotEth || '0', 6)
               : 0n,
           allowMultipleChoice: normalizedAllowMultipleChoice,
           maxSelectionsPerSubmission: normalizedMaxSelectionsPerSubmission,
           timezoneWindowOffset: -new Date().getTimezoneOffset() * 60,
           paymentToken:
-            electionDraft.settings.paymentMode === 'PAID'
+            normalizedSettings.paymentMode === 'PAID'
               ? vestarContractAddresses.mockUsdt
               : zeroAddress,
           electionPublicKey,
           privateKeyCommitmentHash,
-          keySchemeVersion,
+          keySchemeVersion:
+            normalizedSettings.visibilityMode === 'PRIVATE' ? PRIVATE_ELECTION_KEY_SCHEME_VERSION : 0,
         }
 
-        const initialCandidateHashes = manifestForChain.map((candidate) =>
-          keccak256(toHex(candidate.candidateKey)),
+        const txHash = await vestarFactory.createElection(
+          walletClient,
+          config,
+          initialCandidateHashes,
         )
-
-        const txHash = await vestarFactory.createElection(walletClient, config, initialCandidateHashes)
         const electionAddress = await parseElectionAddress(txHash)
 
         elections.push({
@@ -805,6 +823,14 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         electionAddress: lastElection.electionAddress,
         elections,
       }
+    } catch (error) {
+      throw new Error(
+        getWalletActionErrorMessage(error, {
+          lang,
+          defaultMessage:
+            lang === 'ko' ? '투표 생성에 실패했습니다.' : 'Failed to create the vote.',
+        }),
+      )
     } finally {
       setIsSubmitting(false)
       setSubmissionProgress({
@@ -813,7 +839,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         currentTitle: null,
       })
     }
-  }, [chainId, draft, switchChainAsync, walletClient])
+  }, [chainId, draft, lang, switchChainAsync, walletClient])
 
   return {
     draft,

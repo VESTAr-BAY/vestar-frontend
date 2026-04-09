@@ -29,7 +29,9 @@ vi.mock('../../contracts/vestar/client', () => ({
 }))
 
 vi.mock('../../utils/ipfs', () => ({
-  uploadJsonToPinata: vi.fn(),
+  createJsonArtifact: vi.fn(),
+  uploadFileToPinata: vi.fn(),
+  uploadJsonArtifactToPinata: vi.fn(),
 }))
 
 describe('useCreateVoteDraft', () => {
@@ -76,12 +78,26 @@ describe('useCreateVoteDraft', () => {
     const { result } = renderHook(() => useCreateVoteDraft())
 
     act(() => result.current.updateField('ballotPolicy', 'UNLIMITED_PAID'))
-    act(() => result.current.updateField('paymentMode', 'PAID'))
-    act(() => result.current.updateField('costPerBallotEth', '100'))
-    act(() => result.current.updateField('maxChoices', 1))
 
     expect(result.current.draft.paymentMode).toBe('PAID')
-    expect(result.current.draft.costPerBallotEth).toBe('100')
+    expect(result.current.draft.costPerBallotEth).toBe('0.066')
     expect(result.current.draft.maxChoices).toBe(1)
+  })
+
+  it('open voting keeps result reveal aligned with end date', () => {
+    const { result } = renderHook(() => useCreateVoteDraft())
+
+    act(() => result.current.updateField('endDate', '2026-04-09T12:00'))
+    act(() => result.current.updateField('visibilityMode', 'OPEN'))
+
+    expect(result.current.draft.resultRevealAt).toBe('2026-04-09T12:00')
+  })
+
+  it('standard paid voting fixes cost per ballot to 100', () => {
+    const { result } = renderHook(() => useCreateVoteDraft())
+
+    act(() => result.current.updateField('paymentMode', 'PAID'))
+
+    expect(result.current.draft.costPerBallotEth).toBe('100')
   })
 })

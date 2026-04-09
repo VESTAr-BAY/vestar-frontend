@@ -3,7 +3,9 @@
     "allow": [
       "Bash(pnpm install:*)",
       "Bash(pnpm check:*)",
-      "Bash(pnpm:*)"
+      "Bash(pnpm:*)",
+      "Bash(npx vitest:*)",
+      "Bash(find /Users/seokhoon/Documents/project/VESTAr/src -name \"*.test.*\" -type f -delete)"
     ]
   }
 }

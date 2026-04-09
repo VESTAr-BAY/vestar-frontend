@@ -79,7 +79,7 @@ export function FooterNav({ scrollState }: FooterNavProps) {
             key={item.labelKey}
             type="button"
             onClick={() => navigate(item.path)}
-            className={`flex-1 h-full flex flex-col items-center justify-center gap-1 bg-transparent border-none cursor-pointer transition-colors ${active ? 'text-[#7140FF]' : scrollState === 'hidden' ? 'text-white/30' : 'text-[#13141A]/30'}`}
+            className={`flex-1 h-full flex flex-col items-center justify-center gap-1 bg-transparent border-none cursor-pointer transition-colors ${active ? 'text-[#7140FF]' : 'text-white/60'}`}
           >
             {item.icon(active)}
             <span className="text-[10px] font-medium tracking-[-0.1px]">{t(item.labelKey)}</span>

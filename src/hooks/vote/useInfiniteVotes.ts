@@ -10,6 +10,7 @@ const PAGE_SIZE = 6
 export type VoteFilter = 'all' | 'live' | 'hot' | 'new' | 'popular'
 
 export interface UseInfiniteVotesResult {
+  allItems: VoteListItem[]
   items: VoteListItem[]
   isLoading: boolean
   hasMore: boolean
@@ -94,7 +95,7 @@ export function useInfiniteVotes(filter: VoteFilter = 'all'): UseInfiniteVotesRe
     }, 300)
   }, [hasMore, isLoadingMore])
 
-  return { items, isLoading, hasMore, isLoadingMore, loadMore }
+  return { allItems, items, isLoading, hasMore, isLoadingMore, loadMore }
 }
 
 // ── Mock fallback filter (mirrors old applyFilter) ────────────────────────────

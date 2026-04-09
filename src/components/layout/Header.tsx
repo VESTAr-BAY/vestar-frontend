@@ -32,9 +32,9 @@ export function Header({ scrollState, onOpenPanel, onOpenSearch }: HeaderProps) 
   const navigate = useNavigate()
   const { t } = useLanguage()
 
-  const isHome = pathname === '/vote'
-  const showBack = !isHome
-  const showLogo = isHome || pathname === '/mypage'
+  const isHomeLike = pathname === '/vote' || pathname === '/mypage'
+  const showBack = !isHomeLike
+  const showLogo = isHomeLike
 
   const handleConnect = () => {
     const injectedConnector = connectors.find((c) => c.id === 'injected') ?? connectors[0]
@@ -52,14 +52,14 @@ export function Header({ scrollState, onOpenPanel, onOpenSearch }: HeaderProps) 
           type="button"
           aria-label={t('btn_back')}
           onClick={() => navigate('/vote')}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-black/[0.06] hover:bg-black/[0.10] transition-colors flex-shrink-0"
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.10] transition-colors flex-shrink-0"
         >
-          <img src={keyboardArrowLeft} alt="" className="w-6 h-6 brightness-0" />
+          <img src={keyboardArrowLeft} alt="" className="w-6 h-6 invert" />
         </button>
       )}
 
       {showLogo && (
-        <span className="font-mono text-base font-medium tracking-[1.5px] text-[#13141A] flex-shrink-0">
+        <span className="font-mono text-base font-medium tracking-[1.5px] text-white flex-shrink-0">
           VEST<span className="text-[#7140FF]">Ar</span>
         </span>
       )}
@@ -72,7 +72,7 @@ export function Header({ scrollState, onOpenPanel, onOpenSearch }: HeaderProps) 
         onClick={onOpenSearch}
         className="flex items-center justify-center w-8 h-8 flex-shrink-0"
       >
-        <img src={searchIcon} alt="" className="w-[18px] h-[18px] brightness-0" />
+        <img src={searchIcon} alt="" className="w-[18px] h-[18px] invert" />
       </button>
 
       {isConnected && address ? (
@@ -80,18 +80,18 @@ export function Header({ scrollState, onOpenPanel, onOpenSearch }: HeaderProps) 
           <button
             type="button"
             onClick={onOpenPanel}
-            className="flex items-center gap-[5px] bg-black/[0.04] border border-black/[0.08] rounded-[20px] px-[10px] py-[5px] text-[11px] font-mono whitespace-nowrap hover:bg-black/[0.08] transition-colors cursor-pointer"
+            className="flex items-center gap-[5px] bg-white/[0.06] border border-white/[0.10] rounded-[20px] px-[10px] py-[5px] text-[11px] font-mono whitespace-nowrap hover:bg-white/[0.10] transition-colors cursor-pointer"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_#22C55E] animate-pulse flex-shrink-0" />
             <span className="text-[#7140FF] font-semibold">2,480</span>
-            <span className="text-[#13141A]/60">{truncateAddress(address)}</span>
+            <span className="text-white/60">{truncateAddress(address)}</span>
           </button>
           <button
             type="button"
             onClick={() => navigate('/host')}
-            className="flex items-center gap-[5px] bg-black/[0.04] border border-black/[0.08] rounded-[20px] px-[10px] py-[5px] text-[11px] font-mono text-[#13141A] whitespace-nowrap hover:bg-black/[0.08] transition-colors cursor-pointer"
+            className="flex items-center gap-[5px] bg-white/[0.06] border border-white/[0.10] rounded-[20px] px-[10px] py-[5px] text-[11px] font-mono text-white whitespace-nowrap hover:bg-white/[0.10] transition-colors cursor-pointer"
           >
-            <img src={complete_vote} alt="" className="w-4 h-4 brightness-0" />
+            <img src={complete_vote} alt="" className="w-4 h-4 invert" />
             {t('btn_hold')}
           </button>
         </div>
@@ -100,9 +100,9 @@ export function Header({ scrollState, onOpenPanel, onOpenSearch }: HeaderProps) 
           type="button"
           onClick={handleConnect}
           disabled={isPending}
-          className="bg-[#7140FF] text-[#13141A] rounded-2xl px-[13px] py-[6px] text-[12px] font-semibold hover:opacity-85 transition-opacity disabled:opacity-50 flex-shrink-0 flex items-center gap-1"
+          className="bg-[#7140FF] text-white rounded-2xl px-[13px] py-[6px] text-[12px] font-semibold hover:opacity-85 transition-opacity disabled:opacity-50 flex-shrink-0 flex items-center gap-1"
         >
-          <img src={walletIcon} alt="" className="w-4 h-4 brightness-0" />
+          <img src={walletIcon} alt="" className="w-4 h-4 invert" />
           {t('btn_connect')}
         </button>
       )}
@@ -116,7 +116,7 @@ export function Header({ scrollState, onOpenPanel, onOpenSearch }: HeaderProps) 
         <img
           src={accountCircleIcon}
           alt=""
-          className="w-8 h-8 rounded-full brightness-0 opacity-40"
+          className="w-8 h-8 rounded-full invert opacity-40"
         />
       </button>
     </header>

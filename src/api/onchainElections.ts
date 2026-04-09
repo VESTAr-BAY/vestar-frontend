@@ -33,6 +33,13 @@ import {
   vestarElectionAbi,
   vestarElectionFactoryAbi,
 } from '../contracts/vestar/generated'
+import {
+  getCandidateManifestCoverImageUrl,
+  getCandidateManifestSeriesPreimage,
+  getCandidateManifestTitle,
+  parseCandidateManifest,
+  type CandidateManifest,
+} from '../utils/candidateManifest'
 import { resolveIpfsUrl } from '../utils/ipfs'
 
 const FACTORY_ADDRESS = getAddress(vestarContractAddresses.electionFactory)
@@ -41,7 +48,7 @@ const ZERO_HASH =
   '0x0000000000000000000000000000000000000000000000000000000000000000' as const
 const ONCHAIN_INDEX_CACHE_KEY = `vestar:onchain:index:v1:${FACTORY_ADDRESS.toLowerCase()}`
 const ONCHAIN_DETAIL_CACHE_PREFIX = `vestar:onchain:detail:v2:${FACTORY_ADDRESS.toLowerCase()}:`
-const ONCHAIN_MANIFEST_CACHE_PREFIX = `vestar:onchain:manifest:v1:`
+const ONCHAIN_MANIFEST_CACHE_PREFIX = `vestar:onchain:manifest:v2:`
 const ONCHAIN_SUBMISSION_COUNT_CACHE_PREFIX = `vestar:onchain:submission-count:v1:${FACTORY_ADDRESS.toLowerCase()}:`
 const ONCHAIN_DETAIL_TTL_MS = 30_000
 
@@ -86,20 +93,6 @@ type StoredOnchainSubmissionCount = {
   totalSubmissions: number
 }
 
-type OnchainCandidateManifest = {
-  title?: string
-  description?: string
-  seriesPreimage?: string
-  coverImageUrl?: string | null
-  candidates?: Array<{
-    candidateKey?: string
-    displayName?: string | null
-    groupLabel?: string | null
-    displayOrder?: number
-    imageUrl?: string | null
-  }>
-}
-
 const electionCreatedEvent = getAbiItem({
   abi: vestarElectionFactoryAbi,
   name: 'ElectionCreated',
@@ -115,7 +108,7 @@ const encryptedVoteSubmittedEvent = getAbiItem({
 
 const onchainListRequestCache = new Map<string, Promise<ApiElectionListResponse>>()
 const onchainDetailRequestCache = new Map<string, Promise<ApiElectionDetail>>()
-const onchainManifestRequestCache = new Map<string, Promise<OnchainCandidateManifest | null>>()
+const onchainManifestRequestCache = new Map<string, Promise<CandidateManifest | null>>()
 const onchainSubmissionCountRequestCache = new Map<string, Promise<number>>()
 
 function readStoredItem<T>(key: string): T | null {
@@ -306,24 +299,7 @@ async function syncOnchainElectionIndex() {
 
 function parseManifestBody(body: string) {
   try {
-    const parsed = JSON.parse(body) as OnchainCandidateManifest
-    if (!Array.isArray(parsed.candidates)) {
-      return null
-    }
-
-    const candidates = parsed.candidates.filter(
-      (candidate): candidate is NonNullable<OnchainCandidateManifest['candidates']>[number] =>
-        typeof candidate?.candidateKey === 'string' && candidate.candidateKey.trim().length > 0,
-    )
-
-    if (candidates.length === 0) {
-      return null
-    }
-
-    return {
-      ...parsed,
-      candidates,
-    }
+    return parseCandidateManifest(JSON.parse(body))
   } catch {
     return null
   }
@@ -392,16 +368,15 @@ function buildFallbackSeries(entry: IndexedOnchainElection) {
   return decodeBytes32Ascii(entry.seriesId) ?? truncateAddress(entry.organizer)
 }
 
-function mapManifestCandidates(manifest: OnchainCandidateManifest | null): ApiCandidate[] {
+function mapManifestCandidates(manifest: CandidateManifest | null): ApiCandidate[] {
   return [...(manifest?.candidates ?? [])]
     .map((candidate, index) => ({
-      candidate_key: candidate.candidateKey ?? '',
+      candidate_key: candidate.candidateKey,
       display_name: candidate.displayName ?? null,
       group_label: candidate.groupLabel ?? null,
       image_url: candidate.imageUrl ?? null,
       display_order: candidate.displayOrder ?? index + 1,
     }))
-    .filter((candidate) => candidate.candidate_key.length > 0)
     .sort((left, right) => left.display_order - right.display_order)
 }
 
@@ -509,9 +484,9 @@ export async function fetchOnchainElectionDetail(id: string): Promise<ApiElectio
       onchain_election_id: entry.electionId,
       onchain_election_address: entry.electionAddress,
       onchain_state: mapContractState(state),
-      title: manifest?.title?.trim() || buildFallbackTitle(entry.electionId, entry.electionAddress),
-      cover_image_url: manifest?.coverImageUrl ?? null,
-      series_preimage: manifest?.seriesPreimage?.trim() || buildFallbackSeries(entry),
+      title: getCandidateManifestTitle(manifest) || buildFallbackTitle(entry.electionId, entry.electionAddress),
+      cover_image_url: getCandidateManifestCoverImageUrl(manifest),
+      series_preimage: getCandidateManifestSeriesPreimage(manifest) || buildFallbackSeries(entry),
       organizer_wallet_address: entry.organizer,
       organizer_verified_snapshot: entry.organizerVerifiedSnapshot,
       start_at: toIsoDate(config.startAt),
