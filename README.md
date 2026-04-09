@@ -195,14 +195,14 @@ src/
 ## Business Model
 
 ```
-투표권 1장 = ₩100  (기존 문자투표와 동일 가격)
-├── 플랫폼    ₩50
-└── 주최자    ₩50   ← 기존 ₩10~20원 → 오히려 수익 발생
+투표권 1장 = mockUSDT 100  (문서 기준 고정 가격)
+├── 플랫폼    mockUSDT 50
+└── 주최자    mockUSDT 50
 ```
 
 | Phase | 수익원            | 비고                               |
 | ----- | ----------------- | ---------------------------------- |
-| MVP   | 투표권 과금       | 1장 ₩100                           |
+| MVP   | 투표권 과금       | 1장 mockUSDT 100 고정             |
 | MVP   | 투표 완료 후 광고 | 감정 고조 시점 노출, CPM 3~5×      |
 | V2    | 팬덤 데이터 B2B   | 익명화 온체인 집계, GDPR 이슈 없음 |
 | V2    | 프리미엄 대시보드 | 주최자 고급 기능                   |
@@ -214,7 +214,7 @@ src/
 
 | Feature     | Benefit                                                             |
 | ----------- | ------------------------------------------------------------------- |
-| Zero Gas    | bridged stETH yield가 가스비 대납. 팬은 투표권 가격만 부담          |
+| Zero Gas    | bridged stETH yield가 가스비 대납. 팬은 ballot당 mockUSDT 100만 부담 |
 | RLN Privacy | Rate Limiting Nullifier로 봇·다중계정 구조적 차단                   |
 | Linea zkEVM | Ethereum L1 보안 + L2 속도. 투표 TX 즉시 확정                       |
 | SNT Karma   | SNT 스테이킹 → Karma 획득 → 투표 가중치. 진성 팬일수록 더 큰 목소리 |
