@@ -198,6 +198,34 @@ export interface ApiVoteSubmissionStatus {
   }>
 }
 
+export interface ApiVoteHistoryItem {
+  id: string
+  type: 'OPEN' | 'PRIVATE'
+  onchainTxHash: string
+  voterAddress: `0x${string}`
+  blockNumber: number
+  blockTimestamp: string
+  onchainElection: {
+    id: string
+    onchainElectionId: string
+    onchainElectionAddress: `0x${string}` | null
+    onchainState: ApiElectionState
+    draft: {
+      id: string
+      title: string
+      series: {
+        id: string
+        seriesPreimage: string
+      } | null
+    } | null
+  } | null
+  selection: {
+    candidateKeys: string[]
+    isPending: boolean
+    isValid: boolean | null
+  }
+}
+
 export interface PreparePrivateElectionRequest {
   seriesPreimage: string
   seriesCoverImageUrl?: string | null

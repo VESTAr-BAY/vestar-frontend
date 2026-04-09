@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
+    base: '/vote/',
     define: {
       __PINATA_JWT__: JSON.stringify(env.PINATA_JWT ?? ''),
       __PINATA_GATEWAYS__: JSON.stringify(env.PINATA_GATEWAYS ?? ''),
@@ -30,7 +31,7 @@ export default defineConfig(({ mode }) => {
           display: 'standalone',
           orientation: 'portrait',
           scope: '/',
-          start_url: '/vote',
+          start_url: '/vote/',
           icons: [
             {
               src: 'pwa-icon.svg',
