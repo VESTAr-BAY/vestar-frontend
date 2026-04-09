@@ -1,9 +1,15 @@
 import axios from 'axios'
 import { keccak256, stringToHex, type Hex } from 'viem'
 
-type PinataFileUploadResponse = {
-  IpfsHash: string
-}
+type PinataFileUploadResponse =
+  | {
+      data?: {
+        cid?: string
+      }
+    }
+  | {
+      IpfsHash?: string
+    }
 
 type VerifyUploadArgs = {
   uri: string
@@ -32,7 +38,7 @@ export type PinataJsonUploadArtifact<T> = PinataUploadArtifact & {
 // sungje : verification-portal/src/vestar/constants.ts 와 같은 gateway를 기본값으로 고정해서 읽기/쓰기 경로가 엇갈리지 않게 맞춘다.
 export const PINATA_GATEWAY_URL = 'https://chocolate-elegant-otter-530.mypinata.cloud'
 
-const PINATA_API_URL = 'https://api.pinata.cloud/pinning/pinFileToIPFS'
+const PINATA_API_URL = 'https://uploads.pinata.cloud/v3/files'
 const VERIFY_RETRY_COUNT = 8
 const VERIFY_RETRY_DELAY_MS = 1_500
 
@@ -80,6 +86,36 @@ function getGatewayBaseUrl() {
 
 function createBrowserFile(parts: BlobPart[], fileName: string, type: string) {
   return new File(parts, fileName, { type })
+}
+
+function extractPinataCid(payload: PinataFileUploadResponse) {
+  if ('data' in payload && payload.data?.cid) {
+    return payload.data.cid
+  }
+
+  if ('IpfsHash' in payload && payload.IpfsHash) {
+    return payload.IpfsHash
+  }
+
+  throw new Error('Pinata 업로드 응답에서 CID를 찾지 못했습니다.')
+}
+
+function toPinataUploadError(error: unknown) {
+  if (axios.isAxiosError(error)) {
+    if (error.response?.status === 403) {
+      return new Error('Pinata 업로드 권한이 거부되었습니다. PINATA_JWT 권한과 업로드 설정을 확인해 주세요.')
+    }
+
+    if (typeof error.response?.data === 'string' && error.response.data.trim()) {
+      return new Error(`Pinata 업로드에 실패했습니다. ${error.response.data}`)
+    }
+
+    if (error.message) {
+      return new Error(`Pinata 업로드에 실패했습니다. ${error.message}`)
+    }
+  }
+
+  return error instanceof Error ? error : new Error('Pinata 업로드에 실패했습니다.')
 }
 
 function buildNoStoreUrl(url: string, attempt: number) {
@@ -133,20 +169,27 @@ async function verifyUploadedIpfsArtifact({
 
 async function uploadFileForm(file: File): Promise<PinataUploadArtifact> {
   const formData = new FormData()
+  // sungje : 현재 프론트 업로드는 Pinata v3 uploads API + public network 기준으로 고정해서 메타데이터와 이미지를 모두 같은 규칙으로 올린다.
+  formData.append('network', 'public')
   formData.append('file', file)
+  formData.append('name', file.name)
 
-  const response = await axios.post<PinataFileUploadResponse>(PINATA_API_URL, formData, {
-    headers: {
-      Authorization: `Bearer ${getPinataJwt()}`,
-    },
-  })
+  try {
+    const response = await axios.post<PinataFileUploadResponse>(PINATA_API_URL, formData, {
+      headers: {
+        Authorization: `Bearer ${getPinataJwt()}`,
+      },
+    })
 
-  const cid = response.data.IpfsHash
+    const cid = extractPinataCid(response.data)
 
-  return {
-    cid,
-    uri: `ipfs://${cid}`,
-    gatewayUrl: `${getGatewayBaseUrl()}/ipfs/${cid}`,
+    return {
+      cid,
+      uri: `ipfs://${cid}`,
+      gatewayUrl: `${getGatewayBaseUrl()}/ipfs/${cid}`,
+    }
+  } catch (error) {
+    throw toPinataUploadError(error)
   }
 }
 
