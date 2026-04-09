@@ -49,7 +49,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           data-testid="splash-brand"
           className="text-[36px] font-bold text-white tracking-tight leading-none"
         >
-          VEST<span className="text-[#7140FF]">Ar</span>
+          VEST<span className="text-[#7140FF]">A</span>r
         </div>
         <div className="text-[13px] text-white/40 mt-2 font-mono tracking-wider">
           K-pop Fan Voting

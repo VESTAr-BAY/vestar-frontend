@@ -46,7 +46,7 @@ export function DetailHeader({
 
       {/* Logo */}
       <span className="font-mono text-base font-medium tracking-[1.5px] text-white flex-shrink-0">
-        VEST<span className="text-[#7140FF]">Ar</span>
+        VEST<span className="text-[#7140FF]">A</span>r
       </span>
 
       {/* Title */}
