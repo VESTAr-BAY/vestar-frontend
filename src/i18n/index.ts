@@ -14,7 +14,7 @@ const STRINGS = {
   btn_search: { en: 'Search', ko: '검색' },
   btn_profile: { en: 'Profile', ko: '프로필' },
   btn_share: { en: 'Share', ko: '공유' },
-  btn_hold: { en: 'Hold', ko: '투표 생성' },
+  btn_hold: { en: 'Hold', ko: '주최하기' },
 
   // ── Search overlay ──────────────────────────────────────────────────────────
   search_placeholder: { en: 'Search votes…', ko: '투표 검색…' },
@@ -36,6 +36,7 @@ const STRINGS = {
   vl_see_all: { en: 'See all', ko: '전체 보기' },
   vl_active_section: { en: 'Active Votes', ko: '진행 중인 투표' },
   vl_sort: { en: 'Sort ▾', ko: '정렬 ▾' },
+  vl_sort_latest: { en: 'Newest first', ko: '최신 생성순' },
   vl_participating: { en: 'participating', ko: '참여 중' },
   vl_ended_badge: { en: 'Ended', ko: '종료됨' },
   vl_vote_btn: { en: 'Vote', ko: '투표하기' },
@@ -147,7 +148,7 @@ const STRINGS = {
   pp_not_connected: { en: 'Not Connected', ko: '지갑 미연결' },
   pp_mint_mock_usdt: { en: 'Mint MockUSDT', ko: 'MockUSDT 민트' },
   pp_mint_mock_usdt_loading: { en: 'Minting…', ko: '민트 중…' },
-  pp_host_page: { en: 'Host Vote', ko: '주최하기' },
+  pp_host_page: { en: 'Hold', ko: '주최하기' },
   pp_disconnect: { en: 'Disconnect Wallet', ko: '지갑 연결 해제' },
   pp_language: { en: 'Language', ko: '언어' },
 
@@ -168,6 +169,15 @@ const STRINGS = {
   vr_ended: { en: '· Ended', ko: '종료' },
   vr_1st_place: { en: '1st Place', ko: '1위' },
   vr_rankings: { en: 'Rankings', ko: '전체 순위' },
+
+  // ── Vote Series ─────────────────────────────────────────────────────────────
+  vs_back_to_list: { en: 'Back to list', ko: '목록으로 돌아가기' },
+  vs_label: { en: 'Series', ko: '시리즈' },
+  vs_loading: { en: 'Loading votes…', ko: '투표를 찾는 중' },
+  vs_empty: {
+    en: 'There are no votes in this series yet.',
+    ko: '이 시리즈에 표시할 투표가 아직 없습니다.',
+  },
 
   // ── Not Found ───────────────────────────────────────────────────────────────
   nf_title: { en: 'Page not found', ko: '페이지를 찾을 수 없어요' },

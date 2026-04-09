@@ -1,5 +1,5 @@
-import { VESTAR_ELECTION_STATE } from '../contracts/vestar/types'
 import type { ApiElection, ApiElectionState } from '../api/types'
+import { VESTAR_ELECTION_STATE } from '../contracts/vestar/types'
 import type { BadgeVariant, Candidate, HotVote, VoteDetailData, VoteListItem } from '../types/vote'
 import { findLocalOpenElectionMetadata } from './localOpenElectionMetadata'
 
@@ -109,7 +109,9 @@ function withLocalOpenMetadata(election: ApiElection) {
         coverImageUrl: local.series.coverImageUrl ?? null,
       } as ApiElection['series']),
     electionCandidates:
-      election.electionCandidates.length > 0 ? election.electionCandidates : local.electionCandidates,
+      election.electionCandidates.length > 0
+        ? election.electionCandidates
+        : local.electionCandidates,
   }
 }
 
@@ -141,6 +143,7 @@ export function mapToVoteListItem(rawElection: ApiElection, index = 0): VoteList
     id: election.id,
     seriesKey,
     sortKey: Number.isFinite(parsedId) ? parsedId : 0,
+    seriesImageUrl: election.series?.coverImageUrl ?? election.coverImageUrl ?? undefined,
     emoji: HOT_EMOJIS[index % HOT_EMOJIS.length],
     emojiColor: EMOJI_COLORS[index % 7],
     org: election.series?.seriesPreimage ?? 'Unknown series',
@@ -175,18 +178,20 @@ export function mapToVoteDetail(
   const candidates: Candidate[] = election.electionCandidates
     .slice()
     .sort((left, right) => left.displayOrder - right.displayOrder)
-    .map((candidate): Candidate => ({
-      id: candidate.candidateKey,
-      name: candidate.candidateKey,
-      group: '',
-      emoji: '🎤',
-      emojiColor: '#F0EDFF',
-      imageUrl: candidate.imageUrl ?? undefined,
-      votes:
-        candidateVotes && candidateVotes.has(candidate.candidateKey)
-          ? Number(candidateVotes.get(candidate.candidateKey))
-          : undefined,
-    }))
+    .map(
+      (candidate): Candidate => ({
+        id: candidate.candidateKey,
+        name: candidate.candidateKey,
+        group: '',
+        emoji: '🎤',
+        emojiColor: '#F0EDFF',
+        imageUrl: candidate.imageUrl ?? undefined,
+        votes:
+          candidateVotes && candidateVotes.has(candidate.candidateKey)
+            ? Number(candidateVotes.get(candidate.candidateKey))
+            : undefined,
+      }),
+    )
 
   return {
     id: election.id,

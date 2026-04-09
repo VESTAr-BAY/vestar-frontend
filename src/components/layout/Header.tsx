@@ -36,10 +36,9 @@ export function Header({
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  const isHomeLike = pathname === '/vote' || pathname === '/mypage'
-  const showBack = !isHomeLike
-  const showLogo = isHomeLike
-
+  const isHomeLike = pathname === "/vote" || pathname === "/mypage";
+  const showBack = !isHomeLike;
+  const showLogo = isHomeLike;
 
   const handleConnect = () => {
     const injectedConnector =

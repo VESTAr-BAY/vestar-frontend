@@ -7,7 +7,6 @@ import { HostLiveTallyPage } from '../pages/host/HostLiveTallyPage'
 import { VoteCreatePage } from '../pages/host/VoteCreatePage'
 import { VoteEditPage } from '../pages/host/VoteEditPage'
 import { VoteManagePage } from '../pages/host/VoteManagePage'
-import { NotFoundPage } from '../pages/NotFoundPage'
 import { UnauthorizedPage } from '../pages/UnauthorizedPage'
 import { MyPage } from '../pages/user/MyPage'
 import { VerifiedAdminPage } from '../pages/verified/VerifiedAdminPage'
@@ -102,6 +101,6 @@ export const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: <NotFoundPage />,
+    element: <Navigate to="/vote" replace />,
   },
 ])

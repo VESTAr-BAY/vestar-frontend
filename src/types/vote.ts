@@ -15,6 +15,7 @@ export interface VoteListItem {
   id: string
   seriesKey?: string
   sortKey?: number
+  seriesImageUrl?: string
   emoji: string
   emojiColor: string
   org: string

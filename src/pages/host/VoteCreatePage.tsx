@@ -172,9 +172,13 @@ export function VoteCreatePage() {
             <>
               <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
               <span>
-                {submissionProgress.total > 1
-                  ? `${submissionProgress.current}/${submissionProgress.total} 서명 요청`
-                  : '서명 요청 중'}
+                {submissionProgress.message
+                  ? submissionProgress.total > 1 && submissionProgress.current > 0
+                    ? `${submissionProgress.current}/${submissionProgress.total} ${submissionProgress.message}`
+                    : submissionProgress.message
+                  : submissionProgress.total > 1
+                    ? `${submissionProgress.current}/${submissionProgress.total} 지갑 서명 요청 중`
+                    : '지갑 서명 요청 중'}
               </span>
             </>
           ) : step === 3 ? (
