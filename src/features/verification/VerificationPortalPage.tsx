@@ -1,5 +1,6 @@
 import { startTransition, useEffect, useMemo, useState } from 'react'
 import { useLanguage } from '../../providers/LanguageProvider'
+import { resolveIpfsUrl } from '../../utils/ipfs'
 import { ProofItem } from './components/cards/ProofItem'
 import { ResultCard } from './components/cards/ResultCard'
 import { ValueCard } from './components/cards/ValueCard'
@@ -407,6 +408,13 @@ function App() {
             <section className="rounded-[28px] border border-[#E7E9ED] bg-white p-5 shadow-[0_12px_30px_rgba(9,10,11,0.04)] [animation:softRise_0.45s_ease-out]">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
+                  {selectedElection.coverImageUrl ? (
+                    <img
+                      src={resolveIpfsUrl(selectedElection.coverImageUrl)}
+                      alt=""
+                      className="mb-3 h-28 w-full rounded-[20px] object-cover"
+                    />
+                  ) : null}
                   <div className="text-[11px] font-mono uppercase tracking-[1px] text-[#7140FF]">
                     {lang === 'ko' ? '지금 보고 있는 투표' : 'Selected vote'}
                   </div>
@@ -414,6 +422,9 @@ function App() {
                     {selectedElection.title}
                   </h1>
                   <div className="mt-3 flex flex-wrap gap-2">
+                    {selectedElection.category ? (
+                      <PortalPill size="sm">{selectedElection.category}</PortalPill>
+                    ) : null}
                     <PortalPill size="sm">{selectedElection.hostName}</PortalPill>
                     <PortalPill size="sm">{selectedElection.hostBadge}</PortalPill>
                     <PortalPill size="sm">{selectedElection.modeLabel}</PortalPill>
@@ -435,9 +446,17 @@ function App() {
                     {lang === 'ko' ? '가장 많은 표를 받은 후보' : 'Current top candidate'}
                   </div>
                   <div className="mt-2 flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.10] text-[22px]">
-                      {selectedStats.winner?.emoji ?? '🗳️'}
-                    </div>
+                    {selectedStats.winner?.imageUrl ? (
+                      <img
+                        src={resolveIpfsUrl(selectedStats.winner.imageUrl)}
+                        alt=""
+                        className="h-12 w-12 rounded-2xl bg-white/[0.10] object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.10] text-[22px]">
+                        {selectedStats.winner?.emoji ?? '🗳️'}
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="text-[18px] font-semibold leading-[1.3]">
                         {selectedStats.winner?.name ?? (lang === 'ko' ? '집계 정보 없음' : 'No tally info')}
@@ -926,6 +945,7 @@ function ResultsTab({
                 rank={index + 1}
                 name={candidate.name}
                 emoji={candidate.emoji}
+                imageUrl={candidate.imageUrl}
                 subtitle={candidate.subtitle}
                 votes={candidate.votes}
                 percentage={candidate.percentage}
@@ -1232,6 +1252,24 @@ function ProofTab({
         value={election.address}
         actionHref={election.addressExplorerUrl}
       />
+
+      {election.candidateManifestURI ? (
+        <ValueCard
+          label={lang === 'ko' ? '후보 메타데이터 IPFS 링크' : 'Candidate metadata IPFS link'}
+          value={election.candidateManifestURI}
+          actionHref={resolveIpfsUrl(election.candidateManifestURI)}
+          actionLabel={lang === 'ko' ? 'IPFS 파일 열기' : 'Open IPFS file'}
+        />
+      ) : null}
+
+      {election.resultManifestURI ? (
+        <ValueCard
+          label={lang === 'ko' ? '결과 메타데이터 IPFS 링크' : 'Result metadata IPFS link'}
+          value={election.resultManifestURI}
+          actionHref={resolveIpfsUrl(election.resultManifestURI)}
+          actionLabel={lang === 'ko' ? 'IPFS 파일 열기' : 'Open IPFS file'}
+        />
+      ) : null}
 
       {election.mode === 'PRIVATE' ? (
         <>

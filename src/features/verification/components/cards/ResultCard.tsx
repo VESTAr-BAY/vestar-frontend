@@ -1,10 +1,12 @@
 import { useLanguage } from '../../../../providers/LanguageProvider'
+import { resolveIpfsUrl } from '../../../../utils/ipfs'
 import { PortalPanel } from '../ui/PortalPanel'
 
 type ResultCardProps = {
   rank: number
   name: string
   emoji: string
+  imageUrl?: string | null
   subtitle: string
   votes: number
   percentage: number
@@ -14,6 +16,7 @@ export function ResultCard({
   rank,
   name,
   emoji,
+  imageUrl,
   subtitle,
   votes,
   percentage,
@@ -29,9 +32,17 @@ export function ResultCard({
         <div className={`flex h-8 w-8 items-center justify-center font-mono text-[14px] font-bold ${rankColor}`}>
           {rank}
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F0EDFF] text-[18px]">
-          {emoji}
-        </div>
+        {imageUrl ? (
+          <img
+            src={resolveIpfsUrl(imageUrl)}
+            alt=""
+            className="h-10 w-10 rounded-xl bg-[#F0EDFF] object-cover"
+          />
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F0EDFF] text-[18px]">
+            {emoji}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="truncate text-[15px] font-semibold text-[#090A0B]">{name}</div>
           <div className="truncate text-[12px] text-[#707070]">{subtitle}</div>

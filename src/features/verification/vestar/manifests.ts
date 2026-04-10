@@ -1,4 +1,5 @@
 import { keccak256, stringToHex, type Hex } from 'viem'
+import { parseCandidateManifest } from '../../../utils/candidateManifest'
 import { MANIFEST_CACHE_PREFIX, PINATA_GATEWAY_URL, ZERO_HASH } from './constants'
 import { readStoredItem, removeStoredItem, writeStoredItem } from './cache'
 import type { CandidateManifest, ResultManifest } from './types'
@@ -8,7 +9,7 @@ const manifestRequestCache = new Map<string, Promise<CandidateManifest | ResultM
 
 export async function readCandidateManifest(uri: string, expectedHash: Hex) {
   if (!uri) return null
-  return readVerifiedManifest<CandidateManifest>(uri, expectedHash)
+  return readVerifiedCandidateManifest(uri, expectedHash)
 }
 
 export async function readResultManifest(uri: string, expectedHash: Hex) {
@@ -67,6 +68,67 @@ async function readVerifiedManifest<T extends CandidateManifest | ResultManifest
 
   manifestRequestCache.set(manifestRequestKey, pending)
   const resolved = (await pending) as T | null
+
+  if (resolved === null) {
+    manifestRequestCache.delete(manifestRequestKey)
+  }
+
+  return resolved
+}
+
+async function readVerifiedCandidateManifest(
+  uri: string,
+  expectedHash: Hex,
+): Promise<CandidateManifest | null> {
+  const manifestCacheKey = `${MANIFEST_CACHE_PREFIX}${expectedHash}:${uri}`
+  const manifestRequestKey = `${expectedHash}:${uri}:candidate`
+
+  if (manifestRequestCache.has(manifestRequestKey)) {
+    return (await manifestRequestCache.get(manifestRequestKey)) as CandidateManifest | null
+  }
+
+  const pending = (async () => {
+    const cachedBody = readStoredItem<string>(manifestCacheKey)
+    if (cachedBody) {
+      if (keccak256(stringToHex(cachedBody)) === expectedHash) {
+        try {
+          return parseCandidateManifest(JSON.parse(cachedBody))
+        } catch {
+          removeStoredItem(manifestCacheKey)
+        }
+      } else {
+        removeStoredItem(manifestCacheKey)
+      }
+    }
+
+    const resolved = await resolveManifestUrl(uri)
+    if (!resolved) return null
+
+    try {
+      const response = await fetch(resolved.url)
+      if (!response.ok) {
+        return null
+      }
+
+      const body = await response.text()
+      if (!resolved.skipHashVerification && keccak256(stringToHex(body)) !== expectedHash) {
+        return null
+      }
+
+      const parsed = parseCandidateManifest(JSON.parse(body))
+      if (!parsed) {
+        return null
+      }
+
+      writeStoredItem(manifestCacheKey, body)
+      return parsed
+    } catch {
+      return null
+    }
+  })()
+
+  manifestRequestCache.set(manifestRequestKey, pending)
+  const resolved = (await pending) as CandidateManifest | null
 
   if (resolved === null) {
     manifestRequestCache.delete(manifestRequestKey)

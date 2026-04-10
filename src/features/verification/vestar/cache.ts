@@ -5,6 +5,15 @@ import type {
   VerificationElectionDetail,
   VerificationElectionSummary,
 } from './types'
+import {
+  formatElectionDescription,
+  formatElectionTitle,
+  formatHostBadge,
+  formatModeLabel,
+  formatStateLabel,
+  hasResolvedElectionTitle,
+} from './utils'
+import { resolveVerificationLanguage } from './language'
 
 export function readCachedVerificationElectionSummaries() {
   const cache = readStoredIndexCache()
@@ -18,7 +27,18 @@ export function readCachedVerificationElectionSummaries() {
 }
 
 export function readCachedVerificationElectionDetail(address: Address) {
-  return readStoredItem<VerificationElectionDetail>(`${DETAIL_CACHE_PREFIX}${address.toLowerCase()}`)
+  const stored = readStoredItem<VerificationElectionDetail>(
+    `${DETAIL_CACHE_PREFIX}${address.toLowerCase()}`,
+  )
+  if (!stored) {
+    return null
+  }
+
+  return {
+    ...normalizeElectionSummary(stored),
+    receipts: stored.receipts,
+    candidates: stored.candidates,
+  }
 }
 
 export function sortElectionSummaries(elections: VerificationElectionSummary[]) {
@@ -28,8 +48,30 @@ export function sortElectionSummaries(elections: VerificationElectionSummary[]) 
 }
 
 export function normalizeElectionSummary(election: VerificationElectionSummary) {
+  const lang = resolveVerificationLanguage()
+  const hostVerified =
+    election.hostVerified ??
+    (election.hostBadge === '인증 주최자' || election.hostBadge === 'Verified organizer')
+  const localizedTitle = hasResolvedElectionTitle(election)
+    ? election.title
+    : formatElectionTitle(election.chainElectionId, election.address, lang)
+  const fallbackDescriptions = new Set([
+    '체인에서 선거 정보를 확인하고 있어요.',
+    'Reading election data from the chain.',
+    formatElectionDescription(election.mode, election.isFinalized, election.canDecrypt, 'ko'),
+    formatElectionDescription(election.mode, election.isFinalized, election.canDecrypt, 'en'),
+  ])
+
   return {
     ...election,
+    modeLabel: formatModeLabel(election.mode, lang),
+    stateLabel: formatStateLabel(election.state, lang),
+    title: localizedTitle,
+    description: fallbackDescriptions.has(election.description)
+      ? formatElectionDescription(election.mode, election.isFinalized, election.canDecrypt, lang)
+      : election.description,
+    hostVerified,
+    hostBadge: formatHostBadge(hostVerified, lang),
     createdBlock: election.createdBlock ?? election.sortBlock,
   }
 }

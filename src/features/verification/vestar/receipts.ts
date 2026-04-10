@@ -116,14 +116,22 @@ export function buildOpenCandidates(
   const totalVotes = receipts.reduce((sum, receipt) => sum + receipt.selections.length, 0)
   const tallies = new Map<
     string,
-    { key: string; name: string; emoji: string; subtitle: string; votes: number }
+    {
+      key: string
+      name: string
+      emoji: string
+      imageUrl: string | null
+      subtitle: string
+      votes: number
+    }
   >()
 
   getOrderedManifestCandidates(candidateManifest).forEach((candidate) => {
     tallies.set(candidate.candidateKey, {
       key: candidate.candidateKey,
       name: candidate.displayName ?? formatCandidateName(candidate.candidateKey),
-      emoji: candidate.emoji ?? pickEmoji(candidate.candidateKey),
+      emoji: pickEmoji(candidate.candidateKey),
+      imageUrl: candidate.imageUrl ?? null,
       subtitle: lang === 'ko' ? '공개 후보' : 'Public candidate',
       votes: 0,
     })
@@ -135,6 +143,7 @@ export function buildOpenCandidates(
         key: selection.key,
         name: selection.name,
         emoji: selection.emoji,
+        imageUrl: selection.imageUrl ?? null,
         subtitle: lang === 'ko' ? '공개 후보' : 'Public candidate',
         votes: 0,
       }
@@ -160,14 +169,23 @@ export function buildPrivateCandidates(
   const totalVotes = receipts.reduce((sum, receipt) => sum + receipt.selections.length, 0)
   const tallies = new Map<
     string,
-    { key: string; name: string; emoji: string; subtitle: string; votes: number; index: number }
+    {
+      key: string
+      name: string
+      emoji: string
+      imageUrl: string | null
+      subtitle: string
+      votes: number
+      index: number
+    }
   >()
 
   getOrderedManifestCandidates(candidateManifest).forEach((candidate, index) => {
     tallies.set(candidate.candidateKey, {
       key: candidate.candidateKey,
       name: candidate.displayName ?? formatCandidateName(candidate.candidateKey),
-      emoji: candidate.emoji ?? '🔐',
+      emoji: '🔐',
+      imageUrl: candidate.imageUrl ?? null,
       subtitle: lang === 'ko' ? '비공개 후보' : 'Private candidate',
       votes: 0,
       index,
@@ -181,6 +199,7 @@ export function buildPrivateCandidates(
         key: selection.key,
         name: selection.name,
         emoji: selection.emoji,
+        imageUrl: selection.imageUrl ?? null,
         subtitle: lang === 'ko' ? '비공개 후보' : 'Private candidate',
         votes: 0,
         index,
@@ -195,6 +214,7 @@ export function buildPrivateCandidates(
       key: candidate.key,
       name: candidate.name,
       emoji: candidate.emoji,
+      imageUrl: candidate.imageUrl,
       subtitle: candidate.subtitle,
       votes: candidate.votes,
       percentage: totalVotes > 0 ? (candidate.votes / totalVotes) * 100 : 0,
@@ -301,7 +321,8 @@ function makeOpenSelection(key: string, candidateManifest: CandidateManifest | n
   return {
     key: normalizedKey,
     name: manifestCandidate?.displayName ?? formatCandidateName(normalizedKey),
-    emoji: manifestCandidate?.emoji ?? pickEmoji(normalizedKey),
+    emoji: pickEmoji(normalizedKey),
+    imageUrl: manifestCandidate?.imageUrl ?? null,
   }
 }
 
@@ -316,7 +337,8 @@ function makePrivateSelectionByIndex(
     key: manifestCandidate?.candidateKey ?? `private-candidate-${index + 1}`,
     name:
       manifestCandidate?.displayName ?? (lang === 'ko' ? `후보 ${index + 1}` : `Candidate ${index + 1}`),
-    emoji: manifestCandidate?.emoji ?? '🔐',
+    emoji: '🔐',
+    imageUrl: manifestCandidate?.imageUrl ?? null,
     index,
   }
 }
@@ -333,7 +355,8 @@ function makePrivateSelectionByKey(
   return {
     key: normalizedKey,
     name: manifestCandidate?.displayName ?? formatCandidateName(normalizedKey),
-    emoji: manifestCandidate?.emoji ?? '🔐',
+    emoji: '🔐',
+    imageUrl: manifestCandidate?.imageUrl ?? null,
   }
 }
 

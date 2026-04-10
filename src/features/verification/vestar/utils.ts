@@ -89,6 +89,32 @@ export function formatElectionDescription(
       : 'This is a private vote currently on chain. Submission counts are visible, but results stay hidden until the key is revealed.'
 }
 
+export function formatModeLabel(
+  mode: VisibilityMode,
+  lang: VerificationLang = resolveVerificationLanguage(),
+) {
+  return mode === 'OPEN'
+    ? lang === 'ko'
+      ? '공개 투표'
+      : 'Public vote'
+    : lang === 'ko'
+      ? '비공개 투표'
+      : 'Private vote'
+}
+
+export function formatHostBadge(
+  isVerified: boolean,
+  lang: VerificationLang = resolveVerificationLanguage(),
+) {
+  return isVerified
+    ? lang === 'ko'
+      ? '인증 주최자'
+      : 'Verified organizer'
+    : lang === 'ko'
+      ? '일반 주최자'
+      : 'Organizer'
+}
+
 export function formatStateLabel(state: number, lang: VerificationLang = resolveVerificationLanguage()) {
   switch (state) {
     case 0:

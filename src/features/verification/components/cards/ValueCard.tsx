@@ -6,9 +6,10 @@ type ValueCardProps = {
   label: string
   value: string
   actionHref?: string
+  actionLabel?: string
 }
 
-export function ValueCard({ label, value, actionHref }: ValueCardProps) {
+export function ValueCard({ label, value, actionHref, actionLabel }: ValueCardProps) {
   const { lang } = useLanguage()
 
   return (
@@ -20,7 +21,7 @@ export function ValueCard({ label, value, actionHref }: ValueCardProps) {
       {actionHref ? (
         <div className="mt-4 flex justify-start">
           <PortalButton href={actionHref} size="sm">
-            {lang === 'ko' ? '블록체인에서 보기' : 'View on blockchain'}
+            {actionLabel ?? (lang === 'ko' ? '블록체인에서 보기' : 'View on blockchain')}
           </PortalButton>
         </div>
       ) : null}

@@ -360,8 +360,8 @@ export function VoteListPage() {
   ]
   const activePaymentChips = [
     { key: 'all' as const, label: lang === 'ko' ? '전체' : 'All' },
-    { key: 'FREE' as const, label: lang === 'ko' ? '무료' : 'Free' },
-    { key: 'PAID' as const, label: lang === 'ko' ? '유료' : 'Paid' },
+    { key: 'FREE' as const, label: lang === 'ko' ? '무료' : 'FREE' },
+    { key: 'PAID' as const, label: lang === 'ko' ? '유료' : 'PAID' },
   ]
 
   const handleHotNavigate = (vote: HotVote) => {

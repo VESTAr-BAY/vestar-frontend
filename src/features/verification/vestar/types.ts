@@ -1,4 +1,5 @@
 import type { Address, Hex } from 'viem'
+import type { CandidateManifest as SharedCandidateManifest } from '../../../utils/candidateManifest'
 
 export type VisibilityMode = 'OPEN' | 'PRIVATE'
 
@@ -33,21 +34,7 @@ export type ResultSummary = {
   totalInvalidVotes: bigint
 }
 
-export type ManifestCandidate = {
-  candidateKey: string
-  displayName?: string
-  emoji?: string
-  displayOrder?: number
-}
-
-export type CandidateManifest = {
-  schemaVersion?: number
-  electionId?: string
-  title?: string
-  description?: string
-  visibilityMode?: string
-  candidates?: ManifestCandidate[]
-}
+export type CandidateManifest = SharedCandidateManifest
 
 export type ResultManifest = {
   schemaVersion?: number
@@ -97,6 +84,7 @@ export type ReceiptSelection = {
   key: string
   name: string
   emoji: string
+  imageUrl?: string | null
   index?: number
 }
 
@@ -116,6 +104,7 @@ export type VerificationCandidate = {
   key: string
   name: string
   emoji: string
+  imageUrl?: string | null
   subtitle: string
   votes: number
   percentage: number
@@ -131,6 +120,7 @@ export type VerificationElectionSummary = {
   title: string
   description: string
   hostName: string
+  hostVerified: boolean
   hostBadge: string
   address: Address
   addressExplorerUrl: string
@@ -151,6 +141,8 @@ export type VerificationElectionSummary = {
   chainElectionId: Hex
   candidateManifestHash: Hex
   candidateManifestURI: string
+  category: string | null
+  coverImageUrl: string | null
   resultManifestHash: Hex
   resultManifestURI: string
   createdBlock: string

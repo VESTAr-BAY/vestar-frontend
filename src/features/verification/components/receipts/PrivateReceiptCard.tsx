@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLanguage } from '../../../../providers/LanguageProvider'
+import { resolveIpfsUrl } from '../../../../utils/ipfs'
 import type { VerificationReceipt } from '../../vestar'
 import { truncateMiddle } from '../../vestar/utils'
 import { PortalButton } from '../ui/PortalButton'
@@ -119,7 +120,18 @@ export function PrivateReceiptCard({ order, receipt, canDecrypt }: PrivateReceip
             <div className="mt-2 flex flex-wrap gap-2">
               {receipt.selections.map((selection) => (
                 <PortalPill key={`${receipt.id}-${selection.key}`} tone="neutral" size="sm">
-                  {selection.emoji} {selection.name}
+                  <span className="inline-flex items-center gap-1.5">
+                    {selection.imageUrl ? (
+                      <img
+                        src={resolveIpfsUrl(selection.imageUrl)}
+                        alt=""
+                        className="h-4 w-4 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span>{selection.emoji}</span>
+                    )}
+                    <span>{selection.name}</span>
+                  </span>
                 </PortalPill>
               ))}
             </div>

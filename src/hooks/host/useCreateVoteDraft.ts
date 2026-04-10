@@ -293,14 +293,27 @@ function buildCandidateHashes(candidates: FlattenedCandidate[]) {
 
 function buildManifestPayload(
   draft: VoteCreateDraft,
+  electionTitle: string,
+  settings: ElectionSettingsDraft,
   candidates: FlattenedCandidate[],
   candidateImageUrls: Map<string, string>,
   bannerImageUrl: string | null,
 ) {
+  const allowMultipleChoice =
+    settings.ballotPolicy === 'UNLIMITED_PAID' ? false : settings.maxChoices > 1
+  const maxSelectionsPerSubmission = allowMultipleChoice ? Math.max(2, settings.maxChoices) : 1
+
   return buildCandidateManifest({
+    seriesPreimage: draft.title,
+    title: electionTitle,
     seriesCoverImageUrl: bannerImageUrl,
     category: draft.category,
     electionCoverImageUrl: bannerImageUrl,
+    visibilityMode: settings.visibilityMode,
+    paymentMode: settings.paymentMode,
+    ballotPolicy: settings.ballotPolicy,
+    allowMultipleChoice,
+    maxSelectionsPerSubmission,
     candidates: buildCandidateManifestCandidates(candidates, candidateImageUrls),
   })
 }
@@ -702,6 +715,8 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
 
         const manifest = buildManifestPayload(
           draft,
+          electionDraft.title,
+          normalizedSettings,
           electionDraft.candidates,
           candidateImageUrls,
           bannerImageUrl,
