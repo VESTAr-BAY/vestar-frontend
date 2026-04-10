@@ -270,5 +270,5 @@ export function resolveIpfsUrl(uri: string): string {
 }
 
 export function resolvePublicIpfsUrl(uri: string): string {
-  return resolveReadableIpfsUrls(uri)[0] ?? uri
+  return resolveIpfsUrls(uri)[0] ?? uri
 }

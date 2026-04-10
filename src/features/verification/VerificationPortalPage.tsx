@@ -1472,7 +1472,7 @@ function ProofTab({
           label={lang === 'ko' ? '후보 메타데이터 IPFS 링크' : 'Candidate metadata IPFS link'}
           value={election.candidateManifestURI}
           actionHref={resolvePublicIpfsUrl(election.candidateManifestURI)}
-          actionLabel={lang === 'ko' ? 'IPFS 파일 열기' : 'Open IPFS file'}
+          actionLabel={lang === 'ko' ? 'IPFS 링크 열기' : 'Open IPFS link'}
         />
       ) : null}
 
@@ -1481,7 +1481,7 @@ function ProofTab({
           label={lang === 'ko' ? '결과 메타데이터 IPFS 링크' : 'Result metadata IPFS link'}
           value={election.resultManifestURI}
           actionHref={resolvePublicIpfsUrl(election.resultManifestURI)}
-          actionLabel={lang === 'ko' ? 'IPFS 파일 열기' : 'Open IPFS file'}
+          actionLabel={lang === 'ko' ? 'IPFS 링크 열기' : 'Open IPFS link'}
         />
       ) : null}
 
