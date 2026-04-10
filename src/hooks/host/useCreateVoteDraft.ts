@@ -161,6 +161,23 @@ function buildDefaultElectionSettings(): ElectionSettingsDraft {
   }
 }
 
+function pickElectionSettings(settings: ElectionSettingsDraft): ElectionSettingsDraft {
+  return {
+    startDate: settings.startDate,
+    endDate: settings.endDate,
+    resultRevealAt: settings.resultRevealAt,
+    maxChoices: settings.maxChoices,
+    visibilityMode: settings.visibilityMode,
+    ballotPolicy: settings.ballotPolicy,
+    paymentMode: settings.paymentMode,
+    costPerBallotEth: settings.costPerBallotEth,
+    minKarmaTier: settings.minKarmaTier,
+    resetIntervalValue: settings.resetIntervalValue,
+    resetIntervalUnit: settings.resetIntervalUnit,
+    resultReveal: settings.resultReveal,
+  }
+}
+
 const INITIAL_DRAFT: VoteCreateDraft = {
   title: '',
   electionTitle: '',
@@ -170,6 +187,7 @@ const INITIAL_DRAFT: VoteCreateDraft = {
   electionCoverImage: '',
   electionCoverImageFile: null,
   category: '음악방송',
+  sectionPolicyUnified: true,
   candidates: [makeBlankCandidate(), makeBlankCandidate()],
   sections: [],
   ...buildDefaultElectionSettings(),
@@ -344,6 +362,9 @@ function buildSubmissionPlan(draft: VoteCreateDraft): {
   allCandidates: FlattenedCandidate[]
   elections: SubmissionUnit[]
 } {
+  const getSectionSettings = (section: SectionDraft): ElectionSettingsDraft =>
+    draft.sectionPolicyUnified && draft.sections.length > 0 ? draft.sections[0] : section
+
   const allCandidates =
     draft.sections.length > 0
       ? draft.sections.flatMap((section) =>
@@ -363,7 +384,7 @@ function buildSubmissionPlan(draft: VoteCreateDraft): {
     draft.sections.length > 0
       ? draft.sections.map((section) => ({
           title: section.name.trim(),
-          settings: section,
+          settings: getSectionSettings(section),
           electionCoverImageFile: section.electionCoverImageFile ?? null,
           candidates: section.candidates.map((candidate) => ({
             id: candidate.id,
@@ -713,7 +734,27 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
 
   const updateField = useCallback(
     <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => {
-      setDraft((prev) => normalizeElectionSettingsDraft({ ...prev, [key]: value }))
+      setDraft((prev) => {
+        if (key === 'sectionPolicyUnified') {
+          const nextUnified = value as VoteCreateDraft['sectionPolicyUnified']
+
+          if (nextUnified && prev.sections.length > 0) {
+            const baseSettings = pickElectionSettings(prev.sections[0])
+            return normalizeElectionSettingsDraft({
+              ...prev,
+              sectionPolicyUnified: true,
+              sections: prev.sections.map((section) => ({
+                ...section,
+                ...baseSettings,
+              })),
+            })
+          }
+
+          return normalizeElectionSettingsDraft({ ...prev, [key]: value })
+        }
+
+        return normalizeElectionSettingsDraft({ ...prev, [key]: value })
+      })
     },
     [],
   )
@@ -820,9 +861,17 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     ) => {
       setDraft((prev) => ({
         ...prev,
-        sections: prev.sections.map((section) => {
-          if (section.id !== sectionId) return section
+        sections: prev.sections.map((section, index) => {
+          if (prev.sectionPolicyUnified) {
+            const sourceSection = prev.sections[0]
+            const nextSettings = normalizeElectionSettingsDraft({
+              ...pickElectionSettings(sourceSection ?? section),
+              [key]: value,
+            })
+            return { ...section, ...pickElectionSettings(nextSettings) }
+          }
 
+          if (section.id !== sectionId) return section
           return normalizeElectionSettingsDraft({ ...section, [key]: value })
         }),
       }))

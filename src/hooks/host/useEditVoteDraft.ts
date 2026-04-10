@@ -26,6 +26,7 @@ const INITIAL_DRAFT: VoteCreateDraft = {
   electionCoverImage: '',
   electionCoverImageFile: null,
   category: '음악방송',
+  sectionPolicyUnified: true,
   visibilityMode: 'PRIVATE',
   candidates: [],
   sections: [],
@@ -86,6 +87,7 @@ export function useEditVoteDraft(id: string) {
         electionCoverImage: vote.imageUrl || '',
         electionCoverImageFile: null,
         category: '음악방송',
+        sectionPolicyUnified: true,
         visibilityMode: vote.visibilityMode ?? 'PRIVATE',
         candidates: vote.candidates.map((c) => ({
           id: c.id,
