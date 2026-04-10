@@ -10,6 +10,7 @@ export interface MyVoteItem {
   date: string
   karmaEarned: number
   choice: string
+  selectedCandidateKeys: string[]
   badge: BadgeVariant
 }
 

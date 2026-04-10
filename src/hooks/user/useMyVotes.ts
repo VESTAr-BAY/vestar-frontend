@@ -65,6 +65,7 @@ function mapToMyVoteItem(item: ApiVoteHistoryItem): MyVoteItem {
     date: formatDate(item.blockTimestamp),
     karmaEarned: 0,
     choice: mapChoiceLabel(item),
+    selectedCandidateKeys: item.selection.candidateKeys,
     badge: mapBadge(item.onchainElection?.onchainState ?? 'FINALIZED'),
   }
 }

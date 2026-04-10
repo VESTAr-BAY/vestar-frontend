@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useLocation, useNavigate, useParams } from 'react-router'
 import type { Address } from 'viem'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import completeVoteIcon from '../../assets/complete_vote.svg'
@@ -38,6 +38,11 @@ interface DangerConfirmModalProps {
   selectedCandidateLabels: string[]
   onConfirm: () => void
   onCancel: () => void
+}
+
+interface VoteHistoryLocationState {
+  historySelectionCandidateKeys?: string[]
+  historySelectionLabel?: string
 }
 
 function DangerConfirmModal({
@@ -135,6 +140,7 @@ function DangerConfirmModal({
 // ── Main page ────────────────────────────────────────────────────────────────
 export function VoteDetailPage() {
   const { id = '1' } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const { vote, isLoading } = useVoteDetail(id)
   const { address } = useAccount()
@@ -158,9 +164,22 @@ export function VoteDetailPage() {
   const { switchChainAsync } = useSwitchChain()
   const { addToast } = useToast()
   const { t, lang } = useLanguage()
+  const voteHistoryState = (location.state ?? null) as VoteHistoryLocationState | null
 
   const isEnded = vote?.badge === 'end'
   const isWrongNetwork = !!vote?.electionAddress && chainId !== vestarStatusTestnetChain.id
+  const historySelectionCandidateKeys = Array.isArray(voteHistoryState?.historySelectionCandidateKeys)
+    ? voteHistoryState.historySelectionCandidateKeys.filter(
+        (candidateKey: string): candidateKey is string =>
+          typeof candidateKey === 'string' && candidateKey.length > 0,
+      )
+    : []
+  const historySelectionLabel =
+    typeof voteHistoryState?.historySelectionLabel === 'string'
+      ? voteHistoryState.historySelectionLabel
+      : null
+  // sungje : 마이페이지에서 들어온 경우엔 현재 재투표 가능 여부와 무관하게 그 시점의 제출 내역을 우선 보여준다.
+  const isHistorySelectionView = historySelectionCandidateKeys.length > 0 || Boolean(historySelectionLabel)
   const voteFeeLabel =
     vote?.paymentMode === 'PAID' && vote.costPerBallot && vote.costPerBallot !== '0'
       ? vote.costPerBallot
@@ -169,12 +188,17 @@ export function VoteDetailPage() {
     vote?.paymentMode === 'PAID' && vote.costPerBallot && vote.costPerBallot !== '0'
       ? `${sectionSelection.selectedCount} ${lang === 'ko' ? `섹션 선택됨 · ${vote.costPerBallot}` : `sections selected · ${vote.costPerBallot}`}`
       : `${sectionSelection.selectedCount} ${lang === 'ko' ? '섹션 선택됨 · 무료' : 'sections selected · free'}`
-  const resolvedHasVoted = hasVoted && !canSubmitByEligibility
+  const resolvedHasVoted = isHistorySelectionView || (hasVoted && !canSubmitByEligibility)
 
   // ── Voted candidate IDs (from localStorage, stable after voting or on reload) ──
   const votedCandidateIds = useMemo<Set<string> | undefined>(
-    () => (resolvedHasVoted ? new Set(getVotedCandidates(id)) : undefined),
-    [resolvedHasVoted, id, getVotedCandidates],
+    () =>
+      resolvedHasVoted
+        ? new Set(
+            isHistorySelectionView ? historySelectionCandidateKeys : getVotedCandidates(id),
+          )
+        : undefined,
+    [resolvedHasVoted, isHistorySelectionView, historySelectionCandidateKeys, id, getVotedCandidates],
   )
 
   // ── Override isSelected to show voted candidates highlighted after voting ──
@@ -332,7 +356,11 @@ export function VoteDetailPage() {
 
   // ── Action bar label ──────────────────────────────────────────────────────
   const submitLabel = resolvedHasVoted
-    ? isGrouped
+    ? isHistorySelectionView
+      ? lang === 'ko'
+        ? `내 투표: ${historySelectionLabel ?? '선택 정보 없음'}`
+        : `Your vote: ${historySelectionLabel ?? 'No selection info'}`
+      : isGrouped
       ? `${votedSectionCount} ${lang === 'ko' ? '섹션 투표 완료!' : 'sections voted!'}`
       : `${lang === 'ko'
           ? `${withKoreanParticle(selectedCandidate?.name ?? '후보', '을/를')} 선택했어요`

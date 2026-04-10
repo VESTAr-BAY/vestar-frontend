@@ -76,7 +76,15 @@ function VoteHistoryList({ votes, isLoading }: { votes: MyVoteItem[]; isLoading:
         <button
           type="button"
           key={item.id}
-          onClick={() => navigate(`/vote/${item.voteId}`)}
+          onClick={() =>
+            navigate(`/vote/${item.voteId}`, {
+              state: {
+                // sungje : 마이페이지 투표내역에서 들어오면 당시 제출한 선택값을 그대로 보여주는 읽기 전용 뷰로 연다.
+                historySelectionCandidateKeys: item.selectedCandidateKeys,
+                historySelectionLabel: item.choice,
+              },
+            })
+          }
           className="bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px] text-left transition-colors hover:border-[#d9ddf3]"
         >
           <div
