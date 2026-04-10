@@ -1,4 +1,5 @@
 import type { CandidateDraft, SectionDraft, VoteCreateDraft } from '../../../types/host'
+import { useLanguage } from '../../../providers/LanguageProvider'
 
 const MAX_CANDIDATES = 10
 
@@ -49,6 +50,7 @@ function CandidateCard({
   isEditMode: boolean
   initialCandidates?: VoteCreateDraft['candidates']
 }) {
+  const { lang } = useLanguage()
   const initialCandidate = initialCandidates?.find((c) => c.id === candidate.id)
   const isCandidateChanged =
     initialCandidate &&
@@ -60,11 +62,11 @@ function CandidateCard({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-semibold text-[#7140FF] font-mono">
-            후보 {index + 1}
+            {lang === 'ko' ? `후보 ${index + 1}` : `Candidate ${index + 1}`}
           </span>
           {isCandidateChanged && (
             <span className="text-[10px] font-bold text-[#7140FF] bg-[#7140FF]/10 px-1.5 py-0.5 rounded-md">
-              수정됨
+              {lang === 'ko' ? '수정됨' : 'Edited'}
             </span>
           )}
         </div>
@@ -73,7 +75,7 @@ function CandidateCard({
             type="button"
             onClick={onRemove}
             className="w-7 h-7 flex items-center justify-center rounded-full text-[#707070] hover:bg-[#FEF2F2] hover:text-[#dc2626] transition-colors"
-            aria-label="후보 삭제"
+            aria-label={lang === 'ko' ? '후보 삭제' : 'Remove candidate'}
           >
             <svg
               width="14"
@@ -95,7 +97,7 @@ function CandidateCard({
         type="text"
         value={candidate.name}
         onChange={(e) => onUpdate('name', e.target.value)}
-        placeholder="아티스트 이름 *"
+        placeholder={lang === 'ko' ? '아티스트 이름 *' : 'Artist name *'}
         maxLength={30}
         className="w-full bg-[#F7F8FA] border border-[#E7E9ED] rounded-xl px-3 py-2.5 text-[14px] text-[#090A0B] placeholder:text-[#C0C4CC] outline-none focus:border-[#7140FF] focus:bg-white transition-all mb-3"
       />
@@ -106,7 +108,11 @@ function CandidateCard({
         className="w-24 h-24 rounded-xl border-2 border-dashed border-[#E7E9ED] bg-[#F7F8FA] hover:border-[#7140FF]/50 transition-colors flex flex-col items-center justify-center cursor-pointer overflow-hidden relative"
       >
         {candidate.image ? (
-          <img src={candidate.image} alt="후보 이미지" className="w-full h-full object-cover" />
+          <img
+            src={candidate.image}
+            alt={lang === 'ko' ? '후보 이미지' : 'Candidate image'}
+            className="w-full h-full object-cover"
+          />
         ) : (
           <>
             <svg
@@ -124,7 +130,9 @@ function CandidateCard({
               <circle cx="8.5" cy="8.5" r="1.5" />
               <polyline points="21 15 16 10 5 21" />
             </svg>
-            <span className="text-[10px] text-[#C0C4CC] font-medium">사진 업로드</span>
+            <span className="text-[10px] text-[#C0C4CC] font-medium">
+              {lang === 'ko' ? '사진 업로드' : 'Upload photo'}
+            </span>
           </>
         )}
         <input
@@ -173,12 +181,13 @@ function SectionCard({
   isEditMode: boolean
   initialCandidates?: VoteCreateDraft['candidates']
 }) {
+  const { lang } = useLanguage()
   return (
     <div className="bg-[#F0EDFF]/40 border-2 border-[#7140FF]/20 rounded-2xl p-4">
       {/* Section header */}
       <div className="flex items-center gap-2 mb-3">
         <span className="text-[11px] font-bold text-[#7140FF] font-mono uppercase tracking-wider">
-          섹션 {sectionIndex + 1}
+          {lang === 'ko' ? `섹션 ${sectionIndex + 1}` : `Section ${sectionIndex + 1}`}
         </span>
         <div className="flex-1" />
         {!isEditMode && canRemove && (
@@ -186,7 +195,7 @@ function SectionCard({
             type="button"
             onClick={onRemoveSection}
             className="w-7 h-7 flex items-center justify-center rounded-full text-[#707070] hover:bg-[#FEF2F2] hover:text-[#dc2626] transition-colors"
-            aria-label="섹션 삭제"
+            aria-label={lang === 'ko' ? '섹션 삭제' : 'Remove section'}
           >
             <svg
               width="14"
@@ -208,7 +217,9 @@ function SectionCard({
         type="text"
         value={section.name}
         onChange={(e) => onUpdateSectionName(e.target.value)}
-        placeholder="섹션 이름 * (예: 남자 그룹)"
+        placeholder={
+          lang === 'ko' ? '섹션 이름 * (예: 남자 그룹)' : 'Section name * (e.g. Boy Group)'
+        }
         maxLength={30}
         className="w-full bg-white border border-[#E7E9ED] rounded-xl px-3 py-2.5 text-[14px] text-[#090A0B] placeholder:text-[#C0C4CC] outline-none focus:border-[#7140FF] focus:bg-white transition-all mb-3"
       />
@@ -247,7 +258,7 @@ function SectionCard({
           >
             <path d="M12 5v14M5 12h14" />
           </svg>
-          후보 추가
+          {lang === 'ko' ? '후보 추가' : 'Add candidate'}
         </button>
       )}
     </div>
@@ -271,6 +282,7 @@ export function StepCandidates({
   onClearSections,
   initialCandidates,
 }: StepCandidatesProps) {
+  const { lang } = useLanguage()
   const isEditMode = !!initialCandidates
   const useSections = sections.length > 0
 
@@ -288,9 +300,13 @@ export function StepCandidates({
       {/* Sections toggle */}
       <div className="flex items-center justify-between bg-white border border-[#E7E9ED] rounded-2xl px-4 py-3 mb-4">
         <div>
-          <div className="text-[14px] font-semibold text-[#090A0B]">섹션 구분 사용</div>
+          <div className="text-[14px] font-semibold text-[#090A0B]">
+            {lang === 'ko' ? '섹션 구분 사용' : 'Use Sections'}
+          </div>
           <div className="text-[12px] text-[#707070] mt-0.5">
-            부문별 투표 (예: MAMA 남자 그룹 / 여자 그룹)
+            {lang === 'ko'
+              ? '부문별 투표 (예: MAMA 남자 그룹 / 여자 그룹)'
+              : 'Create sub-votes by category (e.g. MAMA Boy Group / Girl Group)'}
           </div>
         </div>
         <button
@@ -300,7 +316,7 @@ export function StepCandidates({
           className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${
             useSections ? 'bg-[#7140FF]' : 'bg-[#E7E9ED]'
           } ${isEditMode ? 'opacity-50 cursor-not-allowed' : ''}`}
-          aria-label="섹션 구분 토글"
+          aria-label={lang === 'ko' ? '섹션 구분 토글' : 'Toggle sections'}
         >
           <span
             className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
@@ -316,14 +332,14 @@ export function StepCandidates({
             htmlFor="election-title"
             className="block text-[13px] font-semibold text-[#090A0B] mb-2"
           >
-            투표 이름 <span className="text-[#7140FF]">*</span>
+            {lang === 'ko' ? '투표 이름' : 'Vote Title'} <span className="text-[#7140FF]">*</span>
           </label>
           <input
             id="election-title"
             type="text"
             value={electionTitle}
             onChange={(e) => onUpdateElectionTitle(e.target.value)}
-            placeholder="예: 남자 그룹 인기상"
+            placeholder={lang === 'ko' ? '예: 남자 그룹 인기상' : 'e.g. Best Boy Group'}
             maxLength={60}
             className="w-full bg-[#F7F8FA] border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] placeholder:text-[#C0C4CC] outline-none focus:border-[#7140FF] focus:bg-white transition-all"
           />
@@ -334,12 +350,18 @@ export function StepCandidates({
         // ── Sections mode ──────────────────────────────────────────────────
         <>
           <div className="text-[12px] text-[#707070] mb-4">
-            각 섹션 이름이 개별 투표 이름으로 사용됩니다.
+            {lang === 'ko'
+              ? '각 섹션 이름이 개별 투표 이름으로 사용됩니다.'
+              : 'Each section name becomes the title of its own vote.'}
           </div>
           <div className="text-[12px] text-[#707070] mb-4">
             {isEditMode
-              ? '수정 모드에서는 후보의 삭제 및 추가가 제한됩니다.'
-              : '후보는 각 섹션에 최소 2명 이상 등록하세요.'}
+              ? lang === 'ko'
+                ? '수정 모드에서는 후보의 삭제 및 추가가 제한됩니다.'
+                : 'Editing mode limits adding or removing candidates.'
+              : lang === 'ko'
+                ? '후보는 각 섹션에 최소 2명 이상 등록하세요.'
+                : 'Please add at least 2 candidates to each section.'}
           </div>
 
           <div className="flex flex-col gap-5">
@@ -380,7 +402,7 @@ export function StepCandidates({
               >
                 <path d="M12 5v14M5 12h14" />
               </svg>
-              섹션 추가
+              {lang === 'ko' ? '섹션 추가' : 'Add section'}
             </button>
           )}
         </>
@@ -389,8 +411,12 @@ export function StepCandidates({
         <>
           <div className="text-[12px] text-[#707070] mb-4">
             {isEditMode
-              ? '수정 모드에서는 후보의 삭제 및 추가가 제한됩니다.'
-              : `최소 2명, 최대 ${MAX_CANDIDATES}명까지 등록할 수 있습니다.`}
+              ? lang === 'ko'
+                ? '수정 모드에서는 후보의 삭제 및 추가가 제한됩니다.'
+                : 'Editing mode limits adding or removing candidates.'
+              : lang === 'ko'
+                ? `최소 2명, 최대 ${MAX_CANDIDATES}명까지 등록할 수 있습니다.`
+                : `You can add between 2 and ${MAX_CANDIDATES} candidates.`}
           </div>
 
           <div className="flex flex-col gap-4">
@@ -425,7 +451,7 @@ export function StepCandidates({
               >
                 <path d="M12 5v14M5 12h14" />
               </svg>
-              후보 추가
+              {lang === 'ko' ? '후보 추가' : 'Add candidate'}
             </button>
           )}
         </>

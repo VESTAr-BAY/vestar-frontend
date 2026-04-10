@@ -216,6 +216,7 @@ export function mapToVoteListItem(rawElection: ApiElection, index = 0): VoteList
     sortKey: Number.isFinite(parsedId) ? parsedId : 0,
     seriesImageUrl: election.series?.coverImageUrl ?? election.coverImageUrl ?? undefined,
     visibilityMode: election.visibilityMode,
+    paymentMode: election.paymentMode,
     emoji: HOT_EMOJIS[index % HOT_EMOJIS.length],
     emojiColor: EMOJI_COLORS[index % 7],
     org: election.series?.seriesPreimage ?? 'Unknown series',

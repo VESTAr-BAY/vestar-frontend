@@ -17,6 +17,7 @@ export interface VoteListItem {
   sortKey?: number
   seriesImageUrl?: string
   visibilityMode?: 'OPEN' | 'PRIVATE'
+  paymentMode?: 'FREE' | 'PAID'
   emoji: string
   emojiColor: string
   org: string
