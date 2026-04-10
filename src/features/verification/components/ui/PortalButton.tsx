@@ -12,7 +12,7 @@ type PortalButtonProps = {
 }
 
 const BASE_CLASS =
-  'inline-flex items-center justify-center whitespace-nowrap rounded-full border text-center font-semibold leading-none transition-colors duration-200'
+  'inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full border text-center font-semibold leading-none transition-colors duration-200'
 
 const VARIANT_CLASS = {
   surface:
@@ -26,7 +26,7 @@ const SIZE_CLASS = {
   md: 'min-h-12 px-5 text-[15px]',
 } as const
 
-const HEADER_SIZE_CLASS = 'min-h-10 px-4 text-[14px]'
+const HEADER_SIZE_CLASS = 'min-h-9 px-3.5 text-[13px]'
 
 export function PortalButton({
   children,

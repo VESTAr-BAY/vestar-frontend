@@ -101,7 +101,7 @@ export function VoteCreatePage() {
   return (
     <div className="relative mx-auto h-screen w-full max-w-[430px] overflow-hidden bg-[#F7F8FA] shadow-[0_0_60px_rgba(0,0,0,0.12)]">
       {/* Header */}
-      <header className="fixed left-1/2 top-0 z-[100] flex h-[var(--header-h)] w-full max-w-[430px] -translate-x-1/2 items-center gap-3 bg-[#13141A] px-4 pt-[var(--safe-top)]">
+      <header className="fixed left-1/2 top-0 z-[100] flex h-[calc(4rem+var(--safe-top))] w-full max-w-[430px] -translate-x-1/2 items-end gap-3 bg-[#13141A] px-[calc(1.25rem+var(--safe-left))] pb-3 pt-[calc(var(--safe-top)+0.75rem)] pr-[calc(1.25rem+var(--safe-right))]">
         <button
           type="button"
           aria-label="뒤로가기"
@@ -124,14 +124,16 @@ export function VoteCreatePage() {
         </button>
 
         <div className="flex-1">
-          <div className="text-[11px] text-white/40 font-mono">{STEP_LABELS[step - 1]}</div>
+          <div className="text-[15px] font-semibold tracking-[-0.01em] text-white">
+            {STEP_LABELS[step - 1]}
+          </div>
         </div>
 
         <StepIndicator current={step} total={3} />
       </header>
 
       {/* Scrollable content */}
-      <main className="h-screen overflow-y-auto px-[var(--safe-left)] pr-[var(--safe-right)] pt-[var(--header-h)] pb-[calc(var(--footer-h)+1.5rem)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <main className="h-screen overflow-y-auto px-[var(--safe-left)] pr-[var(--safe-right)] pt-[calc(4rem+var(--safe-top))] pb-[calc(var(--footer-h)+1.5rem)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {step === 1 && <StepBasicInfo draft={draft} onUpdate={updateField} />}
         {step === 2 && (
           <StepCandidates

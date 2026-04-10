@@ -264,11 +264,11 @@ function App() {
 
   return (
     <div className="relative mx-auto min-h-screen w-full max-w-[430px] overflow-hidden bg-[#F7F8FA] shadow-[0_0_60px_rgba(0,0,0,0.12)]">
-      <div className="relative overflow-hidden bg-[#13141A] px-5 pb-6 pt-6">
+      <div className="relative overflow-hidden bg-[#13141A] px-[calc(1.25rem+var(--safe-left))] pb-6 pt-[calc(var(--safe-top)+1rem)] pr-[calc(1.25rem+var(--safe-right))]">
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7140FF] to-transparent" />
 
-        <div className="flex items-center justify-between gap-3">
-          <span className="font-mono text-base font-medium tracking-[1.5px] text-white uppercase">
+        <div className="flex items-start justify-between gap-3">
+          <span className="font-mono text-[20px] font-semibold tracking-[1.8px] text-white uppercase">
             VEST<span className="text-[#7140FF]">A</span>r
           </span>
           <PortalButton
