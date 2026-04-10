@@ -861,7 +861,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     ) => {
       setDraft((prev) => ({
         ...prev,
-        sections: prev.sections.map((section, index) => {
+        sections: prev.sections.map((section) => {
           if (prev.sectionPolicyUnified) {
             const sourceSection = prev.sections[0]
             const nextSettings = normalizeElectionSettingsDraft({
