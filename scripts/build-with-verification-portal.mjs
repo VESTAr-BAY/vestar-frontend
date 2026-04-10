@@ -11,9 +11,10 @@ const frontendBaseDir = path.join(frontendDistDir, 'vote')
 const portalDistDir = path.join(portalRoot, 'dist')
 const embeddedPortalDir = path.join(frontendBaseDir, 'verification')
 const redirectsPath = path.join(frontendDistDir, '_redirects')
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+const npmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 const FRONTEND_DIST_SKIP = new Set(['vote'])
 const PORTAL_REDIRECT_RULE = '/vote/verification/* /vote/verification/index.html  200'
+const SPA_REDIRECT_RULE = '/vote/*  /vote/index.html  200'
 
 function runCommand(command, args, cwd) {
   const result = spawnSync(command, args, {
@@ -63,7 +64,8 @@ async function syncRedirects() {
   }
 
   const lines = content.split(/\r?\n/).filter(Boolean)
-  const nextLines = [PORTAL_REDIRECT_RULE, ...lines.filter((line) => line !== PORTAL_REDIRECT_RULE)]
+  const preserved = lines.filter((line) => line !== PORTAL_REDIRECT_RULE && line !== SPA_REDIRECT_RULE)
+  const nextLines = [PORTAL_REDIRECT_RULE, SPA_REDIRECT_RULE, ...preserved]
 
   await writeFile(redirectsPath, `${nextLines.join('\n')}\n`)
 }

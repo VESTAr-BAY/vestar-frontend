@@ -118,8 +118,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   const karma = isConnected ? 2480 : 0
   const votes = isConnected ? 14 : 0
   const tier = getKarmaTier(karma)
-  const verificationPortalPath =
-    import.meta.env.BASE_URL === '/vote/' ? '/vote/verification' : '/verification'
+  const verificationPortalPath = `${import.meta.env.BASE_URL}verification`
 
   useEffect(() => {
     let cancelled = false
