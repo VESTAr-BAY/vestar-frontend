@@ -191,10 +191,10 @@ function SeriesVoteCard({
       ? isEndedSeries
         ? lang === "ko"
           ? `${group.items[0].count}명 참여`
-          : `${group.items[0].count} participated`
+          : `${group.items[0].count} votes`
         : lang === "ko"
           ? `${group.items[0].count}명 참여 중`
-          : `${group.items[0].count} participating`
+          : `${group.items[0].count} voting`
       : isEndedSeries
         ? lang === "ko"
           ? `${group.items.length}개의 마감된 투표`
@@ -213,7 +213,7 @@ function SeriesVoteCard({
     : group.items.length === 1
       ? lang === "ko"
         ? "바로 입장"
-        : "Open now"
+        : "Open vote"
       : lang === "ko"
         ? `${group.items.length}개 보기`
         : `View ${group.items.length}`;

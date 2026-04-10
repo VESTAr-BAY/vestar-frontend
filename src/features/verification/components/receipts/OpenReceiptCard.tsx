@@ -1,3 +1,4 @@
+import { useLanguage } from '../../../../providers/LanguageProvider'
 import type { VerificationReceipt } from '../../vestar'
 import { PortalButton } from '../ui/PortalButton'
 import { PortalPanel } from '../ui/PortalPanel'
@@ -9,6 +10,8 @@ type OpenReceiptCardProps = {
 }
 
 export function OpenReceiptCard({ order, receipt }: OpenReceiptCardProps) {
+  const { lang } = useLanguage()
+
   return (
     <PortalPanel>
       <div className="flex items-start justify-between gap-3">
@@ -24,12 +27,14 @@ export function OpenReceiptCard({ order, receipt }: OpenReceiptCardProps) {
           <div className="mt-2 text-[12px] leading-[1.5] text-[#707070]">{receipt.submittedAtLabel}</div>
         </div>
         <PortalPill tone="success" size="sm">
-          제출 완료
+          {lang === 'ko' ? '제출 완료' : 'Submitted'}
         </PortalPill>
       </div>
 
       <PortalPanel tone="muted" className="mt-3 rounded-[20px] px-3 py-3">
-        <div className="text-[12px] text-[#707070]">이 지갑이 고른 후보</div>
+        <div className="text-[12px] text-[#707070]">
+          {lang === 'ko' ? '이 지갑이 고른 후보' : 'Candidate picked by this wallet'}
+        </div>
         <div className="mt-2 flex flex-wrap gap-2">
           {receipt.selections.map((selection) => (
             <PortalPill key={`${receipt.id}-${selection.key}`} tone="neutral" size="sm">
@@ -40,7 +45,9 @@ export function OpenReceiptCard({ order, receipt }: OpenReceiptCardProps) {
       </PortalPanel>
 
       <PortalPanel tone="muted" className="mt-3 rounded-[20px] px-3 py-3">
-        <div className="text-[12px] text-[#707070]">트랜잭션 확인값</div>
+        <div className="text-[12px] text-[#707070]">
+          {lang === 'ko' ? '트랜잭션 확인값' : 'Transaction hash'}
+        </div>
         <div className="mt-1 break-all font-mono text-[11px] leading-[1.65] text-[#090A0B]">
           {receipt.transactionHash}
         </div>
@@ -48,7 +55,7 @@ export function OpenReceiptCard({ order, receipt }: OpenReceiptCardProps) {
 
       <div className="mt-3">
         <PortalButton href={receipt.walletExplorerUrl} fullWidth size="sm">
-          블록체인에서 보기
+          {lang === 'ko' ? '블록체인에서 보기' : 'View on blockchain'}
         </PortalButton>
       </div>
     </PortalPanel>

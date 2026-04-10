@@ -1,5 +1,6 @@
 import { getAddress, keccak256, hexToBytes, type Address, type Hex } from 'viem'
 import { OPEN_EMOJIS, STATUS_CHAIN_ID, STATUS_EXPLORER_URL } from './constants'
+import { resolveVerificationLanguage, type VerificationLang } from './language'
 import type { VerificationElectionSummary, VisibilityMode } from './types'
 
 export function isLikelyCid(value: string) {
@@ -23,10 +24,16 @@ export function formatElectionId(electionId: Hex, fallbackAddress: Address) {
   return decodeBytes32Ascii(electionId) ?? truncateAddress(fallbackAddress)
 }
 
-export function formatElectionTitle(electionId: Hex, fallbackAddress: Address) {
+export function formatElectionTitle(
+  electionId: Hex,
+  fallbackAddress: Address,
+  lang: VerificationLang = resolveVerificationLanguage(),
+) {
   const rawId = decodeBytes32Ascii(electionId)
   if (!rawId) {
-    return `투표 ${truncateAddress(fallbackAddress)}`
+    return lang === 'ko'
+      ? `투표 ${truncateAddress(fallbackAddress)}`
+      : `Vote ${truncateAddress(fallbackAddress)}`
   }
 
   const cleaned = rawId
@@ -36,55 +43,70 @@ export function formatElectionTitle(electionId: Hex, fallbackAddress: Address) {
     .replace(/\s+/g, ' ')
     .trim()
 
-  return cleaned || `투표 ${truncateAddress(fallbackAddress)}`
+  return cleaned ||
+    (lang === 'ko' ? `투표 ${truncateAddress(fallbackAddress)}` : `Vote ${truncateAddress(fallbackAddress)}`)
 }
 
 export function hasResolvedElectionTitle(
   election: Pick<VerificationElectionSummary, 'title' | 'chainElectionId' | 'address'>,
 ) {
-  if (election.title === '불러오는 중') {
+  const lang = resolveVerificationLanguage()
+  const loadingLabel = lang === 'ko' ? '불러오는 중' : 'Loading'
+
+  if (election.title === loadingLabel) {
     return false
   }
 
-  return election.title !== formatElectionTitle(election.chainElectionId, election.address)
+  return election.title !== formatElectionTitle(election.chainElectionId, election.address, lang)
 }
 
 export function formatElectionDescription(
   mode: VisibilityMode,
   isFinalized: boolean,
   canDecrypt: boolean,
+  lang: VerificationLang = resolveVerificationLanguage(),
 ) {
   if (mode === 'OPEN') {
     return isFinalized
-      ? '끝난 뒤 최종 결과가 고정된 공개 투표예요.'
-      : '현재 체인에 올라온 공개 투표예요. 지금까지 제출된 표 흐름을 바로 볼 수 있어요.'
+      ? lang === 'ko'
+        ? '끝난 뒤 최종 결과가 고정된 공개 투표예요.'
+        : 'This is a public vote with finalized results after the vote ended.'
+      : lang === 'ko'
+        ? '현재 체인에 올라온 공개 투표예요. 지금까지 제출된 표 흐름을 바로 볼 수 있어요.'
+        : 'This is a public vote currently on chain. You can review the submitted vote flow right away.'
   }
 
   return isFinalized
     ? canDecrypt
-      ? '공개된 키와 투표 기록을 함께 보며 결과를 다시 확인할 수 있어요.'
-      : '끝난 비공개 투표예요. 키가 공개된 형식이면 결과를 다시 확인할 수 있어요.'
-    : '현재 체인에 올라온 비공개 투표예요. 투표 수는 보이지만 결과는 키 공개 전까지 숨겨져요.'
+      ? lang === 'ko'
+        ? '공개된 키와 투표 기록을 함께 보며 결과를 다시 확인할 수 있어요.'
+        : 'You can verify the result again by reviewing the revealed keys and vote records together.'
+      : lang === 'ko'
+        ? '끝난 비공개 투표예요. 키가 공개된 형식이면 결과를 다시 확인할 수 있어요.'
+        : 'This private vote has ended. If the key is revealed in a supported format, the results can be verified again.'
+    : lang === 'ko'
+      ? '현재 체인에 올라온 비공개 투표예요. 투표 수는 보이지만 결과는 키 공개 전까지 숨겨져요.'
+      : 'This is a private vote currently on chain. Submission counts are visible, but results stay hidden until the key is revealed.'
 }
 
-export function formatStateLabel(state: number) {
+export function formatStateLabel(state: number, lang: VerificationLang = resolveVerificationLanguage()) {
   switch (state) {
     case 0:
-      return '시작 전'
+      return lang === 'ko' ? '시작 전' : 'Scheduled'
     case 1:
-      return '진행 중'
+      return lang === 'ko' ? '진행 중' : 'Active'
     case 2:
-      return '마감됨'
+      return lang === 'ko' ? '마감됨' : 'Closed'
     case 3:
-      return '키 공개 대기'
+      return lang === 'ko' ? '키 공개 대기' : 'Key reveal pending'
     case 4:
-      return '키 공개됨'
+      return lang === 'ko' ? '키 공개됨' : 'Key revealed'
     case 5:
-      return '결과 확정'
+      return lang === 'ko' ? '결과 확정' : 'Finalized'
     case 6:
-      return '취소됨'
+      return lang === 'ko' ? '취소됨' : 'Cancelled'
     default:
-      return '상태 확인 중'
+      return lang === 'ko' ? '상태 확인 중' : 'Checking status'
   }
 }
 
@@ -203,8 +225,8 @@ export function makeExplorerUrl(kind: 'address' | 'tx', value: string) {
   return `${STATUS_EXPLORER_URL}/${kind}/${value}`
 }
 
-export function formatDate(timestamp: bigint) {
-  return new Intl.DateTimeFormat('ko-KR', {
+export function formatDate(timestamp: bigint, lang: VerificationLang = resolveVerificationLanguage()) {
+  return new Intl.DateTimeFormat(lang === 'ko' ? 'ko-KR' : 'en-US', {
     month: 'long',
     day: 'numeric',
     hour: 'numeric',
@@ -214,8 +236,8 @@ export function formatDate(timestamp: bigint) {
   }).format(new Date(Number(timestamp) * 1000))
 }
 
-export function formatDateTime(timestamp: bigint) {
-  return new Intl.DateTimeFormat('ko-KR', {
+export function formatDateTime(timestamp: bigint, lang: VerificationLang = resolveVerificationLanguage()) {
+  return new Intl.DateTimeFormat(lang === 'ko' ? 'ko-KR' : 'en-US', {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',

@@ -1,3 +1,4 @@
+import { useLanguage } from '../../../../providers/LanguageProvider'
 import { PortalButton } from '../ui/PortalButton'
 import { PortalPanel } from '../ui/PortalPanel'
 
@@ -8,6 +9,8 @@ type ValueCardProps = {
 }
 
 export function ValueCard({ label, value, actionHref }: ValueCardProps) {
+  const { lang } = useLanguage()
+
   return (
     <PortalPanel className="rounded-[22px]">
       <div className="text-[13px] font-medium text-[#707070]">{label}</div>
@@ -17,7 +20,7 @@ export function ValueCard({ label, value, actionHref }: ValueCardProps) {
       {actionHref ? (
         <div className="mt-4 flex justify-start">
           <PortalButton href={actionHref} size="sm">
-            블록체인에서 보기
+            {lang === 'ko' ? '블록체인에서 보기' : 'View on blockchain'}
           </PortalButton>
         </div>
       ) : null}

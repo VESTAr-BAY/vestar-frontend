@@ -57,10 +57,12 @@ import {
   toVisibilityMode,
   truncateAddress,
 } from './utils'
+import { resolveVerificationLanguage } from './language'
 
 export { readCachedVerificationElectionDetail, readCachedVerificationElectionSummaries }
 
 export async function syncVerificationElectionSummaries() {
+  const lang = resolveVerificationLanguage()
   const cached = readStoredIndexCache()
   const cachedMap = new Map(
     (cached?.elections ?? []).map((entry) => [entry.address.toLowerCase(), normalizeElectionSummary(entry)] as const),
@@ -95,18 +97,33 @@ export async function syncVerificationElectionSummaries() {
     cachedMap.set(electionAddress.toLowerCase(), {
       id: truncateAddress(electionAddress),
       mode: log.args.visibilityMode === 1 ? 'PRIVATE' : 'OPEN',
-      modeLabel: log.args.visibilityMode === 1 ? '비공개 투표' : '공개 투표',
+      modeLabel: log.args.visibilityMode === 1
+        ? lang === 'ko'
+          ? '비공개 투표'
+          : 'Private vote'
+        : lang === 'ko'
+          ? '공개 투표'
+          : 'Public vote',
       state: 0,
-      stateLabel: '상태 확인 중',
+      stateLabel: lang === 'ko' ? '상태 확인 중' : 'Checking status',
       isFinalized: false,
-      title: '불러오는 중',
-      description: '체인에서 선거 정보를 확인하고 있어요.',
+      title: lang === 'ko' ? '불러오는 중' : 'Loading',
+      description:
+        lang === 'ko'
+          ? '체인에서 선거 정보를 확인하고 있어요.'
+          : 'Reading election data from the chain.',
       hostName: truncateAddress(organizer),
-      hostBadge: log.args.organizerVerifiedSnapshot ? '인증 주최자' : '일반 주최자',
+      hostBadge: log.args.organizerVerifiedSnapshot
+        ? lang === 'ko'
+          ? '인증 주최자'
+          : 'Verified organizer'
+        : lang === 'ko'
+          ? '일반 주최자'
+          : 'Organizer',
       address: electionAddress,
       addressExplorerUrl: makeExplorerUrl('address', electionAddress),
       endedAtLabel: '',
-      finalizeTransactionHash: '아직 없음',
+      finalizeTransactionHash: lang === 'ko' ? '아직 없음' : 'Not available yet',
       finalizeExplorerUrl: STATUS_EXPLORER_URL,
       resultSummaryNote: null,
       totalSubmissions: 0,
@@ -265,7 +282,7 @@ async function loadElectionSummary(
   const createdBlock = context.log?.blockNumber ?? parseStoredBlock(previous.createdBlock, previous.sortBlock)
   const eventFromBlock = context.fromBlock ?? createdBlock
   const shouldReadFinalizeLogs =
-    previous.finalizeTransactionHash === '아직 없음' || context.fromBlock !== undefined
+    previous.finalizeTransactionHash === (resolveVerificationLanguage() === 'ko' ? '아직 없음' : 'Not available yet') || context.fromBlock !== undefined
 
   const [state, electionId, config, result, revealedPrivateKey, resultLogs, receiptLogs] =
     await Promise.all([
@@ -340,7 +357,12 @@ async function loadElectionSummary(
   const canDecrypt = hasRevealedPrivateKey && totalReceipts > 0
   const previousTitle = hasResolvedElectionTitle(previous) ? previous.title : null
   const previousDescription =
-    previous.description !== '체인에서 선거 정보를 확인하고 있어요.' ? previous.description : null
+    previous.description !==
+      (resolveVerificationLanguage() === 'ko'
+        ? '체인에서 선거 정보를 확인하고 있어요.'
+        : 'Reading election data from the chain.')
+      ? previous.description
+      : null
   const cachedDetail = readCachedVerificationElectionDetail(electionAddress)
   const detailTopCandidate =
     cachedDetail &&
@@ -362,7 +384,14 @@ async function loadElectionSummary(
             resultManifest.results[0].displayName ??
             formatCandidateName(resultManifest.results[0].candidateKey),
           emoji: pickEmoji(resultManifest.results[0].candidateKey),
-          subtitle: mode === 'OPEN' ? '공개 후보' : '비공개 후보',
+          subtitle:
+            mode === 'OPEN'
+              ? resolveVerificationLanguage() === 'ko'
+                ? '공개 후보'
+                : 'Public candidate'
+              : resolveVerificationLanguage() === 'ko'
+                ? '비공개 후보'
+                : 'Private candidate',
           votes: resultManifest.results[0].votes,
           percentage:
             validVotes > 0 ? (resultManifest.results[0].votes / validVotes) * 100 : 0,
@@ -375,7 +404,14 @@ async function loadElectionSummary(
     ...previous,
     id: formatElectionId(electionId, electionAddress),
     mode,
-    modeLabel: mode === 'OPEN' ? '공개 투표' : '비공개 투표',
+    modeLabel:
+      mode === 'OPEN'
+        ? resolveVerificationLanguage() === 'ko'
+          ? '공개 투표'
+          : 'Public vote'
+        : resolveVerificationLanguage() === 'ko'
+          ? '비공개 투표'
+          : 'Private vote',
     state: Number(state),
     stateLabel: formatStateLabel(Number(state)),
     isFinalized,
@@ -389,12 +425,16 @@ async function loadElectionSummary(
     hostBadge:
       context.log?.args.organizerVerifiedSnapshot !== undefined
         ? context.log.args.organizerVerifiedSnapshot
-          ? '인증 주최자'
-          : '일반 주최자'
+          ? resolveVerificationLanguage() === 'ko'
+            ? '인증 주최자'
+            : 'Verified organizer'
+          : resolveVerificationLanguage() === 'ko'
+            ? '일반 주최자'
+            : 'Organizer'
         : previous.hostBadge,
     address: electionAddress,
     addressExplorerUrl: makeExplorerUrl('address', electionAddress),
-    endedAtLabel: `${formatDate(config.endAt)} 종료`,
+    endedAtLabel: resolveVerificationLanguage() === 'ko' ? `${formatDate(config.endAt)} 종료` : `Ends ${formatDate(config.endAt)}`,
     finalizeTransactionHash: finalizeLog?.transactionHash ?? previous.finalizeTransactionHash,
     finalizeExplorerUrl: finalizeLog?.transactionHash
       ? makeExplorerUrl('tx', finalizeLog.transactionHash)

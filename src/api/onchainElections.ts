@@ -41,6 +41,7 @@ import {
   type CandidateManifest,
 } from '../utils/candidateManifest'
 import { resolveIpfsUrl } from '../utils/ipfs'
+import { resolveStoredLanguage } from '../utils/language'
 
 const FACTORY_ADDRESS = getAddress(vestarContractAddresses.electionFactory)
 const LOG_BLOCK_CHUNK_SIZE = 4_000n
@@ -360,7 +361,12 @@ async function readCandidateManifest(uri: string, expectedHash: Hex) {
 }
 
 function buildFallbackTitle(electionId: Hex, electionAddress: Address) {
-  return decodeBytes32Ascii(electionId) ?? `투표 ${truncateAddress(electionAddress)}`
+  const lang = resolveStoredLanguage()
+
+  return (
+    decodeBytes32Ascii(electionId) ??
+    (lang === 'ko' ? `투표 ${truncateAddress(electionAddress)}` : `Vote ${truncateAddress(electionAddress)}`)
+  )
 }
 
 function buildFallbackSeries(entry: IndexedOnchainElection) {

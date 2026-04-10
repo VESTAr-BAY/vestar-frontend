@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { fetchVoteHistory } from '../../api/elections'
 import type { ApiElectionState, ApiVoteHistoryItem } from '../../api/types'
+import { useLanguage } from '../../providers/LanguageProvider'
 import type { MyVoteItem } from '../../types/user'
 
 export interface UseMyVotesResult {
@@ -40,23 +41,23 @@ function mapBadge(state: ApiElectionState): MyVoteItem['badge'] {
   }
 }
 
-function mapChoiceLabel(item: ApiVoteHistoryItem): string {
+function mapChoiceLabel(item: ApiVoteHistoryItem, lang: 'en' | 'ko'): string {
   if (item.selection.isPending) {
-    return '집계 대기 중'
+    return lang === 'ko' ? '집계 대기 중' : 'Awaiting tally'
   }
 
   if (item.selection.isValid === false) {
-    return '무효 처리됨'
+    return lang === 'ko' ? '무효 처리됨' : 'Marked invalid'
   }
 
   if (item.selection.candidateKeys.length === 0) {
-    return '선택 정보 없음'
+    return lang === 'ko' ? '선택 정보 없음' : 'No selection info'
   }
 
   return item.selection.candidateKeys.join(', ')
 }
 
-function mapToMyVoteItem(item: ApiVoteHistoryItem): MyVoteItem {
+function mapToMyVoteItem(item: ApiVoteHistoryItem, lang: 'en' | 'ko'): MyVoteItem {
   return {
     id: item.id,
     voteId: item.onchainElection?.id ?? item.id,
@@ -64,7 +65,7 @@ function mapToMyVoteItem(item: ApiVoteHistoryItem): MyVoteItem {
     org: item.onchainElection?.draft?.series?.seriesPreimage ?? 'Unknown series',
     date: formatDate(item.blockTimestamp),
     karmaEarned: 0,
-    choice: mapChoiceLabel(item),
+    choice: mapChoiceLabel(item, lang),
     selectedCandidateKeys: item.selection.candidateKeys,
     badge: mapBadge(item.onchainElection?.onchainState ?? 'FINALIZED'),
   }
@@ -72,6 +73,7 @@ function mapToMyVoteItem(item: ApiVoteHistoryItem): MyVoteItem {
 
 export function useMyVotes(): UseMyVotesResult {
   const { address, isConnected } = useAccount()
+  const { lang } = useLanguage()
   const [votes, setVotes] = useState<MyVoteItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -88,7 +90,7 @@ export function useMyVotes(): UseMyVotesResult {
     fetchVoteHistory(address)
       .then((history) => {
         if (cancelled) return
-        setVotes(history.map(mapToMyVoteItem))
+        setVotes(history.map((item) => mapToMyVoteItem(item, lang)))
       })
       .catch(() => {
         if (cancelled) return
@@ -103,7 +105,7 @@ export function useMyVotes(): UseMyVotesResult {
     return () => {
       cancelled = true
     }
-  }, [address, isConnected])
+  }, [address, isConnected, lang])
 
   return { votes, isLoading }
 }

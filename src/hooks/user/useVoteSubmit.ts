@@ -56,11 +56,19 @@ export function useVoteSubmit(): VoteSubmitResult {
         })
 
         if (!vote?.electionAddress || !vote.onchainElectionId) {
-          throw new Error('아직 온체인 election 정보가 인덱싱되지 않아 투표할 수 없습니다.')
+          throw new Error(
+            lang === 'ko'
+              ? '아직 온체인 election 정보가 인덱싱되지 않아 투표할 수 없습니다.'
+              : 'This vote cannot be submitted yet because the on-chain election data is not indexed.',
+          )
         }
 
         if (!walletClient?.account) {
-          throw new Error('지갑 연결이 확인되지 않습니다. 지갑을 다시 연결한 뒤 시도해주세요.')
+          throw new Error(
+            lang === 'ko'
+              ? '지갑 연결이 확인되지 않습니다. 지갑을 다시 연결한 뒤 시도해주세요.'
+              : 'Wallet connection could not be confirmed. Reconnect your wallet and try again.',
+          )
         }
 
         if (chainId !== vestarStatusTestnetChain.id) {
@@ -70,7 +78,9 @@ export function useVoteSubmit(): VoteSubmitResult {
           })
           await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
           throw new Error(
-            '네트워크를 Status testnet으로 변경했습니다. 다시 한 번 투표를 눌러주세요.',
+            lang === 'ko'
+              ? '네트워크를 Status testnet으로 변경했습니다. 다시 한 번 투표를 눌러주세요.'
+              : 'The network was switched to Status Testnet. Please tap vote again.',
           )
         }
 
@@ -102,14 +112,26 @@ export function useVoteSubmit(): VoteSubmitResult {
           })
 
           if (state !== undefined && state !== VESTAR_ELECTION_STATE.ACTIVE) {
-            throw new Error('현재 투표 가능한 상태가 아닙니다.')
+            throw new Error(
+              lang === 'ko'
+                ? '현재 투표 가능한 상태가 아닙니다.'
+                : 'This vote is not currently open for submissions.',
+            )
           }
 
           if (remainingBallots !== undefined && remainingBallots <= 0) {
-            throw new Error('이 주소로 사용할 수 있는 투표권을 모두 사용했습니다.')
+            throw new Error(
+              lang === 'ko'
+                ? '이 주소로 사용할 수 있는 투표권을 모두 사용했습니다.'
+                : 'This address has already used all available ballots.',
+            )
           }
 
-          throw new Error('현재 제출 가능한 투표권이 없습니다.')
+          throw new Error(
+            lang === 'ko'
+              ? '현재 제출 가능한 투표권이 없습니다.'
+              : 'There is no ballot available to submit right now.',
+          )
         }
 
         setState('awaiting_signature')

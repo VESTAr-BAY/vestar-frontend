@@ -1,5 +1,6 @@
 import { useParams } from 'react-router'
 import { useVoteResult } from '../../hooks/user/useVoteResult'
+import { useLanguage } from '../../providers/LanguageProvider'
 import { VoteResultRankings } from '../user/VoteResultRankings'
 import { VoteResultWinner } from '../user/VoteResultWinner'
 
@@ -12,11 +13,17 @@ function LoadingSkeleton() {
 }
 
 function EmptyState() {
+  const { lang } = useLanguage()
+
   return (
     <div className="mx-5 mt-10 rounded-3xl border border-[#E7E9ED] bg-white px-6 py-10 text-center">
-      <div className="text-[16px] font-semibold text-[#090A0B]">아직 표시할 결과가 없습니다.</div>
+      <div className="text-[16px] font-semibold text-[#090A0B]">
+        {lang === 'ko' ? '아직 표시할 결과가 없습니다.' : 'There are no results to display yet.'}
+      </div>
       <div className="mt-2 text-[13px] text-[#707070]">
-        비공개 투표는 finalize 이후에만 결과를 볼 수 있습니다.
+        {lang === 'ko'
+          ? '비공개 투표는 finalize 이후에만 결과를 볼 수 있습니다.'
+          : 'Private votes can be viewed only after finalization.'}
       </div>
     </div>
   )
