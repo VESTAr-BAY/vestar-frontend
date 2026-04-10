@@ -365,7 +365,9 @@ function buildFallbackTitle(electionId: Hex, electionAddress: Address) {
 
   return (
     decodeBytes32Ascii(electionId) ??
-    (lang === 'ko' ? `투표 ${truncateAddress(electionAddress)}` : `Vote ${truncateAddress(electionAddress)}`)
+    (lang === 'ko'
+      ? `투표 ${truncateAddress(electionAddress)}`
+      : `Vote ${truncateAddress(electionAddress)}`)
   )
 }
 

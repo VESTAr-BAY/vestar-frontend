@@ -131,10 +131,45 @@ function buildDefaultElectionSettings(): ElectionSettingsDraft {
   }
 }
 
+function copyElectionSettings<T extends ElectionSettingsDraft>(
+  target: T,
+  source: ElectionSettingsDraft,
+): T {
+  return normalizeElectionSettingsDraft({
+    ...target,
+    startDate: source.startDate,
+    endDate: source.endDate,
+    resultRevealAt: source.resultRevealAt,
+    maxChoices: source.maxChoices,
+    visibilityMode: source.visibilityMode,
+    ballotPolicy: source.ballotPolicy,
+    paymentMode: source.paymentMode,
+    costPerBallotEth: source.costPerBallotEth,
+    minKarmaTier: source.minKarmaTier,
+    resetIntervalValue: source.resetIntervalValue,
+    resetIntervalUnit: source.resetIntervalUnit,
+    resultReveal: source.resultReveal,
+  })
+}
+
+function unifySectionSettings(sections: SectionDraft[]): SectionDraft[] {
+  if (sections.length <= 1) return sections
+
+  const normalizedSource = normalizeElectionSettingsDraft(sections[0])
+  return sections.map((section, index) =>
+    index === 0 ? normalizedSource : copyElectionSettings(section, normalizedSource),
+  )
+}
+
+function getEffectiveSections(draft: VoteCreateDraft): SectionDraft[] {
+  return draft.sectionPolicyUnified ? unifySectionSettings(draft.sections) : draft.sections
+}
+
 const INITIAL_DRAFT: VoteCreateDraft = {
   title: '',
   electionTitle: '',
   group: '',
+  sectionPolicyUnified: true,
   bannerImage: '',
   bannerImageFile: null,
   electionCoverImage: '',
@@ -166,8 +201,10 @@ function hasDuplicateCandidateNames(draft: VoteCreateDraft) {
 function isStep2Valid(draft: VoteCreateDraft): boolean {
   if (hasDuplicateCandidateNames(draft)) return false
 
-  if (draft.sections.length > 0) {
-    return draft.sections.every(
+  const effectiveSections = getEffectiveSections(draft)
+
+  if (effectiveSections.length > 0) {
+    return effectiveSections.every(
       (section) =>
         section.name.trim().length > 0 &&
         section.candidates.length >= 2 &&
@@ -223,8 +260,12 @@ function isStep3Valid(draft: VoteCreateDraft): boolean {
     )
   }
 
-  if (draft.sections.length > 0) {
-    return draft.sections.every((section) => validateSettings(section, section.candidates.length))
+  const effectiveSections = getEffectiveSections(draft)
+
+  if (effectiveSections.length > 0) {
+    return effectiveSections.every((section) =>
+      validateSettings(section, section.candidates.length),
+    )
   }
 
   return validateSettings(draft, draft.candidates.length)
@@ -420,7 +461,18 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
 
   const updateField = useCallback(
     <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => {
-      setDraft((prev) => normalizeElectionSettingsDraft({ ...prev, [key]: value }))
+      setDraft((prev) => {
+        if (key === 'sectionPolicyUnified') {
+          const nextUnified = value as VoteCreateDraft['sectionPolicyUnified']
+          return {
+            ...prev,
+            sectionPolicyUnified: nextUnified,
+            sections: nextUnified ? unifySectionSettings(prev.sections) : prev.sections,
+          }
+        }
+
+        return normalizeElectionSettingsDraft({ ...prev, [key]: value })
+      })
     },
     [],
   )
@@ -461,6 +513,8 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         prev.sections.length === 0
           ? prev.candidates.map((candidate) => ({ ...candidate, id: makeId() }))
           : [makeBlankCandidate(), makeBlankCandidate()]
+      const settingsSource =
+        prev.sectionPolicyUnified && prev.sections.length > 0 ? prev.sections[0] : prev
 
       const newSection: SectionDraft = {
         id: makeId(),
@@ -468,24 +522,26 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         electionCoverImage: '',
         electionCoverImageFile: null,
         candidates: defaultCandidates,
-        startDate: prev.startDate,
-        endDate: prev.endDate,
-        resultRevealAt: prev.resultRevealAt,
-        maxChoices: prev.maxChoices,
-        visibilityMode: prev.visibilityMode,
-        ballotPolicy: prev.ballotPolicy,
-        paymentMode: prev.paymentMode,
-        costPerBallotEth: prev.costPerBallotEth,
-        minKarmaTier: prev.minKarmaTier,
-        resetIntervalValue: prev.resetIntervalValue,
-        resetIntervalUnit: prev.resetIntervalUnit,
-        resultReveal: prev.resultReveal,
+        startDate: settingsSource.startDate,
+        endDate: settingsSource.endDate,
+        resultRevealAt: settingsSource.resultRevealAt,
+        maxChoices: settingsSource.maxChoices,
+        visibilityMode: settingsSource.visibilityMode,
+        ballotPolicy: settingsSource.ballotPolicy,
+        paymentMode: settingsSource.paymentMode,
+        costPerBallotEth: settingsSource.costPerBallotEth,
+        minKarmaTier: settingsSource.minKarmaTier,
+        resetIntervalValue: settingsSource.resetIntervalValue,
+        resetIntervalUnit: settingsSource.resetIntervalUnit,
+        resultReveal: settingsSource.resultReveal,
       }
 
       // sungje : 새 섹션도 단일 생성과 같은 규칙으로 정규화해서 공개투표/유료투표 값이 바로 맞도록 유지한다.
       return {
         ...prev,
-        sections: [...prev.sections, normalizeElectionSettingsDraft(newSection)],
+        sections: prev.sectionPolicyUnified
+          ? unifySectionSettings([...prev.sections, normalizeElectionSettingsDraft(newSection)])
+          : [...prev.sections, normalizeElectionSettingsDraft(newSection)],
         electionTitle: '',
       }
     })
@@ -512,7 +568,9 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
       setDraft((prev) => ({
         ...prev,
         sections: prev.sections.map((section) =>
-          section.id === sectionId ? { ...section, electionCoverImage: image, electionCoverImageFile: imageFile } : section,
+          section.id === sectionId
+            ? { ...section, electionCoverImage: image, electionCoverImageFile: imageFile }
+            : section,
         ),
       }))
     },
@@ -527,11 +585,19 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     ) => {
       setDraft((prev) => ({
         ...prev,
-        sections: prev.sections.map((section) => {
-          if (section.id !== sectionId) return section
+        sections: (prev.sectionPolicyUnified
+          ? unifySectionSettings(
+              prev.sections.map((section) => {
+                if (section.id !== sectionId) return section
 
-          return normalizeElectionSettingsDraft({ ...section, [key]: value })
-        }),
+                return normalizeElectionSettingsDraft({ ...section, [key]: value })
+              }),
+            )
+          : prev.sections.map((section) => {
+              if (section.id !== sectionId) return section
+
+              return normalizeElectionSettingsDraft({ ...section, [key]: value })
+            })) as SectionDraft[],
       }))
     },
     [],
@@ -676,9 +742,10 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         })
       }
 
+      const effectiveSections = getEffectiveSections(draft)
       const electionDrafts: SubmissionUnit[] =
-        draft.sections.length > 0
-          ? draft.sections.map((section) => ({
+        effectiveSections.length > 0
+          ? effectiveSections.map((section) => ({
               title: section.name.trim(),
               settings: section,
               electionCoverImageFile: section.electionCoverImageFile ?? null,

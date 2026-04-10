@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { formatUnits } from 'viem'
-import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain, useWalletClient } from 'wagmi'
+import {
+  useAccount,
+  useChainId,
+  useConnect,
+  useDisconnect,
+  useSwitchChain,
+  useWalletClient,
+} from 'wagmi'
 import accountCircleIcon from '../../assets/account_circle.svg'
 import connectWalletIcon from '../../assets/account_connect_wallet.svg'
 import disconnectWalletIcon from '../../assets/account_disconnect_wallet.svg'
@@ -30,22 +37,14 @@ interface ProfilePanelProps {
 type MenuItem =
   | {
       kind: 'internal'
-      labelKey:
-        | 'pp_my_votes'
-        | 'pp_karma_history'
-        | 'pp_stt_staking'
-        | 'pp_verified_organizer'
+      labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking' | 'pp_verified_organizer'
       icon: string
       bg: string
       to: string
     }
   | {
       kind: 'external'
-      labelKey:
-        | 'pp_my_votes'
-        | 'pp_karma_history'
-        | 'pp_stt_staking'
-        | 'pp_verified_organizer'
+      labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking' | 'pp_verified_organizer'
       icon: string
       bg: string
       href: string

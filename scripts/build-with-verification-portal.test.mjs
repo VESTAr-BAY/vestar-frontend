@@ -11,9 +11,7 @@ import {
 
 describe('redirect rule constants', () => {
   it('portal rule targets verification index', () => {
-    expect(PORTAL_REDIRECT_RULE).toBe(
-      '/vote/verification/* /vote/verification/index.html  200',
-    )
+    expect(PORTAL_REDIRECT_RULE).toBe('/vote/verification/* /vote/verification/index.html  200')
   })
 
   it('SPA rule targets vote index', () => {

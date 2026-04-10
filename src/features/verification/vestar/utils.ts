@@ -43,8 +43,12 @@ export function formatElectionTitle(
     .replace(/\s+/g, ' ')
     .trim()
 
-  return cleaned ||
-    (lang === 'ko' ? `투표 ${truncateAddress(fallbackAddress)}` : `Vote ${truncateAddress(fallbackAddress)}`)
+  return (
+    cleaned ||
+    (lang === 'ko'
+      ? `투표 ${truncateAddress(fallbackAddress)}`
+      : `Vote ${truncateAddress(fallbackAddress)}`)
+  )
 }
 
 export function hasResolvedElectionTitle(
@@ -115,7 +119,10 @@ export function formatHostBadge(
       : 'Organizer'
 }
 
-export function formatStateLabel(state: number, lang: VerificationLang = resolveVerificationLanguage()) {
+export function formatStateLabel(
+  state: number,
+  lang: VerificationLang = resolveVerificationLanguage(),
+) {
   switch (state) {
     case 0:
       return lang === 'ko' ? '시작 전' : 'Scheduled'
@@ -251,7 +258,10 @@ export function makeExplorerUrl(kind: 'address' | 'tx', value: string) {
   return `${STATUS_EXPLORER_URL}/${kind}/${value}`
 }
 
-export function formatDate(timestamp: bigint, lang: VerificationLang = resolveVerificationLanguage()) {
+export function formatDate(
+  timestamp: bigint,
+  lang: VerificationLang = resolveVerificationLanguage(),
+) {
   return new Intl.DateTimeFormat(lang === 'ko' ? 'ko-KR' : 'en-US', {
     month: 'long',
     day: 'numeric',
@@ -262,7 +272,10 @@ export function formatDate(timestamp: bigint, lang: VerificationLang = resolveVe
   }).format(new Date(Number(timestamp) * 1000))
 }
 
-export function formatDateTime(timestamp: bigint, lang: VerificationLang = resolveVerificationLanguage()) {
+export function formatDateTime(
+  timestamp: bigint,
+  lang: VerificationLang = resolveVerificationLanguage(),
+) {
   return new Intl.DateTimeFormat(lang === 'ko' ? 'ko-KR' : 'en-US', {
     month: 'short',
     day: 'numeric',

@@ -124,9 +124,7 @@ export function VoteManagePage() {
       </div>
 
       {/* 현재 투표 현황 */}
-      <VoteResultRankings
-        rankedCandidates={rankedCandidates}
-      />
+      <VoteResultRankings rankedCandidates={rankedCandidates} />
 
       <div className="px-5 py-6 bg-[#F7F8FA] flex flex-col gap-3">
         <button
@@ -139,7 +137,9 @@ export function VoteManagePage() {
         </button>
         <button
           type="button"
-          disabled={isSettlementSettled ? false : isFinalized ? false : Boolean(finalizeBlockingMessage)}
+          disabled={
+            isSettlementSettled ? false : isFinalized ? false : Boolean(finalizeBlockingMessage)
+          }
           onClick={() => {
             if (isSettlementSettled || isFinalized) {
               navigate(`/host/${id}/settlement`)

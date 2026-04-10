@@ -72,7 +72,9 @@ export async function syncVerificationElectionSummaries() {
   const lang = resolveVerificationLanguage()
   const cached = readStoredIndexCache()
   const cachedMap = new Map(
-    (cached?.elections ?? []).map((entry) => [entry.address.toLowerCase(), normalizeElectionSummary(entry)] as const),
+    (cached?.elections ?? []).map(
+      (entry) => [entry.address.toLowerCase(), normalizeElectionSummary(entry)] as const,
+    ),
   )
   const latestBlock = await publicClient.getBlockNumber()
   const createdFromBlock = cached ? BigInt(cached.lastSyncedBlock) + 1n : undefined
@@ -202,7 +204,8 @@ async function hydrateFallbackElectionSummaries(
         seriesTitle: getCandidateManifestSeriesPreimage(candidateManifest) || election.seriesTitle,
         title: getCandidateManifestTitle(candidateManifest) || election.title,
         category: candidateManifest.election?.category ?? election.category,
-        coverImageUrl: getCandidateManifestCoverImageUrl(candidateManifest) ?? election.coverImageUrl,
+        coverImageUrl:
+          getCandidateManifestCoverImageUrl(candidateManifest) ?? election.coverImageUrl,
       }
     }),
   )
@@ -281,10 +284,13 @@ async function loadElectionSummary(
 ): Promise<VerificationElectionSummary | null> {
   const electionAddress = previous.address
   const visibilityHint = context.log?.args.visibilityMode ?? (previous.mode === 'PRIVATE' ? 1 : 0)
-  const createdBlock = context.log?.blockNumber ?? parseStoredBlock(previous.createdBlock, previous.sortBlock)
+  const createdBlock =
+    context.log?.blockNumber ?? parseStoredBlock(previous.createdBlock, previous.sortBlock)
   const eventFromBlock = context.fromBlock ?? createdBlock
   const shouldReadFinalizeLogs =
-    previous.finalizeTransactionHash === (resolveVerificationLanguage() === 'ko' ? '아직 없음' : 'Not available yet') || context.fromBlock !== undefined
+    previous.finalizeTransactionHash ===
+      (resolveVerificationLanguage() === 'ko' ? '아직 없음' : 'Not available yet') ||
+    context.fromBlock !== undefined
 
   const [state, electionId, config, result, revealedPrivateKey, resultLogs, receiptLogs] =
     await Promise.all([
@@ -347,22 +353,22 @@ async function loadElectionSummary(
       : await readResultManifest(result.resultManifestURI, result.resultManifestHash)
 
   const totalReceipts =
-    context.fromBlock === undefined ? receiptLogs.length : previous.receiptCount + receiptLogs.length
+    context.fromBlock === undefined
+      ? receiptLogs.length
+      : previous.receiptCount + receiptLogs.length
   const finalizeLog = resultLogs[resultLogs.length - 1]
   const totalSubmissions = Math.max(totalReceipts, Number(result.totalSubmissions))
   const validVotes = isFinalized ? Number(result.totalValidVotes) : totalReceipts
   const invalidVotes = isFinalized ? Number(result.totalInvalidVotes) : 0
   const hasRevealedPrivateKey =
-    mode === 'PRIVATE' &&
-    Number(state) >= KEY_REVEALED_STATE &&
-    revealedPrivateKey !== '0x'
+    mode === 'PRIVATE' && Number(state) >= KEY_REVEALED_STATE && revealedPrivateKey !== '0x'
   const canDecrypt = hasRevealedPrivateKey && totalReceipts > 0
   const previousTitle = hasResolvedElectionTitle(previous) ? previous.title : null
   const previousDescription =
     previous.description !==
-      (resolveVerificationLanguage() === 'ko'
-        ? '체인에서 선거 정보를 확인하고 있어요.'
-        : 'Reading election data from the chain.')
+    (resolveVerificationLanguage() === 'ko'
+      ? '체인에서 선거 정보를 확인하고 있어요.'
+      : 'Reading election data from the chain.')
       ? previous.description
       : null
   const cachedDetail = readCachedVerificationElectionDetail(electionAddress)
@@ -376,35 +382,32 @@ async function loadElectionSummary(
       resultManifestURI: result.resultManifestURI,
       resultManifestHash: result.resultManifestHash,
     })
-      ? cachedDetail.candidates[0] ?? cachedDetail.topCandidate
+      ? (cachedDetail.candidates[0] ?? cachedDetail.topCandidate)
       : null
   const resultLeader = resultManifest?.results?.[0]
-  const topCandidate =
-    resultLeader
-      ? {
-          key: resultLeader.candidateKey,
-          name:
-            resultLeader.displayName ??
-            formatCandidateName(resultLeader.candidateKey),
-          emoji: pickEmoji(resultLeader.candidateKey),
-          imageUrl:
-            candidateManifest?.candidates.find(
-              (candidate) => candidate.candidateKey === resultLeader.candidateKey,
-            )?.imageUrl ?? null,
-          subtitle:
-            mode === 'OPEN'
-              ? resolveVerificationLanguage() === 'ko'
-                ? '공개 후보'
-                : 'Public candidate'
-              : resolveVerificationLanguage() === 'ko'
-                ? '비공개 후보'
-                : 'Private candidate',
-          votes: resultLeader.votes,
-          percentage: validVotes > 0 ? (resultLeader.votes / validVotes) * 100 : 0,
-        }
-      : totalReceipts === previous.receiptCount
-        ? previous.topCandidate
-        : detailTopCandidate
+  const topCandidate = resultLeader
+    ? {
+        key: resultLeader.candidateKey,
+        name: resultLeader.displayName ?? formatCandidateName(resultLeader.candidateKey),
+        emoji: pickEmoji(resultLeader.candidateKey),
+        imageUrl:
+          candidateManifest?.candidates.find(
+            (candidate) => candidate.candidateKey === resultLeader.candidateKey,
+          )?.imageUrl ?? null,
+        subtitle:
+          mode === 'OPEN'
+            ? resolveVerificationLanguage() === 'ko'
+              ? '공개 후보'
+              : 'Public candidate'
+            : resolveVerificationLanguage() === 'ko'
+              ? '비공개 후보'
+              : 'Private candidate',
+        votes: resultLeader.votes,
+        percentage: validVotes > 0 ? (resultLeader.votes / validVotes) * 100 : 0,
+      }
+    : totalReceipts === previous.receiptCount
+      ? previous.topCandidate
+      : detailTopCandidate
   const manifestTitle = candidateManifest ? getCandidateManifestTitle(candidateManifest) : ''
   const manifestSeriesTitle = candidateManifest
     ? getCandidateManifestSeriesPreimage(candidateManifest)
@@ -440,7 +443,10 @@ async function loadElectionSummary(
         : previous.hostBadge,
     address: electionAddress,
     addressExplorerUrl: makeExplorerUrl('address', electionAddress),
-    endedAtLabel: resolveVerificationLanguage() === 'ko' ? `${formatDate(config.endAt)} 종료` : `Ends ${formatDate(config.endAt)}`,
+    endedAtLabel:
+      resolveVerificationLanguage() === 'ko'
+        ? `${formatDate(config.endAt)} 종료`
+        : `Ends ${formatDate(config.endAt)}`,
     finalizeTransactionHash: finalizeLog?.transactionHash ?? previous.finalizeTransactionHash,
     finalizeExplorerUrl: finalizeLog?.transactionHash
       ? makeExplorerUrl('tx', finalizeLog.transactionHash)

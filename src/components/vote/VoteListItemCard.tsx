@@ -39,11 +39,7 @@ export function VoteListItemCard({ item, onNavigate, isVoted }: VoteListItemCard
         style={!item.imageUrl ? { background: item.emojiColor } : undefined}
       >
         {item.imageUrl ? (
-          <img
-            src={resolveIpfsUrl(item.imageUrl)}
-            alt=""
-            className="h-full w-full object-cover"
-          />
+          <img src={resolveIpfsUrl(item.imageUrl)} alt="" className="h-full w-full object-cover" />
         ) : null}
       </div>
       <div className="flex-1 min-w-0">

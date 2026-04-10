@@ -6,7 +6,10 @@ const FIXED_PAID_DISPLAY_COST = '100'
 const FIXED_PAID_RAW_COST = '100000000'
 
 // sungje : on-chain 저장값(0.066 / 66000)과 화면 표시값(100원)을 분리해서, 컨트랙트 검증 조건을 유지하면서 locale별 문구만 바꿔 보여준다.
-export function formatBallotCostLabel(rawCost: string | number | bigint | null | undefined, lang: Lang) {
+export function formatBallotCostLabel(
+  rawCost: string | number | bigint | null | undefined,
+  lang: Lang,
+) {
   const normalized = String(rawCost ?? '').trim()
 
   if (!normalized || normalized === '0') {

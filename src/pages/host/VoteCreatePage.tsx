@@ -158,9 +158,7 @@ export function VoteCreatePage() {
             sections={draft.sections}
             onUpdateElectionTitle={(value) => updateField('electionTitle', value)}
             onUpdateElectionCoverImage={(value) => updateField('electionCoverImage', value)}
-            onUpdateElectionCoverImageFile={(value) =>
-              updateField('electionCoverImageFile', value)
-            }
+            onUpdateElectionCoverImageFile={(value) => updateField('electionCoverImageFile', value)}
             onAdd={addCandidate}
             onRemove={removeCandidate}
             onUpdate={updateCandidate}
@@ -219,8 +217,10 @@ export function VoteCreatePage() {
               ) : (
                 `Create Votes (${draft.sections.length})`
               )
+            ) : lang === 'ko' ? (
+              '투표 만들기 완료'
             ) : (
-              lang === 'ko' ? '투표 만들기 완료' : 'Create Vote'
+              'Create Vote'
             )
           ) : (
             <>

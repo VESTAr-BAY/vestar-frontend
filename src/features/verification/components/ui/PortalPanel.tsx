@@ -13,14 +13,8 @@ const TONE_CLASS = {
   dark: 'border-white/10 bg-[#13141A] text-white',
 } as const
 
-export function PortalPanel({
-  children,
-  tone = 'surface',
-  className,
-}: PortalPanelProps) {
+export function PortalPanel({ children, tone = 'surface', className }: PortalPanelProps) {
   return (
-    <div className={cn('rounded-[24px] border p-4', TONE_CLASS[tone], className)}>
-      {children}
-    </div>
+    <div className={cn('rounded-[24px] border p-4', TONE_CLASS[tone], className)}>{children}</div>
   )
 }

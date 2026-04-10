@@ -39,6 +39,7 @@ export interface VoteCreateDraft extends ElectionSettingsDraft {
   title: string
   electionTitle: string
   group: string
+  sectionPolicyUnified: boolean
   bannerImage: string
   bannerImageFile?: File | null
   electionCoverImage: string

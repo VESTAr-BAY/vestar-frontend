@@ -94,7 +94,9 @@ function SettingsEditor({
   const isUnlimitedPaid = settings.ballotPolicy === 'UNLIMITED_PAID'
   const allowMultipleChoice = settings.maxChoices > 1 && !isUnlimitedPaid
   const isOpenVote = settings.visibilityMode === 'OPEN'
-  const minKarmaTierValue = karmaTierOptions.some((option) => option.value === settings.minKarmaTier)
+  const minKarmaTierValue = karmaTierOptions.some(
+    (option) => option.value === settings.minKarmaTier,
+  )
     ? settings.minKarmaTier
     : '0'
   const displayedCostPerBallot =
@@ -104,85 +106,89 @@ function SettingsEditor({
         ? UNLIMITED_PAID_COST_PER_BALLOT
         : FIXED_PAID_COST_PER_BALLOT
   const displayedCostPerBallotLabel = formatBallotCostLabel(displayedCostPerBallot, lang)
-  const copy = lang === 'ko'
-    ? {
-        visibilityLabel: '공개 방식',
-        openTitle: '공개 투표',
-        openDescription: '투표 중에도 현재 집계와 순위를 확인할 수 있습니다.',
-        privateTitle: '비공개 투표',
-        privateDescription: '암호화된 투표로 진행되고 종료 후 key reveal 이후 결과를 확인합니다.',
-        startLabel: '시작 일시',
-        endLabel: '종료 일시',
-        openRevealNotice: '공개 투표는 종료되면 바로 닫히고, 결과 공개 기준 시각은 따로 입력하지 않습니다.',
-        revealLabel: '결과 공개 시각',
-        revealHelp: '비공개 투표는 result reveal 시각 이후 key reveal pending 단계로 이동합니다.',
-        ballotPolicyLabel: '투표 정책',
-        onePerElectionTitle: '선거당 1회',
-        onePerElectionDescription: '선거 전체 기간 동안 한 번만 투표할 수 있습니다.',
-        onePerIntervalTitle: '주기마다 1회',
-        onePerIntervalDescription: '설정한 갱신 주기마다 다시 투표할 수 있습니다.',
-        unlimitedPaidTitle: '유료 반복 투표',
-        unlimitedPaidDescription: '결제를 전제로 반복 투표를 허용합니다.',
-        intervalValueLabel: '갱신 주기 값',
-        intervalUnitLabel: '단위',
-        minuteOption: '분',
-        hourOption: '시간',
-        dayOption: '일',
-        noIntervalHelp: '현재 정책에서는 투표권 갱신 주기 설정이 필요 없습니다.',
-        maxChoicesLabel: '한 번에 선택할 인원',
-        maxChoicesOptions: (value: number) => `${value}명`,
-        minRequirementLabel: '참여 조건',
-        minKarmaLabel: '최소 참여 카르마 티어',
-        minKarmaHelp: 'Status Karma 기준으로 참여 가능한 최소 티어를 고를 수 있어요.',
-        paymentLabel: '결제 설정',
-        freeTitle: '무료 투표',
-        freeDescription: '별도 결제 없이 참여할 수 있습니다.',
-        paidTitle: '유료 투표',
-        paidDescription: '투표 1회당 비용을 받고 참여를 허용합니다.',
-        costLabel: '투표 1회당 비용',
-        freeCostHelp: '무료 투표는 비용이 없습니다.',
-        unlimitedPaidCostHelp: `유료 반복 투표는 컨트랙트 규칙상 ${displayedCostPerBallotLabel} 고정 비용으로 생성됩니다.`,
-        fixedPaidCostHelp: '일반 유료 투표는 100으로 고정됩니다.',
-      }
-    : {
-        visibilityLabel: 'Visibility',
-        openTitle: 'Open Vote',
-        openDescription: 'Live totals and rankings stay visible while voting is open.',
-        privateTitle: 'Private Vote',
-        privateDescription: 'Votes stay encrypted and become readable after key reveal.',
-        startLabel: 'Start Time',
-        endLabel: 'End Time',
-        openRevealNotice: 'Open votes close at the end time, so no separate result reveal time is needed.',
-        revealLabel: 'Result Reveal Time',
-        revealHelp: 'Private votes move into key reveal pending after the result reveal time.',
-        ballotPolicyLabel: 'Ballot Policy',
-        onePerElectionTitle: 'One per Election',
-        onePerElectionDescription: 'Each wallet can vote once during the full election period.',
-        onePerIntervalTitle: 'One per Interval',
-        onePerIntervalDescription: 'Voting rights reset on the interval you set below.',
-        unlimitedPaidTitle: 'Unlimited Paid Voting',
-        unlimitedPaidDescription: 'Repeat voting is allowed as long as the fee is paid each time.',
-        intervalValueLabel: 'Interval Value',
-        intervalUnitLabel: 'Unit',
-        minuteOption: 'Minute',
-        hourOption: 'Hour',
-        dayOption: 'Day',
-        noIntervalHelp: 'This policy does not require an interval reset setting.',
-        maxChoicesLabel: 'Selections per Ballot',
-        maxChoicesOptions: (value: number) => `${value} pick${value > 1 ? 's' : ''}`,
-        minRequirementLabel: 'Eligibility',
-        minKarmaLabel: 'Minimum Karma Tier',
-        minKarmaHelp: 'Choose the minimum Status Karma tier required to join this vote.',
-        paymentLabel: 'Payment',
-        freeTitle: 'Free Vote',
-        freeDescription: 'Anyone eligible can join without paying.',
-        paidTitle: 'Paid Vote',
-        paidDescription: 'Participants pay the fee shown below for each ballot.',
-        costLabel: 'Cost per Ballot',
-        freeCostHelp: 'Free votes do not charge a fee.',
-        unlimitedPaidCostHelp: `Unlimited paid voting uses the fixed on-chain cost of ${displayedCostPerBallotLabel}.`,
-        fixedPaidCostHelp: 'Standard paid votes are fixed at 100.',
-      }
+  const copy =
+    lang === 'ko'
+      ? {
+          visibilityLabel: '공개 방식',
+          openTitle: '공개 투표',
+          openDescription: '투표 중에도 현재 집계와 순위를 확인할 수 있습니다.',
+          privateTitle: '비공개 투표',
+          privateDescription: '암호화된 투표로 진행되고 종료 후 key reveal 이후 결과를 확인합니다.',
+          startLabel: '시작 일시',
+          endLabel: '종료 일시',
+          openRevealNotice:
+            '공개 투표는 종료되면 바로 닫히고, 결과 공개 기준 시각은 따로 입력하지 않습니다.',
+          revealLabel: '결과 공개 시각',
+          revealHelp: '비공개 투표는 result reveal 시각 이후 key reveal pending 단계로 이동합니다.',
+          ballotPolicyLabel: '투표 정책',
+          onePerElectionTitle: '선거당 1회',
+          onePerElectionDescription: '선거 전체 기간 동안 한 번만 투표할 수 있습니다.',
+          onePerIntervalTitle: '주기마다 1회',
+          onePerIntervalDescription: '설정한 갱신 주기마다 다시 투표할 수 있습니다.',
+          unlimitedPaidTitle: '유료 반복 투표',
+          unlimitedPaidDescription: '결제를 전제로 반복 투표를 허용합니다.',
+          intervalValueLabel: '갱신 주기 값',
+          intervalUnitLabel: '단위',
+          minuteOption: '분',
+          hourOption: '시간',
+          dayOption: '일',
+          noIntervalHelp: '현재 정책에서는 투표권 갱신 주기 설정이 필요 없습니다.',
+          maxChoicesLabel: '한 번에 선택할 인원',
+          maxChoicesOptions: (value: number) => `${value}명`,
+          minRequirementLabel: '참여 조건',
+          minKarmaLabel: '최소 참여 카르마 티어',
+          minKarmaHelp: 'Status Karma 기준으로 참여 가능한 최소 티어를 고를 수 있어요.',
+          paymentLabel: '결제 설정',
+          freeTitle: '무료 투표',
+          freeDescription: '별도 결제 없이 참여할 수 있습니다.',
+          paidTitle: '유료 투표',
+          paidDescription: '투표 1회당 비용을 받고 참여를 허용합니다.',
+          costLabel: '투표 1회당 비용',
+          freeCostHelp: '무료 투표는 비용이 없습니다.',
+          unlimitedPaidCostHelp: `유료 반복 투표는 컨트랙트 규칙상 ${displayedCostPerBallotLabel} 고정 비용으로 생성됩니다.`,
+          fixedPaidCostHelp: '일반 유료 투표는 100으로 고정됩니다.',
+        }
+      : {
+          visibilityLabel: 'Visibility',
+          openTitle: 'Open Vote',
+          openDescription: 'Live totals and rankings stay visible while voting is open.',
+          privateTitle: 'Private Vote',
+          privateDescription: 'Votes stay encrypted and become readable after key reveal.',
+          startLabel: 'Start Time',
+          endLabel: 'End Time',
+          openRevealNotice:
+            'Open votes close at the end time, so no separate result reveal time is needed.',
+          revealLabel: 'Result Reveal Time',
+          revealHelp: 'Private votes move into key reveal pending after the result reveal time.',
+          ballotPolicyLabel: 'Ballot Policy',
+          onePerElectionTitle: 'One per Election',
+          onePerElectionDescription: 'Each wallet can vote once during the full election period.',
+          onePerIntervalTitle: 'One per Interval',
+          onePerIntervalDescription: 'Voting rights reset on the interval you set below.',
+          unlimitedPaidTitle: 'Unlimited Paid Voting',
+          unlimitedPaidDescription:
+            'Repeat voting is allowed as long as the fee is paid each time.',
+          intervalValueLabel: 'Interval Value',
+          intervalUnitLabel: 'Unit',
+          minuteOption: 'Minute',
+          hourOption: 'Hour',
+          dayOption: 'Day',
+          noIntervalHelp: 'This policy does not require an interval reset setting.',
+          maxChoicesLabel: 'Selections per Ballot',
+          maxChoicesOptions: (value: number) => `${value} pick${value > 1 ? 's' : ''}`,
+          minRequirementLabel: 'Eligibility',
+          minKarmaLabel: 'Minimum Karma Tier',
+          minKarmaHelp: 'Choose the minimum Status Karma tier required to join this vote.',
+          paymentLabel: 'Payment',
+          freeTitle: 'Free Vote',
+          freeDescription: 'Anyone eligible can join without paying.',
+          paidTitle: 'Paid Vote',
+          paidDescription: 'Participants pay the fee shown below for each ballot.',
+          costLabel: 'Cost per Ballot',
+          freeCostHelp: 'Free votes do not charge a fee.',
+          unlimitedPaidCostHelp: `Unlimited paid voting uses the fixed on-chain cost of ${displayedCostPerBallotLabel}.`,
+          fixedPaidCostHelp: 'Standard paid votes are fixed at 100.',
+        }
   const maxChoicesOptions = Array.from({ length: Math.max(candidateCount, 1) }, (_, index) => {
     const value = index + 1
     return { value, label: copy.maxChoicesOptions(value) }
@@ -365,9 +371,7 @@ function SettingsEditor({
           {copy.minRequirementLabel}
         </span>
         <Field label={copy.minKarmaLabel}>
-          <div className={HELPER_TEXT_CLASS}>
-            {copy.minKarmaHelp}
-          </div>
+          <div className={HELPER_TEXT_CLASS}>{copy.minKarmaHelp}</div>
           <select
             value={minKarmaTierValue}
             onChange={(event) => onUpdate('minKarmaTier', event.target.value)}
@@ -454,6 +458,32 @@ function SectionScheduleCard({
   )
 }
 
+function SmallToggle({
+  checked,
+  onChange,
+}: {
+  checked: boolean
+  onChange: (nextChecked: boolean) => void
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+        checked ? 'bg-[#7140FF]' : 'bg-[#D7DBE3]'
+      }`}
+    >
+      <span
+        className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+          checked ? 'translate-x-5' : 'translate-x-1'
+        }`}
+      />
+    </button>
+  )
+}
+
 export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepScheduleProps) {
   const usesSections = draft.sections.length > 0
   const { lang } = useLanguage()
@@ -472,10 +502,14 @@ export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepSche
     }
 
     // sungje : 섹션별 설정이 길어질 때 현재 편집 중인 섹션만 보이도록 탭 상태를 유지한다.
-    if (!activeSectionId || !draft.sections.some((section) => section.id === activeSectionId)) {
+    if (
+      draft.sectionPolicyUnified ||
+      !activeSectionId ||
+      !draft.sections.some((section) => section.id === activeSectionId)
+    ) {
       setActiveSectionId(draft.sections[0]?.id ?? null)
     }
-  }, [activeSectionId, draft.sections, usesSections])
+  }, [activeSectionId, draft.sectionPolicyUnified, draft.sections, usesSections])
 
   if (usesSections) {
     const activeSection =
@@ -489,35 +523,61 @@ export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepSche
     return (
       <div className="px-5 py-6 flex flex-col gap-6">
         <div className="rounded-2xl border border-[#E7E9ED] bg-white px-4 py-4">
-          <div className="text-[14px] font-semibold text-[#090A0B]">
-            {lang === 'ko' ? '섹션별 투표 생성' : 'Create Votes by Section'}
+          <div>
+            <div className="text-[14px] font-semibold text-[#090A0B]">
+              {lang === 'ko' ? '섹션별 투표 생성' : 'Create Votes by Section'}
+            </div>
+            <div className="mt-1 text-[12px] text-[#707070]">
+              {lang === 'ko'
+                ? '각 섹션은 독립된 election으로 생성되고, 아래 정책도 섹션별로 각각 서명/제출됩니다.'
+                : 'Each section becomes an independent election, and the settings below are signed and submitted separately.'}
+            </div>
           </div>
-          <div className="mt-1 text-[12px] text-[#707070]">
-            {lang === 'ko'
-              ? '각 섹션은 독립된 election으로 생성되고, 아래 정책도 섹션별로 각각 서명/제출됩니다.'
-              : 'Each section becomes an independent election, and the settings below are signed and submitted separately.'}
+          <div className="mt-3 rounded-2xl border border-dashed border-[#E7E9ED] bg-[#FCFCFD] px-3 py-3 text-[12px] text-[#707070]">
+            {draft.sectionPolicyUnified
+              ? lang === 'ko'
+                ? '정책 통일이 켜져 있어 섹션 1 설정이 모든 섹션 생성 트랜잭션에 동일하게 반영됩니다.'
+                : 'Same Policy is on, so Section 1 settings are reused for every section creation transaction.'
+              : lang === 'ko'
+                ? '정책 통일이 꺼져 있어 각 섹션 정책을 개별적으로 설정하고 서명합니다.'
+                : 'Same Policy is off, so each section keeps its own settings and signature flow.'}
           </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {draft.sections.map((section, index) => {
-            const selected = section.id === activeSection.id
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1">
+            {draft.sections.map((section, index) => {
+              const selected = section.id === activeSection.id
+              const disabled = draft.sectionPolicyUnified && index > 0
 
-            return (
-              <button
-                key={section.id}
-                type="button"
-                onClick={() => setActiveSectionId(section.id)}
-                className={`shrink-0 rounded-full border px-4 py-2 text-[13px] font-semibold transition-all ${
-                  selected
-                    ? 'border-[#7140FF] bg-[#7140FF] text-white'
-                    : 'border-[#E7E9ED] bg-white text-[#707070]'
-                }`}
-              >
-                {lang === 'ko' ? `섹션 ${index + 1}` : `Section ${index + 1}`}
-              </button>
-            )
-          })}
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => setActiveSectionId(section.id)}
+                  className={`shrink-0 rounded-full border px-4 py-2 text-[13px] font-semibold transition-all ${
+                    selected
+                      ? 'border-[#7140FF] bg-[#7140FF] text-white'
+                      : disabled
+                        ? 'border-[#E7E9ED] bg-[#F7F8FA] text-[#C0C4CC]'
+                        : 'border-[#E7E9ED] bg-white text-[#707070]'
+                  } disabled:cursor-not-allowed`}
+                >
+                  {lang === 'ko' ? `섹션 ${index + 1}` : `Section ${index + 1}`}
+                </button>
+              )
+            })}
+          </div>
+          <div className="flex shrink-0 items-center gap-2 rounded-full border border-[#E7E9ED] bg-[#F7F8FA] px-2.5 py-1.5">
+            <span className="text-[11px] font-semibold text-[#707070]">
+              {lang === 'ko' ? '정책 통일' : 'Same Policy'}
+            </span>
+            <SmallToggle
+              checked={draft.sectionPolicyUnified}
+              onChange={(nextChecked) => onUpdate('sectionPolicyUnified', nextChecked)}
+            />
+          </div>
         </div>
 
         <SectionScheduleCard
@@ -536,9 +596,7 @@ export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepSche
         settings={draft}
         candidateCount={draft.candidates.length}
         onUpdate={handleUpdateSingleField}
-        title={
-          draft.electionTitle || (lang === 'ko' ? '투표 이름 미입력' : 'Untitled vote')
-        }
+        title={draft.electionTitle || (lang === 'ko' ? '투표 이름 미입력' : 'Untitled vote')}
         description={
           lang === 'ko'
             ? '단일 투표 모드에서는 아래 설정이 하나의 election에 그대로 반영됩니다.'

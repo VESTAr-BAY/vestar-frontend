@@ -48,8 +48,12 @@ export function HostFinalTallyPage() {
   const { id = '1' } = useParams()
   const navigate = useNavigate()
   const { vote, isLoading: isVoteLoading } = useVoteDetail(id)
-  const { result, totalSubmissions, totalInvalidVotes, isLoading: isResultLoading } =
-    useVoteLiveTally(id)
+  const {
+    result,
+    totalSubmissions,
+    totalInvalidVotes,
+    isLoading: isResultLoading,
+  } = useVoteLiveTally(id)
   const { addToast } = useToast()
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient({ chainId: vestarStatusTestnetChain.id })

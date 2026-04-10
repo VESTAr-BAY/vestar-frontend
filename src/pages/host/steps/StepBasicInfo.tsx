@@ -19,7 +19,8 @@ function VoteHeroPreview({
   lang: 'en' | 'ko'
 }) {
   const previewTitle =
-    title.trim() || (lang === 'ko' ? '시리즈명이 여기에 표시됩니다' : 'Your series name appears here')
+    title.trim() ||
+    (lang === 'ko' ? '시리즈명이 여기에 표시됩니다' : 'Your series name appears here')
 
   return (
     <div className="overflow-hidden rounded-[28px] border border-[#E7E9ED] bg-white shadow-[0_14px_40px_rgba(9,10,11,0.08)]">
@@ -170,7 +171,6 @@ export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoPr
           ))}
         </div>
       </div>
-
     </div>
   )
 }

@@ -40,6 +40,7 @@ describe('useCreateVoteDraft', () => {
 
     expect(result.current.step).toBe(1)
     expect(result.current.draft.visibilityMode).toBe('PRIVATE')
+    expect(result.current.draft.sectionPolicyUnified).toBe(true)
     expect(result.current.draft.candidates).toHaveLength(2)
     expect(result.current.draft.group).toBe('')
   })
@@ -99,5 +100,55 @@ describe('useCreateVoteDraft', () => {
     act(() => result.current.updateField('paymentMode', 'PAID'))
 
     expect(result.current.draft.costPerBallotEth).toBe('100')
+  })
+
+  it('syncs all section settings from section 1 when section policy unified is on', () => {
+    const { result } = renderHook(() => useCreateVoteDraft())
+
+    act(() => {
+      result.current.addSection()
+      result.current.addSection()
+    })
+
+    const [firstSection, secondSection] = result.current.draft.sections
+
+    act(() =>
+      result.current.updateSectionField(firstSection.id, 'ballotPolicy', 'ONE_PER_INTERVAL'),
+    )
+    act(() => result.current.updateSectionField(firstSection.id, 'resetIntervalValue', '6'))
+    act(() => result.current.updateSectionField(firstSection.id, 'resetIntervalUnit', 'HOUR'))
+    act(() => result.current.updateSectionField(firstSection.id, 'visibilityMode', 'OPEN'))
+
+    const syncedSecondSection =
+      result.current.draft.sections.find((section) => section.id === secondSection.id) ??
+      secondSection
+
+    expect(syncedSecondSection.ballotPolicy).toBe('ONE_PER_INTERVAL')
+    expect(syncedSecondSection.resetIntervalValue).toBe('6')
+    expect(syncedSecondSection.resetIntervalUnit).toBe('HOUR')
+    expect(syncedSecondSection.visibilityMode).toBe('OPEN')
+    expect(syncedSecondSection.resultRevealAt).toBe(syncedSecondSection.endDate)
+  })
+
+  it('keeps per-section settings independent when section policy unified is off', () => {
+    const { result } = renderHook(() => useCreateVoteDraft())
+
+    act(() => {
+      result.current.addSection()
+      result.current.addSection()
+      result.current.updateField('sectionPolicyUnified', false)
+    })
+
+    const [firstSection, secondSection] = result.current.draft.sections
+
+    act(() =>
+      result.current.updateSectionField(firstSection.id, 'ballotPolicy', 'ONE_PER_INTERVAL'),
+    )
+
+    const untouchedSecondSection =
+      result.current.draft.sections.find((section) => section.id === secondSection.id) ??
+      secondSection
+
+    expect(untouchedSecondSection.ballotPolicy).toBe('ONE_PER_ELECTION')
   })
 })

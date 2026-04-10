@@ -21,6 +21,7 @@ const INITIAL_DRAFT: VoteCreateDraft = {
   title: '',
   electionTitle: '',
   group: '',
+  sectionPolicyUnified: true,
   bannerImage: '',
   bannerImageFile: null,
   electionCoverImage: '',
@@ -81,6 +82,7 @@ export function useEditVoteDraft(id: string) {
         title: vote.org || '',
         electionTitle: vote.title,
         group: vote.host || '',
+        sectionPolicyUnified: true,
         bannerImage: '', // Mock doesn't have it
         bannerImageFile: null,
         electionCoverImage: vote.imageUrl || '',

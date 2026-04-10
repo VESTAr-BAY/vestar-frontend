@@ -138,9 +138,7 @@ export function VoteEditPage() {
             sections={draft.sections}
             onUpdateElectionTitle={(value) => updateField('electionTitle', value)}
             onUpdateElectionCoverImage={(value) => updateField('electionCoverImage', value)}
-            onUpdateElectionCoverImageFile={(value) =>
-              updateField('electionCoverImageFile', value)
-            }
+            onUpdateElectionCoverImageFile={(value) => updateField('electionCoverImageFile', value)}
             onAdd={addCandidate}
             onRemove={removeCandidate}
             onUpdate={updateCandidate}

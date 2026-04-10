@@ -75,15 +75,36 @@ export function HostDashboardPage() {
       {/* Header strip */}
       <div className="bg-[#13141A] px-5 pt-[calc(56px+24px)] pb-8 relative overflow-hidden -mt-14">
         {/* Decorative: large circle ring — top-right */}
-        <svg aria-hidden="true" className="pointer-events-none absolute -right-12 -top-12 opacity-[0.10]" width="200" height="200" viewBox="0 0 200 200" fill="none">
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-12 -top-12 opacity-[0.10]"
+          width="200"
+          height="200"
+          viewBox="0 0 200 200"
+          fill="none"
+        >
           <circle cx="100" cy="100" r="92" stroke="#7140FF" strokeWidth="10" />
         </svg>
         {/* Decorative: dotted arc — bottom-left */}
-        <svg aria-hidden="true" className="pointer-events-none absolute -bottom-6 -left-6 opacity-[0.08]" width="120" height="120" viewBox="0 0 120 120" fill="none">
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-6 -left-6 opacity-[0.08]"
+          width="120"
+          height="120"
+          viewBox="0 0 120 120"
+          fill="none"
+        >
           <circle cx="60" cy="60" r="52" stroke="#7140FF" strokeWidth="5" strokeDasharray="4 8" />
         </svg>
         {/* Decorative: sparkle star */}
-        <svg aria-hidden="true" className="pointer-events-none absolute right-8 top-[calc(56px+28px)] opacity-[0.25] animate-pulse" width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute right-8 top-[calc(56px+28px)] opacity-[0.25] animate-pulse"
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="none"
+        >
           <path d="M7 0L8.3 5.7L14 7L8.3 8.3L7 14L5.7 8.3L0 7L5.7 5.7Z" fill="#a78bff" />
         </svg>
         {/* Bottom separator */}
@@ -92,7 +113,9 @@ export function HostDashboardPage() {
         <div className="relative">
           <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-[#7140FF]/30 bg-[rgba(113,64,255,0.12)] px-3 py-[5px]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#a78bff]" />
-            <span className="font-mono text-[10px] font-bold uppercase tracking-[1.2px] text-[#a78bff]">Host Dashboard</span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[1.2px] text-[#a78bff]">
+              Host Dashboard
+            </span>
           </span>
           <h1 className="mb-2 text-[26px] font-bold tracking-tight leading-tight text-white">
             {t('hd_title')}
