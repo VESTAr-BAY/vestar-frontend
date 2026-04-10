@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router'
 import { useEditVoteDraft } from '../../hooks/host/useEditVoteDraft'
+import { useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
 import { StepBasicInfo } from './steps/StepBasicInfo'
 import { StepCandidates } from './steps/StepCandidates'
 import { useToast } from '../../providers/ToastProvider'
@@ -59,6 +60,7 @@ function LoadingSkeleton() {
 export function VoteEditPage() {
   const { id = '1' } = useParams()
   const navigate = useNavigate()
+  const navigateBack = useSmartBackNavigation(`/host/manage/${id}`)
   const { addToast } = useToast()
   const {
     isLoading,
@@ -101,7 +103,7 @@ export function VoteEditPage() {
         <button
           type="button"
           aria-label="뒤로가기"
-          onClick={() => (step === 1 ? navigate(`/host/manage/${id}`) : prevStep())}
+          onClick={() => (step === 1 ? navigateBack() : prevStep())}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.08] hover:bg-white/[0.14] transition-colors flex-shrink-0"
         >
           <svg

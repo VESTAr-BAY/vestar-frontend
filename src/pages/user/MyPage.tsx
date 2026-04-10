@@ -4,6 +4,7 @@ import completeVoteIcon from '../../assets/complete_vote.svg'
 import karmaIcon from '../../assets/karma.svg'
 import { useMyKarma } from '../../hooks/user/useMyKarma'
 import { useMyVotes } from '../../hooks/user/useMyVotes'
+import { useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { BadgeVariant, KarmaEvent, KarmaEventType, MyVoteItem } from '../../types/user'
 
@@ -166,6 +167,7 @@ function KarmaHistoryList({ events, total }: { events: KarmaEvent[]; total: numb
 export function MyPage() {
   const { address, isConnected } = useAccount()
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigateBack = useSmartBackNavigation('/vote')
   const tab = searchParams.get('tab') === 'karma' ? 'karma' : 'votes'
   const { t } = useLanguage()
 
@@ -175,6 +177,27 @@ export function MyPage() {
   return (
     <div className="min-h-screen pb-24">
       <div className="relative h-[17.5rem] -mt-14 overflow-hidden bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] px-5 pb-5 pt-[calc(56px+14px)]">
+        <button
+          type="button"
+          aria-label={t('btn_back')}
+          onClick={navigateBack}
+          className="absolute left-5 top-[calc(56px+8px)] z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-[#13141A] shadow-sm backdrop-blur-sm transition-colors hover:bg-white"
+        >
+          <svg
+            aria-hidden="true"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+        </button>
+
         {/* Decorative: large circle ring — top-right */}
         <svg aria-hidden="true" className="pointer-events-none absolute -right-12 -top-12 opacity-[0.08]" width="200" height="200" viewBox="0 0 200 200" fill="none">
           <circle cx="100" cy="100" r="92" stroke="#7140FF" strokeWidth="10" />

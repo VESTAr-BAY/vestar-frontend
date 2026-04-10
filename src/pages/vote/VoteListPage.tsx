@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 import completeVoteIcon from "../../assets/complete_vote.svg";
 import verifiedIcon from "../../assets/verified.svg";
 import { HotCardSkeleton } from "../../components/shared/HotCardSkeleton";
@@ -370,12 +370,7 @@ function SeriesVoteCard({
 }
 
 export function VoteListPage() {
-  const [activeCategory, setActiveCategory] = useState<HomeCategoryFilter>("all")
-  const [seriesTab, setSeriesTab] = useState<'active' | 'ended'>('active')
-  const [activeVisibilityFilter, setActiveVisibilityFilter] = useState<'all' | 'OPEN' | 'PRIVATE'>(
-    'all',
-  )
-  const [activePaymentFilter, setActivePaymentFilter] = useState<'all' | 'FREE' | 'PAID'>('all')
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { isVoted } = useVotedVotes()
   const { isLoading: isHotLoading, hotVotes } = useVoteList()
@@ -388,7 +383,41 @@ export function VoteListPage() {
     loadMore,
   } = useInfiniteVotes()
   const { t, lang } = useLanguage()
+  const activeCategory = useMemo<HomeCategoryFilter>(() => {
+    const category = searchParams.get('category')
+    return FILTER_CHIPS.some((chip) => chip.filter === category)
+      ? (category as HomeCategoryFilter)
+      : 'all'
+  }, [searchParams])
+  const seriesTab = searchParams.get('tab') === 'ended' ? 'ended' : 'active'
+  const activeVisibilityFilter =
+    searchParams.get('visibility') === 'OPEN' || searchParams.get('visibility') === 'PRIVATE'
+      ? (searchParams.get('visibility') as 'OPEN' | 'PRIVATE')
+      : 'all'
+  const activePaymentFilter =
+    searchParams.get('payment') === 'FREE' || searchParams.get('payment') === 'PAID'
+      ? (searchParams.get('payment') as 'FREE' | 'PAID')
+      : 'all'
   const heroCopy = getHeroCopy(activeCategory, lang)
+  const updateFilters = (next: {
+    category?: HomeCategoryFilter
+    tab?: 'active' | 'ended'
+    visibility?: 'all' | 'OPEN' | 'PRIVATE'
+    payment?: 'all' | 'FREE' | 'PAID'
+  }) => {
+    const params = new URLSearchParams(searchParams)
+    const category = next.category ?? activeCategory
+    const tab = next.tab ?? seriesTab
+    const visibility = next.visibility ?? activeVisibilityFilter
+    const payment = next.payment ?? activePaymentFilter
+
+    category === 'all' ? params.delete('category') : params.set('category', category)
+    tab === 'active' ? params.delete('tab') : params.set('tab', tab)
+    visibility === 'all' ? params.delete('visibility') : params.set('visibility', visibility)
+    payment === 'all' ? params.delete('payment') : params.set('payment', payment)
+
+    setSearchParams(params, { replace: true })
+  }
   const activeVisibilityChips = [
     { key: 'all' as const, label: lang === 'ko' ? '전체' : 'All' },
     { key: 'OPEN' as const, label: 'OPEN' },
@@ -532,7 +561,7 @@ export function VoteListPage() {
             <button
               key={filter}
               type="button"
-              onClick={() => setActiveCategory(filter)}
+              onClick={() => updateFilters({ category: filter })}
               className={`inline-flex items-center px-[14px] py-[6px] rounded-[20px] text-[13px] font-medium whitespace-nowrap cursor-pointer transition-all flex-shrink-0 border ${
                 activeCategory === filter
                   ? "bg-[#7140FF] text-white border-[#7140FF]"
@@ -578,7 +607,7 @@ export function VoteListPage() {
             <div className="inline-flex w-fit self-start rounded-full bg-[#F4F5F7] p-1">
               <button
                 type="button"
-                onClick={() => setSeriesTab('active')}
+                onClick={() => updateFilters({ tab: 'active' })}
                 className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
                   seriesTab === 'active'
                     ? 'bg-white text-[#090A0B] shadow-[0_4px_12px_rgba(15,23,42,0.08)]'
@@ -589,7 +618,7 @@ export function VoteListPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setSeriesTab('ended')}
+                onClick={() => updateFilters({ tab: 'ended' })}
                 className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
                   seriesTab === 'ended'
                     ? 'bg-white text-[#090A0B] shadow-[0_4px_12px_rgba(15,23,42,0.08)]'
@@ -609,7 +638,7 @@ export function VoteListPage() {
                     <button
                       key={chip.key}
                       type="button"
-                      onClick={() => setActiveVisibilityFilter(chip.key)}
+                      onClick={() => updateFilters({ visibility: chip.key })}
                       className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
                         activeVisibilityFilter === chip.key
                           ? 'border-[#7140FF] bg-[#F0EDFF] text-[#7140FF]'
@@ -630,7 +659,7 @@ export function VoteListPage() {
                     <button
                       key={chip.key}
                       type="button"
-                      onClick={() => setActivePaymentFilter(chip.key)}
+                      onClick={() => updateFilters({ payment: chip.key })}
                       className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
                         activePaymentFilter === chip.key
                           ? 'border-[#7140FF] bg-[#F0EDFF] text-[#7140FF]'
