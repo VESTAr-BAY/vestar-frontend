@@ -11,23 +11,6 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
-function getKarmaTier(karma: number): {
-  label: string
-  color: string
-} {
-  if (karma >= 100000000) return { label: 'Legendary', color: '#F59E0B' }
-  if (karma >= 5000000) return { label: 'S-Tier', color: '#22d3ee' }
-  if (karma >= 500000) return { label: 'High-Throughput', color: '#06b6d4' }
-  if (karma >= 100000) return { label: 'Pro User', color: '#818cf8' }
-  if (karma >= 20000) return { label: 'Power User', color: '#f97316' }
-  if (karma >= 5000) return { label: 'Regular', color: '#eab308' }
-  if (karma >= 500) return { label: 'Active', color: '#7140FF' }
-  if (karma >= 50) return { label: 'Basic', color: '#3b82f6' }
-  if (karma >= 2) return { label: 'Newbie', color: '#22c55e' }
-  if (karma >= 1) return { label: 'Entry', color: '#9CA3AF' }
-  return { label: '—', color: '#707070' }
-}
-
 const BADGE_STYLES: Record<BadgeVariant, string> = {
   live: 'bg-[rgba(34,197,94,0.12)] text-[#16a34a]',
   hot: 'bg-[rgba(239,68,68,0.10)] text-[#dc2626]',
@@ -187,8 +170,7 @@ export function MyPage() {
   const { t } = useLanguage()
 
   const { votes, isLoading: isVotesLoading } = useMyVotes()
-  const { events, total } = useMyKarma()
-  const tier = getKarmaTier(total)
+  const { events, total, tier } = useMyKarma()
 
   return (
     <div className="min-h-screen pb-24">

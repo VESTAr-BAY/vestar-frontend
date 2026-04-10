@@ -14,7 +14,7 @@ const STRINGS = {
   btn_back: { en: 'Back', ko: '뒤로' },
   btn_profile: { en: 'Profile', ko: '프로필' },
   btn_share: { en: 'Share', ko: '공유' },
-  btn_hold: { en: 'Create poll', ko: '투표 생성' },
+  btn_hold: { en: 'Create poll', ko: '주최하기' },
   btn_update_version: { en: 'Update Version', ko: '버전 업데이트' },
 
   // ── Search overlay ──────────────────────────────────────────────────────────

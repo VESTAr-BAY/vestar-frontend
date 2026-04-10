@@ -17,6 +17,7 @@ import {
   mintMockUsdt,
   waitForVestarTransactionReceipt,
 } from '../../contracts/vestar/actions'
+import { useMyKarma } from '../../hooks/user/useMyKarma'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
@@ -88,23 +89,6 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
-function getKarmaTier(karma: number): {
-  label: string
-  color: string
-} {
-  if (karma >= 100000000) return { label: 'Legendary', color: '#F59E0B' }
-  if (karma >= 5000000) return { label: 'S-Tier', color: '#22d3ee' }
-  if (karma >= 500000) return { label: 'High-Throughput', color: '#06b6d4' }
-  if (karma >= 100000) return { label: 'Pro User', color: '#818cf8' }
-  if (karma >= 20000) return { label: 'Power User', color: '#f97316' }
-  if (karma >= 5000) return { label: 'Regular', color: '#eab308' }
-  if (karma >= 500) return { label: 'Active', color: '#7140FF' }
-  if (karma >= 50) return { label: 'Basic', color: '#3b82f6' }
-  if (karma >= 2) return { label: 'Newbie', color: '#22c55e' }
-  if (karma >= 1) return { label: 'Entry', color: '#9CA3AF' }
-  return { label: '—', color: '#707070' }
-}
-
 function formatMockUsdtBalance(balance: bigint): string {
   const [whole, fraction = ''] = formatUnits(balance, 6).split('.')
   const wholeWithCommas = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
@@ -127,12 +111,11 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   const navigate = useNavigate()
   const { t, lang, toggleLang } = useLanguage()
   const { addToast } = useToast()
+  const { tier } = useMyKarma()
   const [isMintingMockUsdt, setIsMintingMockUsdt] = useState(false)
   const [mockUsdtBalance, setMockUsdtBalance] = useState('—')
 
-  const karma = isConnected ? 2480 : 0
   const votes = isConnected ? 14 : 0
-  const tier = getKarmaTier(karma)
   const verificationPortalPath = `${import.meta.env.BASE_URL}verification`
 
   useEffect(() => {
