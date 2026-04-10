@@ -179,7 +179,7 @@ export function GroupedCandidateSection({
   isEnded,
   votedCandidateIds,
 }: GroupedCandidateSectionProps) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   return (
     <div className="mx-5 mt-5 flex flex-col gap-6">
       {sections.map((section, idx) => {
@@ -197,7 +197,7 @@ export function GroupedCandidateSection({
                 </span>
               </div>
               <span className="text-[11px] bg-[#F0EDFF] text-[#7140FF] px-2.5 py-1 rounded-full font-medium">
-                {feeLabel ?? (resultPublic ? '공개' : '비공개')}
+                {feeLabel ?? (resultPublic ? (lang === 'ko' ? '공개' : 'Public') : lang === 'ko' ? '비공개' : 'Private')}
               </span>
             </div>
 

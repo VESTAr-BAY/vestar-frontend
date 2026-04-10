@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../../../../providers/LanguageProvider'
 import type { VerificationReceipt } from '../../vestar'
 import { truncateMiddle } from '../../vestar/utils'
 import { PortalButton } from '../ui/PortalButton'
@@ -12,6 +13,7 @@ type PrivateReceiptCardProps = {
 }
 
 export function PrivateReceiptCard({ order, receipt, canDecrypt }: PrivateReceiptCardProps) {
+  const { lang } = useLanguage()
   const [showDecrypted, setShowDecrypted] = useState(false)
   const [showFullEncryptedBallot, setShowFullEncryptedBallot] = useState(false)
   const truncatedEncryptedBallot = receipt.encryptedBallot
@@ -41,21 +43,29 @@ export function PrivateReceiptCard({ order, receipt, canDecrypt }: PrivateReceip
           <div className="mt-2 text-[12px] leading-[1.5] text-[#707070]">{receipt.submittedAtLabel}</div>
         </div>
         <PortalPill tone="success" size="sm">
-          제출 완료
+          {lang === 'ko' ? '제출 완료' : 'Submitted'}
         </PortalPill>
       </div>
 
       <PortalPanel tone="muted" className="mt-3 rounded-[20px] px-3 py-3">
-        <div className="text-[12px] text-[#707070]">암호문</div>
+        <div className="text-[12px] text-[#707070]">{lang === 'ko' ? '암호문' : 'Ciphertext'}</div>
         <div className="mt-1 flex items-center justify-between gap-2">
-          <div className="text-[13px] font-semibold text-[#090A0B]">체인에 남은 암호문</div>
+          <div className="text-[13px] font-semibold text-[#090A0B]">
+            {lang === 'ko' ? '체인에 남은 암호문' : 'Ciphertext stored on chain'}
+          </div>
           {canExpandEncryptedBallot ? (
             <button
               type="button"
               onClick={() => setShowFullEncryptedBallot((current) => !current)}
               className="shrink-0 rounded-full border border-[#D8DCEF] px-2 py-1 text-[10px] font-semibold leading-none text-[#5C4FE5] transition-colors duration-200 hover:border-[#7140FF] hover:text-[#7140FF]"
             >
-              {showFullEncryptedBallot ? '접기' : '전체보기'}
+              {showFullEncryptedBallot
+                ? lang === 'ko'
+                  ? '접기'
+                  : 'Collapse'
+                : lang === 'ko'
+                  ? '전체보기'
+                  : 'Expand'}
             </button>
           ) : null}
         </div>
@@ -64,7 +74,9 @@ export function PrivateReceiptCard({ order, receipt, canDecrypt }: PrivateReceip
             ? showFullEncryptedBallot
               ? receipt.encryptedBallot
               : truncatedEncryptedBallot
-            : '암호문을 불러오지 못했어요'}
+            : lang === 'ko'
+              ? '암호문을 불러오지 못했어요'
+              : 'Failed to load the ciphertext'}
         </div>
       </PortalPanel>
 
@@ -78,18 +90,32 @@ export function PrivateReceiptCard({ order, receipt, canDecrypt }: PrivateReceip
           fullWidth
           size="sm"
         >
-          {showDecrypted ? '되돌리기' : canDecrypt ? '암호 풀기' : '개인키 공개 전'}
+          {showDecrypted
+            ? lang === 'ko'
+              ? '되돌리기'
+              : 'Hide decrypted'
+            : canDecrypt
+              ? lang === 'ko'
+                ? '암호 풀기'
+                : 'Decrypt'
+              : lang === 'ko'
+                ? '개인키 공개 전'
+                : 'Before key reveal'}
         </PortalButton>
         <PortalButton href={receipt.walletExplorerUrl} fullWidth size="sm">
-          블록체인에서 보기
+          {lang === 'ko' ? '블록체인에서 보기' : 'View on blockchain'}
         </PortalButton>
       </div>
 
       {showDecrypted ? (
         receipt.selections.length > 0 ? (
           <PortalPanel tone="muted" className="mt-3 rounded-[20px] bg-[#FFF8F3] px-3 py-3">
-            <div className="text-[12px] text-[#707070]">암호문을 푼 뒤</div>
-            <div className="mt-1 text-[13px] font-semibold text-[#090A0B]">이 표가 뽑은 후보</div>
+            <div className="text-[12px] text-[#707070]">
+              {lang === 'ko' ? '암호문을 푼 뒤' : 'After decryption'}
+            </div>
+            <div className="mt-1 text-[13px] font-semibold text-[#090A0B]">
+              {lang === 'ko' ? '이 표가 뽑은 후보' : 'Candidate chosen by this ballot'}
+            </div>
             <div className="mt-2 flex flex-wrap gap-2">
               {receipt.selections.map((selection) => (
                 <PortalPill key={`${receipt.id}-${selection.key}`} tone="neutral" size="sm">
@@ -100,19 +126,27 @@ export function PrivateReceiptCard({ order, receipt, canDecrypt }: PrivateReceip
           </PortalPanel>
         ) : (
           <PortalPanel tone="muted" className="mt-3 rounded-[20px] bg-[#FFF8F3] px-3 py-3">
-            <div className="text-[12px] text-[#707070]">암호문을 푼 뒤</div>
+            <div className="text-[12px] text-[#707070]">
+              {lang === 'ko' ? '암호문을 푼 뒤' : 'After decryption'}
+            </div>
             <div className="mt-1 text-[13px] font-semibold text-[#090A0B]">
-              아직 자동으로 풀 수 있는 형식이 아니에요
+              {lang === 'ko'
+                ? '아직 자동으로 풀 수 있는 형식이 아니에요'
+                : 'This format cannot be decrypted automatically yet'}
             </div>
             <div className="mt-2 text-[12px] leading-[1.65] text-[#707070]">
-              공개된 키는 확인됐지만, 현재 포털이 이 암호문 포맷을 자동으로 해독하지 못하고 있어요.
+              {lang === 'ko'
+                ? '공개된 키는 확인됐지만, 현재 포털이 이 암호문 포맷을 자동으로 해독하지 못하고 있어요.'
+                : 'The revealed key is available, but the portal does not yet support automatic decoding for this ciphertext format.'}
             </div>
           </PortalPanel>
         )
       ) : null}
 
       <PortalPanel tone="muted" className="mt-3 rounded-[20px] px-3 py-3">
-        <div className="text-[12px] text-[#707070]">트랜잭션 확인값</div>
+        <div className="text-[12px] text-[#707070]">
+          {lang === 'ko' ? '트랜잭션 확인값' : 'Transaction hash'}
+        </div>
         <div className="mt-1 break-all font-mono text-[11px] leading-[1.65] text-[#090A0B]">
           {receipt.transactionHash}
         </div>

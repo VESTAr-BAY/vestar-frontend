@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { getStr, type Lang, type StringKey } from '../i18n'
+import { LANGUAGE_STORAGE_KEY, resolveStoredLanguage } from '../utils/language'
 
 interface LanguageContextValue {
   lang: Lang
@@ -15,11 +16,19 @@ const LanguageContext = createContext<LanguageContextValue>({
 })
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>('en')
+  const [lang, setLang] = useState<Lang>(resolveStoredLanguage)
 
   const toggleLang = useCallback(() => {
     setLang((prev) => (prev === 'en' ? 'ko' : 'en'))
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang)
+  }, [lang])
 
   const t = useCallback((key: StringKey) => getStr(key, lang), [lang])
 

@@ -16,6 +16,7 @@ import {
   pickEmoji,
   truncateAddress,
 } from './utils'
+import { resolveVerificationLanguage } from './language'
 
 export async function loadOpenReceipts(
   electionAddress: Address,
@@ -111,6 +112,7 @@ export function buildOpenCandidates(
   receipts: VerificationReceipt[],
   candidateManifest: CandidateManifest | null,
 ) {
+  const lang = resolveVerificationLanguage()
   const totalVotes = receipts.reduce((sum, receipt) => sum + receipt.selections.length, 0)
   const tallies = new Map<
     string,
@@ -122,7 +124,7 @@ export function buildOpenCandidates(
       key: candidate.candidateKey,
       name: candidate.displayName ?? formatCandidateName(candidate.candidateKey),
       emoji: candidate.emoji ?? pickEmoji(candidate.candidateKey),
-      subtitle: '공개 후보',
+      subtitle: lang === 'ko' ? '공개 후보' : 'Public candidate',
       votes: 0,
     })
   })
@@ -133,7 +135,7 @@ export function buildOpenCandidates(
         key: selection.key,
         name: selection.name,
         emoji: selection.emoji,
-        subtitle: '공개 후보',
+        subtitle: lang === 'ko' ? '공개 후보' : 'Public candidate',
         votes: 0,
       }
       current.votes += 1
@@ -154,6 +156,7 @@ export function buildPrivateCandidates(
   receipts: VerificationReceipt[],
   candidateManifest: CandidateManifest | null,
 ) {
+  const lang = resolveVerificationLanguage()
   const totalVotes = receipts.reduce((sum, receipt) => sum + receipt.selections.length, 0)
   const tallies = new Map<
     string,
@@ -165,7 +168,7 @@ export function buildPrivateCandidates(
       key: candidate.candidateKey,
       name: candidate.displayName ?? formatCandidateName(candidate.candidateKey),
       emoji: candidate.emoji ?? '🔐',
-      subtitle: '비공개 후보',
+      subtitle: lang === 'ko' ? '비공개 후보' : 'Private candidate',
       votes: 0,
       index,
     })
@@ -178,7 +181,7 @@ export function buildPrivateCandidates(
         key: selection.key,
         name: selection.name,
         emoji: selection.emoji,
-        subtitle: '비공개 후보',
+        subtitle: lang === 'ko' ? '비공개 후보' : 'Private candidate',
         votes: 0,
         index,
       }
@@ -307,10 +310,12 @@ function makePrivateSelectionByIndex(
   candidateManifest: CandidateManifest | null,
 ): ReceiptSelection {
   const manifestCandidate = getOrderedManifestCandidates(candidateManifest)[index]
+  const lang = resolveVerificationLanguage()
 
   return {
     key: manifestCandidate?.candidateKey ?? `private-candidate-${index + 1}`,
-    name: manifestCandidate?.displayName ?? `후보 ${index + 1}`,
+    name:
+      manifestCandidate?.displayName ?? (lang === 'ko' ? `후보 ${index + 1}` : `Candidate ${index + 1}`),
     emoji: manifestCandidate?.emoji ?? '🔐',
     index,
   }

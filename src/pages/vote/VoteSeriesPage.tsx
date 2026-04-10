@@ -7,6 +7,7 @@ import { VoteListItemCard } from '../../components/vote/VoteListItemCard'
 import { VoteCardSkeleton } from '../../components/shared/VoteCardSkeleton'
 import { useVotedVotes } from '../../hooks/useVotedVotes'
 import { VOTE_ITEMS } from '../../data/mockVotes'
+import { useLanguage } from '../../providers/LanguageProvider'
 import type { VoteListItem } from '../../types/vote'
 import { applyManifestToElection, mapToVoteListItem } from '../../utils/electionMapper'
 import {
@@ -26,6 +27,7 @@ export function VoteSeriesPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { isVoted } = useVotedVotes()
+  const { t, lang } = useLanguage()
   const [isLoading, setIsLoading] = useState(true)
   const [items, setItems] = useState<VoteListItem[]>([])
   const decodedSeriesKey = decodeURIComponent(seriesKey ?? '')
@@ -76,7 +78,7 @@ export function VoteSeriesPage() {
     navigate(buildVoteTargetPath(seriesGroup.items[0]), { replace: true })
   }, [isLoading, navigate, seriesGroup])
 
-  const seriesTitle = seriesGroup?.title ?? locationState.title ?? '시리즈'
+  const seriesTitle = seriesGroup?.title ?? locationState.title ?? t('vs_label')
   const seriesHost = seriesGroup?.host ?? locationState.host
   const seriesVerified = seriesGroup?.verified ?? locationState.verified
 
@@ -103,17 +105,25 @@ export function VoteSeriesPage() {
           onClick={() => navigate('/vote')}
           className="text-[12px] font-semibold text-[#7140FF]"
         >
-          목록으로 돌아가기
+          {t('vs_back_to_list')}
         </button>
         <div className="relative mt-4">
           <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-[#7140FF]/20 bg-[rgba(113,64,255,0.07)] px-3 py-[5px]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#7140FF]" />
-            <span className="font-mono text-[10px] font-bold uppercase tracking-[1.2px] text-[#7140FF]">Series</span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[1.2px] text-[#7140FF]">
+              {t('vs_label')}
+            </span>
           </span>
           <h1 className="mt-1 bg-gradient-to-r from-[#7140FF] to-[#22d3ee] bg-clip-text text-[26px] font-bold tracking-tight leading-tight text-transparent">{seriesTitle}</h1>
         </div>
         <div className="mt-2 flex items-center gap-2 text-[12px] text-[#707070]">
-          <span>{seriesGroup ? `${seriesGroup.items.length}개의 투표` : '투표를 찾는 중'}</span>
+          <span>
+            {seriesGroup
+              ? lang === 'ko'
+                ? `${seriesGroup.items.length}개의 투표`
+                : `${seriesGroup.items.length} vote${seriesGroup.items.length === 1 ? '' : 's'}`
+              : t('vs_loading')}
+          </span>
           {seriesHost ? (
             <span className="inline-flex items-center gap-1 rounded-full border border-[#E7E9ED] bg-white px-2.5 py-1">
               {seriesVerified ? (
@@ -154,7 +164,7 @@ export function VoteSeriesPage() {
           ))
         ) : (
           <div className="rounded-2xl border border-[#E7E9ED] bg-white px-4 py-5 text-[14px] text-[#707070]">
-            이 시리즈에 표시할 투표가 아직 없습니다.
+            {t('vs_empty')}
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { useLanguage } from '../../../../providers/LanguageProvider'
 import { PortalPanel } from '../ui/PortalPanel'
 
 type ResultCardProps = {
@@ -17,6 +18,7 @@ export function ResultCard({
   votes,
   percentage,
 }: ResultCardProps) {
+  const { lang } = useLanguage()
   const rankColor =
     rank === 1 ? 'text-[#F59E0B]' : rank === 2 ? 'text-[#9CA3AF]' : 'text-[#CD7C3A]'
   const barColor = rank === 1 ? 'bg-[#F59E0B]' : rank === 2 ? 'bg-[#7140FF]' : 'bg-[#8B5CF6]'
@@ -36,7 +38,9 @@ export function ResultCard({
         </div>
         <div className="text-right">
           <div className={`font-mono text-[15px] font-bold ${rankColor}`}>{percentage.toFixed(1)}%</div>
-          <div className="font-mono text-[12px] text-[#707070]">{votes.toLocaleString()}표</div>
+          <div className="font-mono text-[12px] text-[#707070]">
+            {lang === 'ko' ? `${votes.toLocaleString()}표` : `${votes.toLocaleString()} votes`}
+          </div>
         </div>
       </div>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#F7F8FA]">
