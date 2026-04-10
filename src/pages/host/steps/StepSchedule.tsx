@@ -7,6 +7,24 @@ import {
 } from '../../../utils/hostElectionSettings'
 import { formatBallotCostLabel } from '../../../utils/paymentDisplay'
 
+const INPUT_CLASS =
+  'block min-w-0 w-full max-w-full appearance-none bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all'
+
+const HELPER_TEXT_CLASS = 'mt-1 text-[12px] leading-5 text-[#7140FF]'
+const KARMA_TIER_OPTIONS = [
+  { value: '0', label: '누구나 참여 가능' },
+  { value: '1', label: '티어 1 · entry' },
+  { value: '2', label: '티어 2 · newbie' },
+  { value: '3', label: '티어 3 · basic' },
+  { value: '4', label: '티어 4 · active' },
+  { value: '5', label: '티어 5 · regular' },
+  { value: '6', label: '티어 6 · power' },
+  { value: '7', label: '티어 7 · pro' },
+  { value: '8', label: '티어 8 · high-throughput' },
+  { value: '9', label: '티어 9 · s-tier' },
+  { value: '10', label: '티어 10 · legendary' },
+] as const
+
 interface StepScheduleProps {
   draft: VoteCreateDraft
   onUpdate: <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => void
@@ -69,6 +87,9 @@ function SettingsEditor({
   const isUnlimitedPaid = settings.ballotPolicy === 'UNLIMITED_PAID'
   const allowMultipleChoice = settings.maxChoices > 1 && !isUnlimitedPaid
   const isOpenVote = settings.visibilityMode === 'OPEN'
+  const minKarmaTierValue = KARMA_TIER_OPTIONS.some((option) => option.value === settings.minKarmaTier)
+    ? settings.minKarmaTier
+    : '0'
   const displayedCostPerBallot =
     settings.paymentMode === 'FREE'
       ? '0'
@@ -80,6 +101,11 @@ function SettingsEditor({
     const value = index + 1
     return { value, label: `${value}명` }
   })
+  const maxChoiceHelperText = isUnlimitedPaid
+    ? '유료 반복 투표는 컨트랙트 규칙상 한 번에 1명만 선택할 수 있어요.'
+    : allowMultipleChoice
+      ? `한 번에 최대 ${settings.maxChoices}명까지 함께 선택할 수 있어요.`
+      : '한 번에 한 명만 선택하는 투표로 생성돼요.'
 
   useEffect(() => {
     if (settings.maxChoices > candidateCount && candidateCount > 0) {
@@ -121,7 +147,7 @@ function SettingsEditor({
           type="datetime-local"
           value={settings.startDate}
           onChange={(event) => onUpdate('startDate', event.target.value)}
-          className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
+          className={INPUT_CLASS}
         />
       </Field>
 
@@ -131,7 +157,7 @@ function SettingsEditor({
           value={settings.endDate}
           min={settings.startDate}
           onChange={(event) => onUpdate('endDate', event.target.value)}
-          className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
+          className={INPUT_CLASS}
         />
       </Field>
 
@@ -146,7 +172,7 @@ function SettingsEditor({
             value={settings.resultRevealAt}
             min={settings.endDate}
             onChange={(event) => onUpdate('resultRevealAt', event.target.value)}
-            className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
+            className={INPUT_CLASS}
           />
           <div className="mt-2 text-[12px] text-[#707070]">
             비공개 투표는 result reveal 시각 이후 key reveal pending 단계로 이동합니다.
@@ -181,14 +207,14 @@ function SettingsEditor({
       </div>
 
       {isIntervalPolicy ? (
-        <div className="grid grid-cols-[1fr_120px] gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_120px]">
           <Field label="갱신 주기 값">
             <input
               type="number"
               min="1"
               value={settings.resetIntervalValue}
               onChange={(event) => onUpdate('resetIntervalValue', event.target.value)}
-              className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
+              className={INPUT_CLASS}
             />
           </Field>
           <Field label="단위">
@@ -200,7 +226,7 @@ function SettingsEditor({
                   event.target.value as ElectionSettingsDraft['resetIntervalUnit'],
                 )
               }
-              className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
+              className={INPUT_CLASS}
             >
               <option value="MINUTE">분</option>
               <option value="HOUR">시간</option>
@@ -215,15 +241,18 @@ function SettingsEditor({
       )}
 
       <div>
-        <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">선택 방식</span>
-        <div className="flex gap-2 mb-4">
+        <div className="mb-2">
+          <span className="block text-[13px] font-semibold text-[#090A0B]">한 번에 선택할 인원</span>
+          <div className={HELPER_TEXT_CLASS}>{maxChoiceHelperText}</div>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {maxChoicesOptions.map(({ value, label }) => (
             <button
               key={value}
               type="button"
               disabled={isUnlimitedPaid && value !== 1}
               onClick={() => onUpdate('maxChoices', value as ElectionSettingsDraft['maxChoices'])}
-              className={`flex-1 py-2.5 rounded-xl text-[14px] font-semibold border-2 transition-all ${
+              className={`min-w-[84px] flex-1 py-2.5 rounded-xl text-[14px] font-semibold border-2 transition-all ${
                 settings.maxChoices === value
                   ? 'bg-[#7140FF] text-white border-[#7140FF]'
                   : 'bg-white text-[#707070] border-[#E7E9ED]'
@@ -233,25 +262,25 @@ function SettingsEditor({
             </button>
           ))}
         </div>
-        <div className="rounded-2xl border border-[#E7E9ED] bg-white px-4 py-4 text-[12px] text-[#707070]">
-          {isUnlimitedPaid
-            ? '유료 반복 투표는 컨트랙트 규칙상 단일 선택만 허용됩니다.'
-            : allowMultipleChoice
-              ? `현재 최대 ${settings.maxChoices}명까지 함께 선택할 수 있습니다.`
-              : '현재 단일 선택 투표로 생성됩니다.'}
-        </div>
       </div>
 
       <div>
         <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">참여 조건</span>
-        <Field label="최소 카르마 티어">
-          <input
-            type="number"
-            min="0"
-            value={settings.minKarmaTier}
+        <Field label="최소 참여 카르마 티어">
+          <div className={HELPER_TEXT_CLASS}>
+            Status Karma 기준으로 참여 가능한 최소 티어를 고를 수 있어요.
+          </div>
+          <select
+            value={minKarmaTierValue}
             onChange={(event) => onUpdate('minKarmaTier', event.target.value)}
-            className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
-          />
+            className={INPUT_CLASS}
+          >
+            {KARMA_TIER_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </Field>
       </div>
 
@@ -278,7 +307,7 @@ function SettingsEditor({
               value={displayedCostPerBallotLabel}
               disabled
               readOnly
-              className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all disabled:bg-[#F7F8FA] disabled:text-[#C0C4CC]"
+              className={`${INPUT_CLASS} disabled:bg-[#F7F8FA] disabled:text-[#C0C4CC]`}
             />
             <div className="mt-2 text-[12px] text-[#707070]">
               {settings.paymentMode === 'FREE'
