@@ -1,5 +1,11 @@
 import { act, renderHook } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { preparePrivateElection } from '../../api/elections'
+import {
+  createJsonArtifact,
+  uploadFileToPinata,
+  uploadJsonArtifactToPinata,
+} from '../../utils/ipfs'
 import { useCreateVoteDraft } from './useCreateVoteDraft'
 
 vi.mock('wagmi', () => ({
@@ -14,6 +20,21 @@ vi.mock('../../config/api', () => ({
     post: vi.fn(),
   },
 }))
+
+vi.mock('../../api/elections', async () => {
+  const actual = await vi.importActual<typeof import('../../api/elections')>('../../api/elections')
+  return {
+    ...actual,
+    preparePrivateElection: vi.fn().mockResolvedValue({
+      publicKey: {
+        format: 'pem',
+        algorithm: 'ECDH-P256',
+        value: 'mock-public-key',
+      },
+      privateKeyCommitmentHash: '0x1234',
+    }),
+  }
+})
 
 vi.mock('../../api/verifiedOrganizers', () => ({
   fetchVerifiedOrganizerByWallet: vi.fn().mockResolvedValue(null),
@@ -35,6 +56,40 @@ vi.mock('../../utils/ipfs', () => ({
 }))
 
 describe('useCreateVoteDraft', () => {
+  const createJsonArtifactMock = vi.mocked(createJsonArtifact)
+  const uploadFileToPinataMock = vi.mocked(uploadFileToPinata)
+  const uploadJsonArtifactToPinataMock = vi.mocked(uploadJsonArtifactToPinata)
+  const preparePrivateElectionMock = vi.mocked(preparePrivateElection)
+
+  beforeEach(() => {
+    createJsonArtifactMock.mockReset()
+    uploadFileToPinataMock.mockReset()
+    uploadJsonArtifactToPinataMock.mockReset()
+    preparePrivateElectionMock.mockClear()
+
+    createJsonArtifactMock.mockImplementation((fileName, body) => ({
+      body,
+      file: new File([JSON.stringify(body)], fileName, { type: 'application/json' }),
+      rawJson: JSON.stringify(body),
+      hash: '0xabc123',
+    }))
+
+    uploadFileToPinataMock.mockResolvedValue({
+      cid: 'bafy-image',
+      uri: 'ipfs://bafy-image',
+      gatewayUrl: 'https://gateway.test/ipfs/bafy-image',
+    })
+
+    uploadJsonArtifactToPinataMock.mockResolvedValue({
+      cid: 'bafy-manifest',
+      uri: 'ipfs://bafy-manifest',
+      gatewayUrl: 'https://gateway.test/ipfs/bafy-manifest',
+      body: {},
+      rawJson: '{}',
+      hash: '0xabc123',
+    })
+  })
+
   it('initializes at step 1 with private visibility and two empty candidates', () => {
     const { result } = renderHook(() => useCreateVoteDraft())
 
@@ -150,5 +205,59 @@ describe('useCreateVoteDraft', () => {
       secondSection
 
     expect(untouchedSecondSection.ballotPolicy).toBe('ONE_PER_ELECTION')
+  })
+
+  it('starts preparing manifest uploads in the background once step 3 is valid', async () => {
+    vi.useFakeTimers()
+    const { result } = renderHook(() => useCreateVoteDraft())
+
+    act(() => result.current.updateField('title', 'MAMA 2026'))
+    act(() => result.current.nextStep())
+    act(() => result.current.updateField('electionTitle', '남자 그룹 인기상'))
+
+    const [first, second] = result.current.draft.candidates
+    act(() => result.current.updateCandidate(first.id, 'name', '아티스트A'))
+    act(() => result.current.updateCandidate(second.id, 'name', '아티스트B'))
+    act(() => result.current.nextStep())
+
+    expect(result.current.step).toBe(3)
+    expect(uploadJsonArtifactToPinataMock).not.toHaveBeenCalled()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700)
+    })
+
+    expect(uploadJsonArtifactToPinataMock).toHaveBeenCalledTimes(1)
+    expect(preparePrivateElectionMock).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  it('invalidates prepared uploads when step 3 settings change', async () => {
+    vi.useFakeTimers()
+    const { result } = renderHook(() => useCreateVoteDraft())
+
+    act(() => result.current.updateField('title', 'MAMA 2026'))
+    act(() => result.current.nextStep())
+    act(() => result.current.updateField('electionTitle', '남자 그룹 인기상'))
+
+    const [first, second] = result.current.draft.candidates
+    act(() => result.current.updateCandidate(first.id, 'name', '아티스트A'))
+    act(() => result.current.updateCandidate(second.id, 'name', '아티스트B'))
+    act(() => result.current.nextStep())
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700)
+    })
+
+    expect(uploadJsonArtifactToPinataMock).toHaveBeenCalledTimes(1)
+
+    act(() => result.current.updateField('maxChoices', 2))
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700)
+    })
+
+    expect(uploadJsonArtifactToPinataMock).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
   })
 })

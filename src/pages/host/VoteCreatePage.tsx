@@ -193,21 +193,37 @@ export function VoteCreatePage() {
             <>
               <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
               <span>
-                {submissionProgress.currentTitle
-                  ? submissionProgress.total > 1 && submissionProgress.current > 0
-                    ? lang === 'ko'
-                      ? `${submissionProgress.current}/${submissionProgress.total} ${submissionProgress.currentTitle} 서명 요청 중`
-                      : `${submissionProgress.current}/${submissionProgress.total} Awaiting signature for ${submissionProgress.currentTitle}`
-                    : lang === 'ko'
-                      ? `${submissionProgress.currentTitle} 서명 요청 중`
-                      : `Awaiting signature for ${submissionProgress.currentTitle}`
-                  : submissionProgress.total > 1
-                    ? lang === 'ko'
-                      ? `${submissionProgress.current}/${submissionProgress.total} 지갑 서명 요청 중`
-                      : `${submissionProgress.current}/${submissionProgress.total} Awaiting wallet signature`
-                    : lang === 'ko'
-                      ? '지갑 서명 요청 중'
-                      : 'Awaiting wallet signature'}
+                {submissionProgress.stage === 'preparing'
+                  ? submissionProgress.currentTitle
+                    ? submissionProgress.total > 1 && submissionProgress.current > 0
+                      ? lang === 'ko'
+                        ? `${submissionProgress.current}/${submissionProgress.total} ${submissionProgress.currentTitle} 준비 중`
+                        : `${submissionProgress.current}/${submissionProgress.total} Preparing ${submissionProgress.currentTitle}`
+                      : lang === 'ko'
+                        ? `${submissionProgress.currentTitle} 준비 중`
+                        : `Preparing ${submissionProgress.currentTitle}`
+                    : submissionProgress.total > 1
+                      ? lang === 'ko'
+                        ? `${submissionProgress.current}/${submissionProgress.total} 생성 준비 중`
+                        : `${submissionProgress.current}/${submissionProgress.total} Preparing vote creation`
+                      : lang === 'ko'
+                        ? '생성 준비 중'
+                        : 'Preparing vote creation'
+                  : submissionProgress.currentTitle
+                    ? submissionProgress.total > 1 && submissionProgress.current > 0
+                      ? lang === 'ko'
+                        ? `${submissionProgress.current}/${submissionProgress.total} ${submissionProgress.currentTitle} 서명 요청 중`
+                        : `${submissionProgress.current}/${submissionProgress.total} Awaiting signature for ${submissionProgress.currentTitle}`
+                      : lang === 'ko'
+                        ? `${submissionProgress.currentTitle} 서명 요청 중`
+                        : `Awaiting signature for ${submissionProgress.currentTitle}`
+                    : submissionProgress.total > 1
+                      ? lang === 'ko'
+                        ? `${submissionProgress.current}/${submissionProgress.total} 지갑 서명 요청 중`
+                        : `${submissionProgress.current}/${submissionProgress.total} Awaiting wallet signature`
+                      : lang === 'ko'
+                        ? '지갑 서명 요청 중'
+                        : 'Awaiting wallet signature'}
               </span>
             </>
           ) : step === 3 ? (

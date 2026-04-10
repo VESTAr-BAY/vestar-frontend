@@ -152,9 +152,19 @@ export function VoteDetailPage() {
     vote?.maxChoices ?? 1,
   )
   const sectionSelection = useSectionVoteSelection(vote?.sections ?? [])
+  const pendingCandidateKeys = useMemo(
+    () =>
+      isGrouped
+        ? sectionSelection.selectedSections.map((section) => section.candidateId)
+        : Array.from(selectedIds),
+    [isGrouped, sectionSelection.selectedSections, selectedIds],
+  )
 
   const { isVoted, markVoted, getVotedCandidates } = useVotedVotes()
-  const { state, txHash, errorMessage, karmaEarned, submit, reset } = useVoteSubmit()
+  const { state, txHash, errorMessage, karmaEarned, submit, reset } = useVoteSubmit(
+    vote,
+    pendingCandidateKeys,
+  )
   const [sheetOpen, setSheetOpen] = useState(false)
   const [dangerModalOpen, setDangerModalOpen] = useState(false)
   const [hasVoted, setHasVoted] = useState(() => isVoted(id))
@@ -335,11 +345,8 @@ export function VoteDetailPage() {
     if (!vote) return
     setDangerModalOpen(false)
     setSheetOpen(true)
-    const candidateKeys = isGrouped
-      ? sectionSelection.selectedSections.map((s) => s.candidateId)
-      : Array.from(selectedIds)
-    submit(vote, candidateKeys)
-  }, [vote, isGrouped, sectionSelection.selectedSections, selectedIds, submit])
+    submit(vote, pendingCandidateKeys)
+  }, [pendingCandidateKeys, submit, vote])
 
   const handleClose = useCallback(() => {
     if (state === 'awaiting_signature' || state === 'confirming') return

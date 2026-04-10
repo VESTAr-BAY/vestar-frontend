@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Address, Hash, Hex } from 'viem'
 import {
   decodeEventLog,
@@ -11,6 +11,7 @@ import {
 } from 'viem'
 import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { preparePrivateElection } from '../../api/elections'
+import type { PreparePrivateElectionResponse } from '../../api/types'
 import { fetchVerifiedOrganizerByWallet } from '../../api/verifiedOrganizers'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { vestarFactory, vestarUtils } from '../../contracts/vestar/client'
@@ -69,7 +70,36 @@ type SubmissionUnit = {
   candidates: FlattenedCandidate[]
 }
 
+type PreparedSubmissionElection = {
+  title: string
+  normalizedSettings: ElectionSettingsDraft
+  candidates: FlattenedCandidate[]
+  candidateManifestURI: string
+  candidateManifestHash: Hex
+  titleHash: Hex
+  initialCandidateHashes: Hex[]
+  electionCoverImageUrl: string | null
+  privatePrepare: PreparePrivateElectionResponse | null
+}
+
+type PreparedSubmissionArtifacts = {
+  signature: string
+  bannerImageUrl: string | null
+  bannerUploadMissing: boolean
+  candidateUploadsMissing: boolean
+  elections: PreparedSubmissionElection[]
+}
+
+type SubmissionProgressState = {
+  stage: 'preparing' | 'awaiting_signature'
+  current: number
+  total: number
+  currentTitle: string | null
+}
+
 const PRIVATE_ELECTION_KEY_SCHEME_VERSION = 1
+const SUBMISSION_PREFLIGHT_DEBOUNCE_MS = 700
+const MAX_PREPARED_SUBMISSION_CACHE_ENTRIES = 3
 
 let counter = 3
 
@@ -335,6 +365,120 @@ function buildCandidateHashes(candidates: FlattenedCandidate[]) {
   return candidates.map((candidate) => keccak256(toHex(candidate.candidateKey)))
 }
 
+function serializePreparationFile(file?: File | null) {
+  if (!file) return null
+
+  return {
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    lastModified: file.lastModified,
+  }
+}
+
+function getUploadedFileKey(file?: File | null) {
+  if (!file) return null
+  return `${file.name}:${file.size}:${file.type}:${file.lastModified}`
+}
+
+function buildSubmissionPlan(draft: VoteCreateDraft): {
+  allCandidates: FlattenedCandidate[]
+  elections: SubmissionUnit[]
+} {
+  const effectiveSections = getEffectiveSections(draft)
+  const allCandidates =
+    effectiveSections.length > 0
+      ? effectiveSections.flatMap((section) =>
+          section.candidates.map((candidate) => ({
+            id: candidate.id,
+            candidateKey: candidate.name.trim(),
+            imageFile: candidate.imageFile ?? null,
+          })),
+        )
+      : draft.candidates.map((candidate) => ({
+          id: candidate.id,
+          candidateKey: candidate.name.trim(),
+          imageFile: candidate.imageFile ?? null,
+        }))
+
+  const elections =
+    effectiveSections.length > 0
+      ? effectiveSections.map((section) => ({
+          title: section.name.trim(),
+          settings: section,
+          electionCoverImageFile: section.electionCoverImageFile ?? null,
+          candidates: section.candidates.map((candidate) => ({
+            id: candidate.id,
+            candidateKey: candidate.name.trim(),
+            imageFile: candidate.imageFile ?? null,
+          })),
+        }))
+      : [
+          {
+            title: draft.electionTitle.trim(),
+            settings: draft,
+            electionCoverImageFile: draft.electionCoverImageFile ?? null,
+            candidates: draft.candidates.map((candidate) => ({
+              id: candidate.id,
+              candidateKey: candidate.name.trim(),
+              imageFile: candidate.imageFile ?? null,
+            })),
+          },
+        ]
+
+  return { allCandidates, elections }
+}
+
+function buildDraftPreparationSignature(draft: VoteCreateDraft): string {
+  const effectiveSections = getEffectiveSections(draft)
+  const normalizeSettingsForSignature = (settings: ElectionSettingsDraft) => {
+    const normalizedSettings = normalizeElectionSettingsDraft(settings)
+
+    return {
+      startDate: normalizedSettings.startDate,
+      endDate: normalizedSettings.endDate,
+      resultRevealAt: getEffectiveResultRevealAt(normalizedSettings),
+      resultReveal: normalizedSettings.resultReveal,
+      visibilityMode: normalizedSettings.visibilityMode,
+      ballotPolicy: normalizedSettings.ballotPolicy,
+      paymentMode: normalizedSettings.paymentMode,
+      costPerBallotEth: normalizedSettings.costPerBallotEth,
+      minKarmaTier: normalizedSettings.minKarmaTier,
+      maxChoices: normalizedSettings.maxChoices,
+      resetIntervalValue: normalizedSettings.resetIntervalValue,
+      resetIntervalUnit: normalizedSettings.resetIntervalUnit,
+    }
+  }
+
+  return JSON.stringify({
+    title: draft.title.trim(),
+    category: draft.category,
+    bannerImageFile: serializePreparationFile(draft.bannerImageFile),
+    elections:
+      effectiveSections.length > 0
+        ? effectiveSections.map((section) => ({
+            title: section.name.trim(),
+            electionCoverImageFile: serializePreparationFile(section.electionCoverImageFile),
+            settings: normalizeSettingsForSignature(section),
+            candidates: section.candidates.map((candidate) => ({
+              name: candidate.name.trim(),
+              imageFile: serializePreparationFile(candidate.imageFile),
+            })),
+          }))
+        : [
+            {
+              title: draft.electionTitle.trim(),
+              electionCoverImageFile: serializePreparationFile(draft.electionCoverImageFile),
+              settings: normalizeSettingsForSignature(draft),
+              candidates: draft.candidates.map((candidate) => ({
+                name: candidate.name.trim(),
+                imageFile: serializePreparationFile(candidate.imageFile),
+              })),
+            },
+          ],
+  })
+}
+
 function buildManifestPayload(
   draft: VoteCreateDraft,
   electionTitle: string,
@@ -351,6 +495,154 @@ function buildManifestPayload(
     electionCoverImageUrl,
     candidates: buildCandidateManifestCandidates(candidates, candidateImageUrls),
   })
+}
+
+async function prepareSubmissionArtifacts(
+  draft: VoteCreateDraft,
+): Promise<PreparedSubmissionArtifacts> {
+  const { allCandidates, elections } = buildSubmissionPlan(draft)
+  const uploadTasks = new Map<string, Promise<string | null>>()
+
+  const ensureUploadedImage = (file?: File | null) => {
+    if (!file) {
+      return Promise.resolve<string | null>(null)
+    }
+
+    const fileKey = getUploadedFileKey(file)
+    if (!fileKey) {
+      return Promise.resolve<string | null>(null)
+    }
+
+    const existingTask = uploadTasks.get(fileKey)
+    if (existingTask) {
+      return existingTask
+    }
+
+    const nextTask = uploadImageToIpfs(file)
+    uploadTasks.set(fileKey, nextTask)
+    return nextTask
+  }
+
+  await Promise.all([
+    ensureUploadedImage(draft.bannerImageFile),
+    draft.sections.length === 0 ? ensureUploadedImage(draft.electionCoverImageFile) : Promise.resolve(),
+    ...elections.map((election) => ensureUploadedImage(election.electionCoverImageFile)),
+    ...allCandidates.map((candidate) => ensureUploadedImage(candidate.imageFile)),
+  ])
+
+  const uploadedImageUrls = new Map<string, string | null>()
+  await Promise.all(
+    [...uploadTasks.entries()].map(async ([key, task]) => {
+      uploadedImageUrls.set(key, await task)
+    }),
+  )
+
+  const resolveUploadedImageUrl = (file?: File | null) => {
+    const fileKey = getUploadedFileKey(file)
+    if (!fileKey) return null
+    return uploadedImageUrls.get(fileKey) ?? null
+  }
+
+  const bannerImageUrl = resolveUploadedImageUrl(draft.bannerImageFile)
+  const rootElectionCoverImageUrl =
+    draft.sections.length === 0 ? resolveUploadedImageUrl(draft.electionCoverImageFile) : null
+
+  const candidateImageUrls = new Map<string, string>()
+  allCandidates.forEach((candidate) => {
+    const imageUrl = resolveUploadedImageUrl(candidate.imageFile)
+    if (imageUrl) {
+      candidateImageUrls.set(candidate.id, imageUrl)
+    }
+  })
+
+  const requestedCandidateImageCount = allCandidates.filter(
+    (candidate) => candidate.imageFile !== null,
+  ).length
+
+  const preparedElections = await Promise.all(
+    elections.map(async (election, index) => {
+      if (election.candidates.length < 2) {
+        throw new Error('후보는 최소 2명 이상이어야 합니다.')
+      }
+
+      const normalizedKeys = election.candidates.map((candidate) => candidate.candidateKey)
+      if (new Set(normalizedKeys).size !== normalizedKeys.length) {
+        throw new Error('후보명은 같은 투표 안에서 중복될 수 없습니다.')
+      }
+
+      const normalizedSettings = normalizeElectionSettingsDraft(election.settings)
+      const electionCoverImageUrl =
+        draft.sections.length > 0
+          ? resolveUploadedImageUrl(election.electionCoverImageFile)
+          : rootElectionCoverImageUrl
+
+      const manifest = buildManifestPayload(
+        draft,
+        election.title,
+        election.candidates,
+        candidateImageUrls,
+        bannerImageUrl,
+        electionCoverImageUrl,
+      )
+      const manifestFileName = buildCandidateManifestFileName(draft.title, election.title, index + 1)
+      const localManifestArtifact = createJsonArtifact(manifestFileName, manifest)
+
+      let candidateManifestURI = buildManifestUriFallback(localManifestArtifact.rawJson)
+
+      try {
+        const uploadedManifestArtifact = await uploadJsonArtifactToPinata(manifestFileName, manifest)
+        candidateManifestURI = uploadedManifestArtifact.uri
+      } catch {
+        candidateManifestURI = buildManifestUriFallback(localManifestArtifact.rawJson)
+      }
+
+      const privatePrepare =
+        normalizedSettings.visibilityMode === 'PRIVATE'
+          ? await preparePrivateElection({
+              seriesPreimage: draft.title.trim(),
+              seriesCoverImageUrl: bannerImageUrl,
+              title: election.title,
+              coverImageUrl: electionCoverImageUrl,
+            })
+          : null
+
+      return {
+        title: election.title,
+        normalizedSettings,
+        candidates: election.candidates,
+        candidateManifestURI,
+        candidateManifestHash: localManifestArtifact.hash,
+        titleHash: keccak256(toHex(election.title)),
+        initialCandidateHashes: buildCandidateHashes(election.candidates),
+        electionCoverImageUrl,
+        privatePrepare,
+      }
+    }),
+  )
+
+  return {
+    signature: buildDraftPreparationSignature(draft),
+    bannerImageUrl,
+    bannerUploadMissing: Boolean(draft.bannerImageFile && !bannerImageUrl),
+    candidateUploadsMissing: requestedCandidateImageCount > candidateImageUrls.size,
+    elections: preparedElections,
+  }
+}
+
+function trimPreparedSubmissionCache(cache: Map<string, PreparedSubmissionArtifacts>) {
+  while (cache.size > MAX_PREPARED_SUBMISSION_CACHE_ENTRIES) {
+    const oldestKey = cache.keys().next().value
+    if (!oldestKey) return
+    cache.delete(oldestKey)
+  }
+}
+
+function shouldRefreshPreparedSubmission(prepared: PreparedSubmissionArtifacts) {
+  if (prepared.bannerUploadMissing || prepared.candidateUploadsMissing) {
+    return true
+  }
+
+  return prepared.elections.some((election) => election.candidateManifestURI.startsWith('data:'))
 }
 
 async function parseElectionAddress(txHash: Hash): Promise<Address> {
@@ -381,11 +673,7 @@ export interface UseCreateVoteDraftResult {
   organizationName: string
   step: CreateStep
   isCurrentStepValid: boolean
-  submissionProgress: {
-    current: number
-    total: number
-    currentTitle: string | null
-  }
+  submissionProgress: SubmissionProgressState
   updateField: <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => void
   addCandidate: () => void
   removeCandidate: (id: string) => void
@@ -422,11 +710,16 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
   const [draft, setDraft] = useState<VoteCreateDraft>(INITIAL_DRAFT)
   const [step, setStep] = useState<CreateStep>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submissionProgress, setSubmissionProgress] = useState({
+  const [submissionProgress, setSubmissionProgress] = useState<SubmissionProgressState>({
+    stage: 'preparing',
     current: 0,
     total: 0,
-    currentTitle: null as string | null,
+    currentTitle: null,
   })
+  const preparedSubmissionCacheRef = useRef<Map<string, PreparedSubmissionArtifacts>>(new Map())
+  const preparedSubmissionPromiseRef = useRef<Map<string, Promise<PreparedSubmissionArtifacts>>>(
+    new Map(),
+  )
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient()
@@ -435,6 +728,8 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
   const { addToast } = useToast()
 
   const isCurrentStepValid = validateStep(step, draft)
+  const currentPreparationSignature =
+    step === 3 && validateStep(3, draft) ? buildDraftPreparationSignature(draft) : null
 
   useEffect(() => {
     let cancelled = false
@@ -670,6 +965,46 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     setStep((prev) => Math.max(prev - 1, 1) as CreateStep)
   }, [])
 
+  const ensurePreparedSubmission = useCallback(
+    async (signature: string, sourceDraft: VoteCreateDraft) => {
+      const cached = preparedSubmissionCacheRef.current.get(signature)
+      if (cached) {
+        return cached
+      }
+
+      const existingPromise = preparedSubmissionPromiseRef.current.get(signature)
+      if (existingPromise) {
+        return existingPromise
+      }
+
+      const nextPromise = prepareSubmissionArtifacts(sourceDraft)
+        .then((prepared) => {
+          preparedSubmissionCacheRef.current.set(signature, prepared)
+          trimPreparedSubmissionCache(preparedSubmissionCacheRef.current)
+          return prepared
+        })
+        .finally(() => {
+          preparedSubmissionPromiseRef.current.delete(signature)
+        })
+
+      preparedSubmissionPromiseRef.current.set(signature, nextPromise)
+      return nextPromise
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (!currentPreparationSignature) return
+
+    const timeoutId = window.setTimeout(() => {
+      void ensurePreparedSubmission(currentPreparationSignature, draft).catch(() => {})
+    }, SUBMISSION_PREFLIGHT_DEBOUNCE_MS)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [currentPreparationSignature, draft, ensurePreparedSubmission])
+
   const submit = useCallback(async () => {
     if (!walletClient) {
       throw new Error('Status Network Testnet에 연결된 지갑이 필요합니다.')
@@ -692,45 +1027,15 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
       }
 
-      const allCandidates =
-        draft.sections.length > 0
-          ? draft.sections.flatMap((section) =>
-              section.candidates.map((candidate) => ({
-                id: candidate.id,
-                candidateKey: candidate.name.trim(),
-                imageFile: candidate.imageFile ?? null,
-              })),
-            )
-          : draft.candidates.map((candidate) => ({
-              id: candidate.id,
-              candidateKey: candidate.name.trim(),
-              imageFile: candidate.imageFile ?? null,
-            }))
+      const draftPreparationSignature = buildDraftPreparationSignature(draft)
+      let preparedSubmission = await ensurePreparedSubmission(draftPreparationSignature, draft)
 
-      const [bannerImageUrl, electionCoverImageUrl, candidateImageEntries] = await Promise.all([
-        draft.bannerImageFile
-          ? uploadImageToIpfs(draft.bannerImageFile)
-          : Promise.resolve<string | null>(null),
-        draft.electionCoverImageFile
-          ? uploadImageToIpfs(draft.electionCoverImageFile)
-          : Promise.resolve<string | null>(null),
-        Promise.all(
-          allCandidates.map(async (candidate) => [
-            candidate.id,
-            candidate.imageFile ? await uploadImageToIpfs(candidate.imageFile) : null,
-          ]),
-        ),
-      ])
+      if (shouldRefreshPreparedSubmission(preparedSubmission)) {
+        preparedSubmissionCacheRef.current.delete(draftPreparationSignature)
+        preparedSubmission = await ensurePreparedSubmission(draftPreparationSignature, draft)
+      }
 
-      const candidateImageUrls = new Map<string, string>(
-        candidateImageEntries.filter((entry): entry is [string, string] => entry[1] !== null),
-      )
-      const requestedCandidateImageCount = allCandidates.filter(
-        (candidate) => candidate.imageFile !== null,
-      ).length
-      const uploadedCandidateImageCount = candidateImageUrls.size
-      const bannerUploadMissing = Boolean(draft.bannerImageFile && !bannerImageUrl)
-      const candidateUploadsMissing = requestedCandidateImageCount > uploadedCandidateImageCount
+      const { bannerUploadMissing, candidateUploadsMissing } = preparedSubmission
 
       if (bannerUploadMissing || candidateUploadsMissing) {
         addToast({
@@ -741,112 +1046,37 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
               : 'Some image uploads failed. The vote will be created without those images.',
         })
       }
-
-      const effectiveSections = getEffectiveSections(draft)
-      const electionDrafts: SubmissionUnit[] =
-        effectiveSections.length > 0
-          ? effectiveSections.map((section) => ({
-              title: section.name.trim(),
-              settings: section,
-              electionCoverImageFile: section.electionCoverImageFile ?? null,
-              candidates: section.candidates.map((candidate) => ({
-                id: candidate.id,
-                candidateKey: candidate.name.trim(),
-                imageFile: candidate.imageFile ?? null,
-              })),
-            }))
-          : [
-              {
-                title: draft.electionTitle.trim(),
-                settings: draft,
-                electionCoverImageFile: draft.electionCoverImageFile ?? null,
-                candidates: draft.candidates.map((candidate) => ({
-                  id: candidate.id,
-                  candidateKey: candidate.name.trim(),
-                  imageFile: candidate.imageFile ?? null,
-                })),
-              },
-            ]
-
       const elections: SubmitVoteResult['elections'] = []
 
       setSubmissionProgress({
+        stage: 'preparing',
         current: 0,
-        total: electionDrafts.length,
+        total: preparedSubmission.elections.length,
         currentTitle: null,
       })
 
-      for (const [index, electionDraft] of electionDrafts.entries()) {
-        const normalizedSettings = normalizeElectionSettingsDraft(electionDraft.settings)
-
+      for (const [index, preparedElection] of preparedSubmission.elections.entries()) {
         setSubmissionProgress({
+          stage: 'awaiting_signature',
           current: index + 1,
-          total: electionDrafts.length,
-          currentTitle: electionDraft.title,
+          total: preparedSubmission.elections.length,
+          currentTitle: preparedElection.title,
         })
-
-        if (electionDraft.candidates.length < 2) {
-          throw new Error('후보는 최소 2명 이상이어야 합니다.')
-        }
-
-        const normalizedKeys = electionDraft.candidates.map((candidate) => candidate.candidateKey)
-        if (new Set(normalizedKeys).size !== normalizedKeys.length) {
-          throw new Error('후보명은 같은 투표 안에서 중복될 수 없습니다.')
-        }
-
-        const resolvedElectionCoverImageUrl = electionDraft.electionCoverImageFile
-          ? await uploadImageToIpfs(electionDraft.electionCoverImageFile)
-          : draft.sections.length > 0
-            ? null
-            : electionCoverImageUrl
-
-        const manifest = buildManifestPayload(
-          draft,
-          electionDraft.title,
-          electionDraft.candidates,
-          candidateImageUrls,
-          bannerImageUrl,
-          resolvedElectionCoverImageUrl,
-        )
-        const manifestFileName = buildCandidateManifestFileName(
-          draft.title,
-          electionDraft.title,
-          index + 1,
-        )
-        const localManifestArtifact = createJsonArtifact(manifestFileName, manifest)
-        let candidateManifestURI = buildManifestUriFallback(localManifestArtifact.rawJson)
-        try {
-          const uploadedManifestArtifact = await uploadJsonArtifactToPinata(
-            manifestFileName,
-            manifest,
-          )
-          if (uploadedManifestArtifact) {
-            candidateManifestURI = uploadedManifestArtifact.uri
-          }
-        } catch {
-          candidateManifestURI = buildManifestUriFallback(localManifestArtifact.rawJson)
-        }
 
         // sungje : manifest hash는 백엔드 prepare 응답이 아니라 프론트가 실제로 업로드한 json bytes 기준으로 고정한다.
         const seriesId = keccak256(
           encodePacked(['address', 'string'], [organizerAddress, draft.title.trim()]),
         )
-        const titleHash = keccak256(toHex(electionDraft.title))
-        const candidateManifestHash = localManifestArtifact.hash
-        const initialCandidateHashes = buildCandidateHashes(electionDraft.candidates)
+        const { normalizedSettings } = preparedElection
 
         let electionPublicKey: Hex
         let privateKeyCommitmentHash: Hex
 
         if (normalizedSettings.visibilityMode === 'PRIVATE') {
-          // sungje : private prepare는 키 생성만 맡기고, 시리즈/타이틀/manifest 해시는 프론트가 직접 계산한 값을 그대로 쓴다.
-          const prepareResponse = await preparePrivateElection({
-            seriesPreimage: draft.title.trim(),
-            seriesCoverImageUrl: bannerImageUrl,
-            title: electionDraft.title,
-            coverImageUrl: resolvedElectionCoverImageUrl,
-          })
-
+          const prepareResponse = preparedElection.privatePrepare
+          if (!prepareResponse) {
+            throw new Error('비공개 투표 준비 정보가 누락되었습니다.')
+          }
           electionPublicKey = toHex(extractPublicKeyValue(prepareResponse.publicKey))
           privateKeyCommitmentHash = prepareResponse.privateKeyCommitmentHash
         } else {
@@ -869,9 +1099,9 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
             normalizedSettings.visibilityMode === 'PRIVATE'
               ? VESTAR_VISIBILITY_MODE.PRIVATE
               : VESTAR_VISIBILITY_MODE.OPEN,
-          titleHash,
-          candidateManifestHash,
-          candidateManifestURI,
+          titleHash: preparedElection.titleHash,
+          candidateManifestHash: preparedElection.candidateManifestHash,
+          candidateManifestURI: preparedElection.candidateManifestURI,
           startAt: Math.floor(Date.parse(normalizedSettings.startDate) / 1000),
           endAt: Math.floor(Date.parse(normalizedSettings.endDate) / 1000),
           // sungje : 공개 투표는 화면에서 결과 공개 시각을 숨기지만 컨트랙트 검증상 종료 시각 이상 값이 필요해서 endAt으로 맞춘다.
@@ -916,14 +1146,14 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         const txHash = await vestarFactory.createElection(
           walletClient,
           config,
-          initialCandidateHashes,
+          preparedElection.initialCandidateHashes,
         )
         const electionAddress = await parseElectionAddress(txHash)
 
         elections.push({
           txHash,
           electionAddress,
-          title: electionDraft.title,
+          title: preparedElection.title,
         })
       }
 
@@ -945,12 +1175,13 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     } finally {
       setIsSubmitting(false)
       setSubmissionProgress({
+        stage: 'preparing',
         current: 0,
         total: 0,
         currentTitle: null,
       })
     }
-  }, [chainId, draft, lang, switchChainAsync, walletClient])
+  }, [address, addToast, chainId, draft, ensurePreparedSubmission, lang, switchChainAsync, walletClient])
 
   return {
     draft,
