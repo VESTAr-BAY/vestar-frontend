@@ -6,10 +6,7 @@ import { HotCardSkeleton } from "../../components/shared/HotCardSkeleton";
 import { InfiniteScrollSentinel } from "../../components/shared/InfiniteScrollSentinel";
 import { VoteCardSkeleton } from "../../components/shared/VoteCardSkeleton";
 import { useVotedVotes } from "../../hooks/useVotedVotes";
-import {
-  useInfiniteVotes,
-  type VoteFilter,
-} from "../../hooks/vote/useInfiniteVotes";
+import { useInfiniteVotes } from "../../hooks/vote/useInfiniteVotes";
 import { useVoteList } from "../../hooks/vote/useVoteList";
 import { useLanguage } from "../../providers/LanguageProvider";
 import type { BadgeVariant, HotVote } from "../../types/vote";
@@ -36,84 +33,113 @@ const BADGE_LABEL: Record<BadgeVariant, string> = {
 };
 
 type FilterChip = {
-  labelKey:
-    | "filter_all"
-    | "filter_music"
-    | "filter_awards"
-    | "filter_fan"
-    | "filter_popular";
-  filter: VoteFilter;
+  labelKey: "filter_all" | "filter_music" | "filter_awards" | "filter_fan" | "filter_other";
+  filter: HomeCategoryFilter;
 };
+
+type HomeCategoryFilter = "all" | "music" | "awards" | "fan" | "other";
 
 const FILTER_CHIPS: FilterChip[] = [
   { labelKey: "filter_all", filter: "all" },
-  { labelKey: "filter_music", filter: "live" },
-  { labelKey: "filter_awards", filter: "hot" },
-  { labelKey: "filter_fan", filter: "new" },
-  { labelKey: "filter_popular", filter: "popular" },
+  { labelKey: "filter_music", filter: "music" },
+  { labelKey: "filter_awards", filter: "awards" },
+  { labelKey: "filter_fan", filter: "fan" },
+  { labelKey: "filter_other", filter: "other" },
 ];
 
-function getHeroCopy(filter: VoteFilter, lang: string) {
+function normalizeHomeCategory(category?: string | null): HomeCategoryFilter {
+  const normalized = category?.trim().toLowerCase();
+
+  switch (normalized) {
+    case "음악방송":
+    case "music show":
+    case "music shows":
+      return "music";
+    case "시상식":
+    case "awards":
+      return "awards";
+    case "팬투표":
+    case "fan vote":
+    case "fan votes":
+      return "fan";
+    case "콘셉트":
+    case "concept":
+    case "기타":
+    case "other":
+    default:
+      return "other";
+  }
+}
+
+function matchesHomeCategory(category: string | null | undefined, filter: HomeCategoryFilter) {
+  if (filter === "all") {
+    return true;
+  }
+
+  return normalizeHomeCategory(category) === filter;
+}
+
+function getHeroCopy(filter: HomeCategoryFilter, lang: string) {
   switch (filter) {
-    case "live":
+    case "music":
       return lang === "ko"
         ? {
-            eyebrow: "진행 중",
-            title: "지금 참여 가능한 투표만 모아봤어요",
-            sub: "지금 바로 참여할 수 있는 투표를 최신 순으로 확인할 수 있어요.",
+            eyebrow: "음악방송",
+            title: "음악방송 투표를 한눈에 볼 수 있어요",
+            sub: "음악방송 카테고리의 진행 중이거나 마감된 투표를 빠르게 둘러보세요.",
           }
         : {
-            eyebrow: "Live Now",
-            title: "See active votes you can join right now",
-            sub: "Browse currently open votes in the newest order.",
+            eyebrow: "Music Shows",
+            title: "See music show votes at a glance",
+            sub: "Browse active and ended votes from the music show category.",
           };
-    case "hot":
+    case "awards":
       return lang === "ko"
         ? {
-            eyebrow: "HOT",
-            title: "참여가 몰린 투표부터 보여드려요",
-            sub: "1명 이상 참여한 진행 중 투표를 참여 수가 많은 순서로 정렬했어요.",
+            eyebrow: "시상식",
+            title: "시상식 투표를 한눈에 볼 수 있어요",
+            sub: "시상식 카테고리의 진행 중이거나 마감된 투표를 빠르게 둘러보세요.",
           }
         : {
-            eyebrow: "Hot Now",
-            title: "Most-participated active votes first",
-            sub: "Active votes with at least one participant are sorted by participation count.",
+            eyebrow: "Awards",
+            title: "See awards votes at a glance",
+            sub: "Browse active and ended votes from the awards category.",
           };
-    case "new":
+    case "fan":
       return lang === "ko"
         ? {
-            eyebrow: "예정된 투표",
-            title: "곧 열릴 투표를 먼저 확인해보세요",
-            sub: "아직 시작 전인 투표를 모아보고 미리 준비할 수 있어요.",
+            eyebrow: "팬투표",
+            title: "팬투표를 한눈에 볼 수 있어요",
+            sub: "팬투표 카테고리의 진행 중이거나 마감된 투표를 빠르게 둘러보세요.",
           }
         : {
-            eyebrow: "Coming Soon",
-            title: "Preview scheduled votes before they open",
-            sub: "Check upcoming votes that have not started yet.",
+            eyebrow: "Fan Votes",
+            title: "See fan votes at a glance",
+            sub: "Browse active and ended votes from the fan vote category.",
           };
-    case "popular":
+    case "other":
       return lang === "ko"
         ? {
-            eyebrow: "인기순",
-            title: "참여가 많은 투표부터 둘러보세요",
-            sub: "전체 투표를 참여 수 기준으로 정렬해서 빠르게 살펴볼 수 있어요.",
+            eyebrow: "기타",
+            title: "기타 카테고리 투표를 한눈에 볼 수 있어요",
+            sub: "기타 카테고리의 진행 중이거나 마감된 투표를 빠르게 둘러보세요.",
           }
         : {
-            eyebrow: "Popular",
-            title: "Browse votes ranked by participation",
-            sub: "See all votes ordered by total participation.",
+            eyebrow: "Other",
+            title: "See other category votes at a glance",
+            sub: "Browse active and ended votes from other categories.",
           };
     default:
       return lang === "ko"
         ? {
             eyebrow: "전체 보기",
-            title: "지금 열려 있는 시리즈를 한눈에 볼 수 있어요",
-            sub: "진행 중이거나 마감된 시리즈를 모아서 빠르게 둘러보세요.",
+            title: "지금 열려 있는 투표를 한눈에 볼 수 있어요",
+            sub: "진행 중이거나 마감된 투표를 모아서 빠르게 둘러보세요.",
           }
         : {
             eyebrow: "All Votes",
-            title: "See every vote series at a glance",
-            sub: "Browse active and ended series in one place.",
+            title: "See currently open votes at a glance",
+            sub: "Browse active and ended votes in one place.",
           };
   }
 }
@@ -344,7 +370,7 @@ function SeriesVoteCard({
 }
 
 export function VoteListPage() {
-  const [activeFilter, setActiveFilter] = useState(0)
+  const [activeCategory, setActiveCategory] = useState<HomeCategoryFilter>("all")
   const [seriesTab, setSeriesTab] = useState<'active' | 'ended'>('active')
   const [activeVisibilityFilter, setActiveVisibilityFilter] = useState<'all' | 'OPEN' | 'PRIVATE'>(
     'all',
@@ -360,10 +386,9 @@ export function VoteListPage() {
     hasMore,
     isLoadingMore,
     loadMore,
-  } = useInfiniteVotes(FILTER_CHIPS[activeFilter].filter)
+  } = useInfiniteVotes()
   const { t, lang } = useLanguage()
-  const currentFilter = FILTER_CHIPS[activeFilter].filter
-  const heroCopy = getHeroCopy(currentFilter, lang)
+  const heroCopy = getHeroCopy(activeCategory, lang)
   const activeVisibilityChips = [
     { key: 'all' as const, label: lang === 'ko' ? '전체' : 'All' },
     { key: 'OPEN' as const, label: 'OPEN' },
@@ -400,17 +425,20 @@ export function VoteListPage() {
   };
 
   const visibleVoteItems = items.filter((item) => {
+    const matchesCategory = matchesHomeCategory(item.category, activeCategory)
     const matchesVisibility =
       activeVisibilityFilter === 'all' || item.visibilityMode === activeVisibilityFilter
     const matchesPayment = activePaymentFilter === 'all' || item.paymentMode === activePaymentFilter
-    return matchesVisibility && matchesPayment
+    return matchesCategory && matchesVisibility && matchesPayment
   })
   const allVoteItems = allItems.filter((item) => {
+    const matchesCategory = matchesHomeCategory(item.category, activeCategory)
     const matchesVisibility =
       activeVisibilityFilter === 'all' || item.visibilityMode === activeVisibilityFilter
     const matchesPayment = activePaymentFilter === 'all' || item.paymentMode === activePaymentFilter
-    return matchesVisibility && matchesPayment
+    return matchesCategory && matchesVisibility && matchesPayment
   })
+  const visibleHotVotes = hotVotes.filter((vote) => matchesHomeCategory(vote.category, activeCategory))
   const visibleGroupedItems = groupVoteItemsBySeries(visibleVoteItems)
   const visibleActiveGroups = visibleGroupedItems.filter((group) => !isVoteSeriesEnded(group))
   const visibleEndedGroups = visibleGroupedItems.filter((group) => isVoteSeriesEnded(group))
@@ -420,7 +448,7 @@ export function VoteListPage() {
   const totalGroups = seriesTab === 'active' ? allActiveGroups : allEndedGroups
   const groupedItems = seriesTab === 'active' ? visibleActiveGroups : visibleEndedGroups
   const hasMoreSeries = groupedItems.length < totalGroups.length
-  const shouldShowHotSection = isHotLoading || hotVotes.length > 0
+  const shouldShowHotSection = isHotLoading || visibleHotVotes.length > 0
   const shouldShowEmptyState = !isItemsLoading && groupedItems.length === 0 && !hasMoreSeries
 
   return (
@@ -500,13 +528,13 @@ export function VoteListPage() {
 
       <div className="bg-[#FFFFFF]">
         <div className="px-5 py-[14px] flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-b border-[#E7E9ED]">
-          {FILTER_CHIPS.map(({ labelKey }, idx) => (
+          {FILTER_CHIPS.map(({ labelKey, filter }) => (
             <button
-              key={labelKey}
+              key={filter}
               type="button"
-              onClick={() => setActiveFilter(idx)}
+              onClick={() => setActiveCategory(filter)}
               className={`inline-flex items-center px-[14px] py-[6px] rounded-[20px] text-[13px] font-medium whitespace-nowrap cursor-pointer transition-all flex-shrink-0 border ${
-                activeFilter === idx
+                activeCategory === filter
                   ? "bg-[#7140FF] text-white border-[#7140FF]"
                   : "bg-white text-[#707070] border-[#E7E9ED] hover:border-[#7140FF] hover:text-[#7140FF] hover:bg-[#F0EDFF]"
               }`}
@@ -532,7 +560,7 @@ export function VoteListPage() {
                     // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders have no stable id
                     <HotCardSkeleton key={i} />
                   ))
-                : hotVotes.map((vote) => (
+                : visibleHotVotes.map((vote) => (
                     <HotVoteCard
                       key={vote.id}
                       vote={vote}

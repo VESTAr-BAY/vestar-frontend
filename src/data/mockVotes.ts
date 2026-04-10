@@ -4,6 +4,7 @@ import type { HotVote, VoteListItem } from '../types/vote'
 export const HOT_VOTES: HotVote[] = [
   {
     id: '1',
+    category: '음악방송',
     emoji: '',
     gradient: 'linear-gradient(135deg,#1a1035,#2d1b6e)',
     org: 'Show! Music Core',
@@ -13,6 +14,7 @@ export const HOT_VOTES: HotVote[] = [
   },
   {
     id: '2',
+    category: '시상식',
     emoji: '',
     gradient: 'linear-gradient(135deg,#0a1a35,#1a2d6e)',
     org: 'Mnet × MAMA Awards',
@@ -22,6 +24,7 @@ export const HOT_VOTES: HotVote[] = [
   },
   {
     id: '3',
+    category: '팬투표',
     emoji: '',
     gradient: 'linear-gradient(135deg,#1a0a35,#3d1a6e)',
     org: 'ARMY 팬카페 공식',
@@ -31,6 +34,7 @@ export const HOT_VOTES: HotVote[] = [
   },
   {
     id: '4',
+    category: '시상식',
     emoji: '',
     gradient: 'linear-gradient(135deg,#1a1a1a,#2a2a2a)',
     org: 'Melon Music Awards',
@@ -44,6 +48,7 @@ export const HOT_VOTES: HotVote[] = [
 export const VOTE_ITEMS: VoteListItem[] = [
   {
     id: '1',
+    category: '음악방송',
     emoji: '',
     emojiColor: '#e8f0ff',
     org: 'Show! Music Core × Mubeat',
@@ -56,6 +61,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '2',
+    category: '시상식',
     emoji: '',
     emojiColor: '#fef3c7',
     org: 'Mnet × MAMA Awards',
@@ -68,6 +74,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '3',
+    category: '팬투표',
     emoji: '',
     emojiColor: '#f0edff',
     org: 'ARMY 팬카페 공식 투표',
@@ -80,6 +87,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '4',
+    category: '음악방송',
     emoji: '',
     emojiColor: '#fff5e8',
     org: 'MBC Show Champion',
@@ -92,6 +100,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '5',
+    category: '기타',
     emoji: '',
     emojiColor: '#e8f8ff',
     org: 'Gaon Chart 공식',
@@ -104,6 +113,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '6',
+    category: '팬투표',
     emoji: '',
     emojiColor: '#fff0f0',
     org: 'SBS 인기가요',
@@ -116,6 +126,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '7',
+    category: '음악방송',
     emoji: '',
     emojiColor: '#f5f0ff',
     org: 'Mnet 엠카운트다운',
@@ -128,6 +139,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '8',
+    category: '기타',
     emoji: '',
     emojiColor: '#fff0f5',
     org: '멜론 차트',
@@ -140,6 +152,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '9',
+    category: '음악방송',
     emoji: '',
     emojiColor: '#fff5ff',
     org: 'KBS 뮤직뱅크',
@@ -152,6 +165,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '10',
+    category: '기타',
     emoji: '',
     emojiColor: '#f0f8ff',
     org: 'MBC 뮤직',
@@ -164,6 +178,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '11',
+    category: '팬투표',
     emoji: '',
     emojiColor: '#e8f0fe',
     org: '네이버 NOW',
@@ -176,6 +191,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '12',
+    category: '기타',
     emoji: '',
     emojiColor: '#fff3e8',
     org: 'Bugs Music',
@@ -188,6 +204,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '13',
+    category: '시상식',
     emoji: '',
     emojiColor: '#fffde8',
     org: 'HANTEO Chart',
@@ -200,6 +217,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '14',
+    category: '팬투표',
     emoji: '',
     emojiColor: '#f0f0ff',
     org: 'IDOL CHAMP',
@@ -212,6 +230,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '15',
+    category: '팬투표',
     emoji: '',
     emojiColor: '#e8fff5',
     org: 'Choeaedol',
@@ -224,6 +243,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '16',
+    category: '기타',
     emoji: '',
     emojiColor: '#fff8e8',
     org: 'VLIVE Charts',
@@ -236,6 +256,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '17',
+    category: '기타',
     emoji: '',
     emojiColor: '#e8fffe',
     org: 'M2 채널',
@@ -248,6 +269,7 @@ export const VOTE_ITEMS: VoteListItem[] = [
   },
   {
     id: '18',
+    category: '시상식',
     emoji: '',
     emojiColor: '#fef0ff',
     org: '유튜브 뮤직 코리아',

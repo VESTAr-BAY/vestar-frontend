@@ -79,6 +79,7 @@ export interface ApiElection {
   costPerBallot: string
   onchainState: ApiElectionState
   title: string | null
+  category?: string | null
   coverImageUrl: string | null
   syncState: ApiElectionSyncState | null
   series: ApiElectionSeries | null
@@ -101,6 +102,7 @@ export interface ApiElectionMetadata {
     organizationName: string
   } | null
   title: string | null
+  category?: string | null
   coverImageUrl: string | null
   series: ApiElectionSeries | null
   electionKey: ApiElectionKey | null

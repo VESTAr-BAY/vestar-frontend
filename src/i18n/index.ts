@@ -54,6 +54,7 @@ const STRINGS = {
   filter_music: { en: 'Music Shows', ko: '음악방송' },
   filter_awards: { en: 'Awards', ko: '시상식' },
   filter_fan: { en: 'Fan Votes', ko: '팬투표' },
+  filter_other: { en: 'Other', ko: '기타' },
   filter_popular: { en: 'Popular', ko: '인기순' },
 
   // ── Badges ─────────────────────────────────────────────────────────────────

@@ -158,6 +158,7 @@ export function applyManifestToElection(
   return {
     ...rawElection,
     title: manifestTitle || null,
+    category: manifest?.election?.category ?? rawElection.category ?? null,
     coverImageUrl: manifest?.election?.coverImageUrl ?? rawElection.coverImageUrl,
     series: manifestSeriesPreimage || manifest?.series?.coverImageUrl
         ? {
@@ -177,6 +178,7 @@ export function mapToHotVote(rawElection: ApiElection, index: number): HotVote {
 
   return {
     id: election.id,
+    category: election.category ?? undefined,
     emoji: HOT_EMOJIS[index % HOT_EMOJIS.length],
     gradient: HOT_GRADIENTS[index % HOT_GRADIENTS.length],
     org: election.series?.seriesPreimage ?? 'Unknown series',
@@ -198,6 +200,7 @@ export function mapToVoteListItem(rawElection: ApiElection, index = 0): VoteList
 
   return {
     id: election.id,
+    category: election.category ?? undefined,
     seriesKey,
     sortKey: Number.isFinite(parsedId) ? parsedId : 0,
     seriesImageUrl: election.series?.coverImageUrl ?? election.coverImageUrl ?? undefined,

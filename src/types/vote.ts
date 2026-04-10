@@ -2,6 +2,7 @@ export type BadgeVariant = 'live' | 'hot' | 'new' | 'end'
 
 export interface HotVote {
   id: string
+  category?: string
   emoji: string
   gradient: string
   org: string
@@ -13,6 +14,7 @@ export interface HotVote {
 
 export interface VoteListItem {
   id: string
+  category?: string
   seriesKey?: string
   sortKey?: number
   seriesImageUrl?: string

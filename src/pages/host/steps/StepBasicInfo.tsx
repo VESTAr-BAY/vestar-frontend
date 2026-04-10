@@ -6,7 +6,6 @@ const CATEGORIES = [
   { value: '음악방송', ko: '음악방송', en: 'Music Show' },
   { value: '시상식', ko: '시상식', en: 'Awards' },
   { value: '팬투표', ko: '팬투표', en: 'Fan Vote' },
-  { value: '콘셉트', ko: '콘셉트', en: 'Concept' },
   { value: '기타', ko: '기타', en: 'Other' },
 ] as const
 
