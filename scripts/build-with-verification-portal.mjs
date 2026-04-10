@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { access, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const frontendRoot = path.resolve(__dirname, '..')
@@ -13,8 +13,9 @@ const embeddedPortalDir = path.join(frontendBaseDir, 'verification')
 const redirectsPath = path.join(frontendDistDir, '_redirects')
 const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 const FRONTEND_DIST_SKIP = new Set(['vote'])
-const PORTAL_REDIRECT_RULE = '/vote/verification/* /vote/verification/index.html  200'
-const SPA_REDIRECT_RULE = '/vote/*  /vote/index.html  200'
+
+export const PORTAL_REDIRECT_RULE = '/vote/verification/* /vote/verification/index.html  200'
+export const SPA_REDIRECT_RULE = '/vote/*  /vote/index.html  200'
 
 function runCommand(command, args, cwd) {
   const result = spawnSync(command, args, {
@@ -32,7 +33,7 @@ async function ensurePortalDependencies() {
   try {
     await access(path.join(portalRoot, 'node_modules'))
   } catch {
-    runCommand(npmCommand, ['ci'], portalRoot)
+    runCommand(pnpmCommand, ['ci'], portalRoot)
   }
 }
 
@@ -54,20 +55,31 @@ async function mirrorFrontendBuildUnderVoteBase() {
   )
 }
 
-async function syncRedirects() {
+/**
+ * Writes redirect rules to a Netlify _redirects file.
+ * Ensures pinned rules appear first and are never duplicated.
+ *
+ * @param {string} filePath - Absolute path to the _redirects file
+ * @param {string[]} pinnedRules - Rules that must appear at the top (in order)
+ */
+export async function syncRedirects(filePath, pinnedRules) {
   let content = ''
 
   try {
-    content = await readFile(redirectsPath, 'utf8')
+    content = await readFile(filePath, 'utf8')
   } catch {
     content = ''
   }
 
-  const lines = content.split(/\r?\n/).filter(Boolean)
-  const preserved = lines.filter((line) => line !== PORTAL_REDIRECT_RULE && line !== SPA_REDIRECT_RULE)
-  const nextLines = [PORTAL_REDIRECT_RULE, SPA_REDIRECT_RULE, ...preserved]
+  const pinnedSet = new Set(pinnedRules)
+  const preserved = content
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .filter((line) => !pinnedSet.has(line))
 
-  await writeFile(redirectsPath, `${nextLines.join('\n')}\n`)
+  const nextLines = [...pinnedRules, ...preserved]
+
+  await writeFile(filePath, `${nextLines.join('\n')}\n`)
 }
 
 async function hasPortal() {
@@ -80,11 +92,11 @@ async function hasPortal() {
 }
 
 async function main() {
-  runCommand(npmCommand, ['run', 'build:app'], frontendRoot)
+  runCommand(pnpmCommand, ['run', 'build:app'], frontendRoot)
 
   // Always mirror the app under /vote/ so asset paths (/vote/assets/...) resolve correctly on Netlify
   await mirrorFrontendBuildUnderVoteBase()
-  await syncRedirects()
+  await syncRedirects(redirectsPath, [PORTAL_REDIRECT_RULE, SPA_REDIRECT_RULE])
 
   if (!(await hasPortal())) {
     console.log('Skipping verification portal build (vestar-verification-portal not found).')
@@ -93,7 +105,7 @@ async function main() {
 
   await ensurePortalDependencies()
   await rm(portalDistDir, { recursive: true, force: true })
-  runCommand(npmCommand, ['run', 'build', '--', '--base=/vote/verification/'], portalRoot)
+  runCommand(pnpmCommand, ['run', 'build', '--', '--base=/vote/verification/'], portalRoot)
 
   await rm(embeddedPortalDir, { recursive: true, force: true })
   await mkdir(path.dirname(embeddedPortalDir), { recursive: true })
@@ -102,4 +114,7 @@ async function main() {
   console.log(`Embedded verification portal into ${embeddedPortalDir}`)
 }
 
-await main()
+// Only run when executed directly (not imported by tests)
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main()
+}
