@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { ElectionSettingsDraft, SectionDraft, VoteCreateDraft } from '../../../types/host'
+import { useLanguage } from '../../../providers/LanguageProvider'
 import {
   FIXED_PAID_COST_PER_BALLOT,
   UNLIMITED_PAID_COST_PER_BALLOT,
 } from '../../../utils/hostElectionSettings'
+import { formatBallotCostLabel } from '../../../utils/paymentDisplay'
 
 interface StepScheduleProps {
   draft: VoteCreateDraft
@@ -62,6 +64,7 @@ function SettingsEditor({
   title?: string
   description?: string
 }) {
+  const { lang } = useLanguage()
   const isIntervalPolicy = settings.ballotPolicy === 'ONE_PER_INTERVAL'
   const isUnlimitedPaid = settings.ballotPolicy === 'UNLIMITED_PAID'
   const allowMultipleChoice = settings.maxChoices > 1 && !isUnlimitedPaid
@@ -72,6 +75,7 @@ function SettingsEditor({
       : isUnlimitedPaid
         ? UNLIMITED_PAID_COST_PER_BALLOT
         : FIXED_PAID_COST_PER_BALLOT
+  const displayedCostPerBallotLabel = formatBallotCostLabel(displayedCostPerBallot, lang)
   const maxChoicesOptions = Array.from({ length: Math.max(candidateCount, 1) }, (_, index) => {
     const value = index + 1
     return { value, label: `${value}명` }
@@ -270,10 +274,8 @@ function SettingsEditor({
         <div className="mt-4">
           <Field label="투표 1회당 비용">
             <input
-              type="number"
-              min="0"
-              step={isUnlimitedPaid ? '0.001' : '1'}
-              value={displayedCostPerBallot}
+              type="text"
+              value={displayedCostPerBallotLabel}
               disabled
               readOnly
               className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all disabled:bg-[#F7F8FA] disabled:text-[#C0C4CC]"
@@ -282,7 +284,7 @@ function SettingsEditor({
               {settings.paymentMode === 'FREE'
                 ? '무료 투표는 비용이 없습니다.'
                 : isUnlimitedPaid
-                  ? '유료 반복 투표는 컨트랙트 규칙상 고정 비용으로 생성됩니다.'
+                  ? `유료 반복 투표는 컨트랙트 규칙상 ${displayedCostPerBallotLabel} 고정 비용으로 생성됩니다.`
                   : '일반 유료 투표는 100으로 고정됩니다.'}
             </div>
           </Field>

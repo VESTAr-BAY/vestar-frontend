@@ -131,7 +131,7 @@ export function VoteCreatePage() {
       </header>
 
       {/* Scrollable content */}
-      <main className="h-screen overflow-y-auto px-[var(--safe-left)] pr-[var(--safe-right)] pt-[var(--header-h)] pb-[var(--footer-h)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <main className="h-screen overflow-y-auto px-[var(--safe-left)] pr-[var(--safe-right)] pt-[var(--header-h)] pb-[calc(var(--footer-h)+1.5rem)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {step === 1 && <StepBasicInfo draft={draft} onUpdate={updateField} />}
         {step === 2 && (
           <StepCandidates

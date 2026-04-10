@@ -1,7 +1,8 @@
 import type { ElectionSettingsDraft } from '../types/host'
 
 export const FIXED_PAID_COST_PER_BALLOT = '100'
-export const UNLIMITED_PAID_COST_PER_BALLOT = '100'
+// sungje : UNLIMITED_PAID는 컨트랙트의 UNLIMITED_PAID_COST_AMOUNT(66_000, 6 decimals)를 그대로 맞춰야 createElection 검증을 통과한다.
+export const UNLIMITED_PAID_COST_PER_BALLOT = '0.066'
 
 export function normalizeElectionSettingsDraft<T extends ElectionSettingsDraft>(settings: T): T {
   const isOpenVote = settings.visibilityMode === 'OPEN'

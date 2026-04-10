@@ -16,6 +16,7 @@ import { useVotedVotes } from '../../hooks/useVotedVotes'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
 import { withKoreanParticle } from '../../utils/korean'
+import { formatBallotCostLabel } from '../../utils/paymentDisplay'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 import { CandidateSection, GroupedCandidateSection } from '../user/CandidateSection'
 import { VoteBottomSheetContent } from '../user/VoteBottomSheetContent'
@@ -182,11 +183,13 @@ export function VoteDetailPage() {
   const isHistorySelectionView = historySelectionCandidateKeys.length > 0 || Boolean(historySelectionLabel)
   const voteFeeLabel =
     vote?.paymentMode === 'PAID' && vote.costPerBallot && vote.costPerBallot !== '0'
-      ? vote.costPerBallot
-      : '무료'
+      ? formatBallotCostLabel(vote.costPerBallot, lang)
+      : lang === 'ko'
+        ? '무료'
+        : 'Free'
   const groupedSelectionLabel =
     vote?.paymentMode === 'PAID' && vote.costPerBallot && vote.costPerBallot !== '0'
-      ? `${sectionSelection.selectedCount} ${lang === 'ko' ? `섹션 선택됨 · ${vote.costPerBallot}` : `sections selected · ${vote.costPerBallot}`}`
+      ? `${sectionSelection.selectedCount} ${lang === 'ko' ? `섹션 선택됨 · ${formatBallotCostLabel(vote.costPerBallot, lang)}` : `sections selected · ${formatBallotCostLabel(vote.costPerBallot, lang)}`}`
       : `${sectionSelection.selectedCount} ${lang === 'ko' ? '섹션 선택됨 · 무료' : 'sections selected · free'}`
   const resolvedHasVoted = isHistorySelectionView || (hasVoted && !canSubmitByEligibility)
 
