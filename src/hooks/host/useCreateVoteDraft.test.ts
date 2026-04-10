@@ -95,6 +95,7 @@ describe('useCreateVoteDraft', () => {
 
     expect(result.current.step).toBe(1)
     expect(result.current.draft.visibilityMode).toBe('PRIVATE')
+    expect(result.current.draft.sectionPolicyUnified).toBe(true)
     expect(result.current.draft.candidates).toHaveLength(2)
     expect(result.current.draft.group).toBe('')
   })
@@ -208,5 +209,75 @@ describe('useCreateVoteDraft', () => {
 
     expect(uploadJsonArtifactToPinataMock).toHaveBeenCalledTimes(2)
     vi.useRealTimers()
+  })
+
+  it('keeps section policies synchronized by default', () => {
+    const { result } = renderHook(() => useCreateVoteDraft())
+
+    act(() => result.current.updateField('title', 'MAMA 2026'))
+    act(() => result.current.addSection())
+    act(() => result.current.addSection())
+
+    const [firstSection, secondSection] = result.current.draft.sections
+
+    act(() => result.current.updateSectionField(firstSection.id, 'ballotPolicy', 'ONE_PER_INTERVAL'))
+
+    expect(result.current.draft.sections[0].ballotPolicy).toBe('ONE_PER_INTERVAL')
+    expect(result.current.draft.sections[1].ballotPolicy).toBe('ONE_PER_INTERVAL')
+
+    act(() => result.current.updateSectionField(secondSection.id, 'resetIntervalUnit', 'DAY'))
+
+    expect(result.current.draft.sections[0].resetIntervalUnit).toBe('DAY')
+    expect(result.current.draft.sections[1].resetIntervalUnit).toBe('DAY')
+    expect(result.current.draft.sections[0].id).toBe(firstSection.id)
+    expect(result.current.draft.sections[1].id).toBe(secondSection.id)
+  })
+
+  it('allows section policies to diverge when unification is turned off', () => {
+    const { result } = renderHook(() => useCreateVoteDraft())
+
+    act(() => result.current.addSection())
+    act(() => result.current.addSection())
+    act(() => result.current.updateField('sectionPolicyUnified', false))
+
+    const [firstSection, secondSection] = result.current.draft.sections
+
+    act(() => result.current.updateSectionField(firstSection.id, 'ballotPolicy', 'ONE_PER_INTERVAL'))
+
+    expect(result.current.draft.sections[0].ballotPolicy).toBe('ONE_PER_INTERVAL')
+    expect(result.current.draft.sections[1].ballotPolicy).toBe('ONE_PER_ELECTION')
+
+    act(() => result.current.updateSectionField(secondSection.id, 'visibilityMode', 'OPEN'))
+
+    expect(result.current.draft.sections[0].visibilityMode).toBe('PRIVATE')
+    expect(result.current.draft.sections[1].visibilityMode).toBe('OPEN')
+  })
+
+  it('immediately applies section 1 policy to every section when unification is turned back on', () => {
+    const { result } = renderHook(() => useCreateVoteDraft())
+
+    act(() => result.current.addSection())
+    act(() => result.current.addSection())
+    act(() => result.current.updateField('sectionPolicyUnified', false))
+
+    const [firstSection, secondSection] = result.current.draft.sections
+
+    act(() => result.current.updateSectionField(firstSection.id, 'ballotPolicy', 'ONE_PER_INTERVAL'))
+    act(() => result.current.updateSectionField(firstSection.id, 'resetIntervalUnit', 'DAY'))
+    act(() => result.current.updateSectionField(secondSection.id, 'visibilityMode', 'OPEN'))
+    act(() => result.current.updateSectionField(secondSection.id, 'paymentMode', 'PAID'))
+
+    act(() => result.current.updateField('sectionPolicyUnified', true))
+
+    expect(result.current.draft.sections[0].ballotPolicy).toBe('ONE_PER_INTERVAL')
+    expect(result.current.draft.sections[1].ballotPolicy).toBe('ONE_PER_INTERVAL')
+    expect(result.current.draft.sections[0].resetIntervalUnit).toBe('DAY')
+    expect(result.current.draft.sections[1].resetIntervalUnit).toBe('DAY')
+    expect(result.current.draft.sections[0].visibilityMode).toBe('PRIVATE')
+    expect(result.current.draft.sections[1].visibilityMode).toBe('PRIVATE')
+    expect(result.current.draft.sections[0].paymentMode).toBe('FREE')
+    expect(result.current.draft.sections[1].paymentMode).toBe('FREE')
+    expect(result.current.draft.sections[0].id).toBe(firstSection.id)
+    expect(result.current.draft.sections[1].id).toBe(secondSection.id)
   })
 })

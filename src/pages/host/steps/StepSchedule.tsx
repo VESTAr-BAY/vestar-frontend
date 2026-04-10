@@ -41,6 +41,40 @@ interface StepScheduleProps {
   ) => void
 }
 
+function PolicyUnifyToggle({
+  checked,
+  onChange,
+}: {
+  checked: boolean
+  onChange: (checked: boolean) => void
+}) {
+  const { lang } = useLanguage()
+
+  return (
+    <div className="ml-auto flex items-center gap-2 pl-3">
+      <span className="text-[12px] font-semibold text-[#707070]">
+        {lang === 'ko' ? '정책 통일' : 'Unified policy'}
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={lang === 'ko' ? '섹션 정책 통일' : 'Unify section policy'}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          checked ? 'bg-[#7140FF]' : 'bg-[#D7DBE3]'
+        }`}
+      >
+        <span
+          className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+            checked ? 'translate-x-5' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    </div>
+  )
+}
+
 function ChoiceCard({
   selected,
   title,
@@ -458,6 +492,7 @@ export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepSche
   const usesSections = draft.sections.length > 0
   const { lang } = useLanguage()
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
+  const isUnifiedPolicy = draft.sectionPolicyUnified
   const handleUpdateSingleField = <K extends keyof ElectionSettingsDraft>(
     key: K,
     value: ElectionSettingsDraft[K],
@@ -471,11 +506,16 @@ export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepSche
       return
     }
 
+    if (isUnifiedPolicy) {
+      setActiveSectionId(draft.sections[0]?.id ?? null)
+      return
+    }
+
     // sungje : 섹션별 설정이 길어질 때 현재 편집 중인 섹션만 보이도록 탭 상태를 유지한다.
     if (!activeSectionId || !draft.sections.some((section) => section.id === activeSectionId)) {
       setActiveSectionId(draft.sections[0]?.id ?? null)
     }
-  }, [activeSectionId, draft.sections, usesSections])
+  }, [activeSectionId, draft.sections, isUnifiedPolicy, usesSections])
 
   if (usesSections) {
     const activeSection =
@@ -494,30 +534,47 @@ export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepSche
           </div>
           <div className="mt-1 text-[12px] text-[#707070]">
             {lang === 'ko'
-              ? '각 섹션은 독립된 election으로 생성되고, 아래 정책도 섹션별로 각각 서명/제출됩니다.'
-              : 'Each section becomes an independent election, and the settings below are signed and submitted separately.'}
+              ? isUnifiedPolicy
+                ? '각 섹션은 독립된 election으로 생성되지만, 현재는 모든 섹션에 같은 정책이 적용됩니다.'
+                : '각 섹션은 독립된 election으로 생성되고, 아래 정책도 섹션별로 각각 서명/제출됩니다.'
+              : isUnifiedPolicy
+                ? 'Each section becomes an independent election, but the same policy is currently applied to all sections.'
+                : 'Each section becomes an independent election, and the settings below are signed and submitted separately.'}
           </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {draft.sections.map((section, index) => {
-            const selected = section.id === activeSection.id
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {draft.sections.map((section, index) => {
+                const selected = section.id === activeSection.id
+                const disabled = isUnifiedPolicy && index > 0
 
-            return (
-              <button
-                key={section.id}
-                type="button"
-                onClick={() => setActiveSectionId(section.id)}
-                className={`shrink-0 rounded-full border px-4 py-2 text-[13px] font-semibold transition-all ${
-                  selected
-                    ? 'border-[#7140FF] bg-[#7140FF] text-white'
-                    : 'border-[#E7E9ED] bg-white text-[#707070]'
-                }`}
-              >
-                {lang === 'ko' ? `섹션 ${index + 1}` : `Section ${index + 1}`}
-              </button>
-            )
-          })}
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setActiveSectionId(section.id)}
+                    className={`shrink-0 rounded-full border px-4 py-2 text-[13px] font-semibold transition-all ${
+                      selected
+                        ? 'border-[#7140FF] bg-[#7140FF] text-white'
+                        : 'border-[#E7E9ED] bg-white text-[#707070]'
+                    } disabled:border-[#E7E9ED] disabled:bg-[#F7F8FA] disabled:text-[#C0C4CC] disabled:cursor-not-allowed`}
+                  >
+                    {lang === 'ko' ? `섹션 ${index + 1}` : `Section ${index + 1}`}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="shrink-0">
+            <PolicyUnifyToggle
+              checked={isUnifiedPolicy}
+              onChange={(checked) => onUpdate('sectionPolicyUnified', checked)}
+            />
+          </div>
         </div>
 
         <SectionScheduleCard

@@ -44,6 +44,7 @@ export interface VoteCreateDraft extends ElectionSettingsDraft {
   electionCoverImage: string
   electionCoverImageFile?: File | null
   category: string
+  sectionPolicyUnified: boolean
   candidates: CandidateDraft[]
   sections: SectionDraft[]
 }
