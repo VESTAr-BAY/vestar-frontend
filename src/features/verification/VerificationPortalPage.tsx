@@ -1,4 +1,5 @@
 import { startTransition, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { resolvePublicIpfsUrl } from '../../utils/ipfs'
 import { ProofItem } from './components/cards/ProofItem'
@@ -140,7 +141,7 @@ function buildSeriesGroups(
 
 function App() {
   const { lang } = useLanguage()
-  const homePath = import.meta.env.BASE_URL
+  const navigate = useNavigate()
   const initialCache = readCachedVerificationElectionSummaries()
   const [elections, setElections] = useState<VerificationElectionSummary[]>(initialCache.elections)
   const [viewTab, setViewTab] = useState<ViewTab>('current')
@@ -393,7 +394,7 @@ function App() {
             <PortalButton
               variant="header"
               onClick={() => {
-                globalThis.location.assign(homePath)
+                navigate('/vote', { replace: true })
               }}
             >
               {lang === 'ko' ? '홈으로' : 'Home'}
