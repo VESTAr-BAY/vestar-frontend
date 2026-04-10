@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router'
 import { useCreateVoteDraft } from '../../hooks/host/useCreateVoteDraft'
+import { useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
 import { StepBasicInfo } from './steps/StepBasicInfo'
@@ -58,6 +59,7 @@ export function VoteCreatePage() {
   const navigate = useNavigate()
   const { addToast } = useToast()
   const { lang } = useLanguage()
+  const navigateBack = useSmartBackNavigation('/host')
   const {
     draft,
     step,
@@ -120,7 +122,7 @@ export function VoteCreatePage() {
         <button
           type="button"
           aria-label={lang === 'ko' ? '뒤로가기' : 'Go back'}
-          onClick={() => (step === 1 ? navigate('/host') : prevStep())}
+          onClick={() => (step === 1 ? navigateBack() : prevStep())}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.08] hover:bg-white/[0.14] transition-colors flex-shrink-0"
         >
           <svg

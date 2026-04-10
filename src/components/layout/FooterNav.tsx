@@ -74,8 +74,7 @@ export function FooterNav({ scrollState }: FooterNavProps) {
       className={`fixed left-1/2 -translate-x-1/2 z-[100] flex items-center justify-around transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${STATE_CLASSES[scrollState]}`}
     >
       {NAV_ITEMS.map((item) => {
-        const active =
-          pathname === item.path || (item.path === '/vote' && pathname.startsWith('/vote'))
+        const active = pathname === item.path
         return (
           <button
             key={item.labelKey}

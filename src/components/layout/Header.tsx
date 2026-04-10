@@ -5,6 +5,7 @@ import { requestWalletConnection } from '../../utils/walletConnection'
 import accountCircleIcon from '../../assets/account_circle.svg'
 import connectWalletIcon from '../../assets/account_connect_wallet.svg'
 import complete_vote from '../../assets/complete_vote.svg'
+import { useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { ScrollState } from '../../hooks/useScrollDirection'
 
@@ -32,6 +33,7 @@ export function Header({ scrollState, onOpenPanel }: HeaderProps) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const handleBack = useSmartBackNavigation(pathname.startsWith('/host') ? '/host' : '/vote')
 
   const isHomeLike = pathname === '/vote' || pathname === '/mypage'
   const showBack = !isHomeLike
@@ -49,7 +51,7 @@ export function Header({ scrollState, onOpenPanel }: HeaderProps) {
         <button
           type="button"
           aria-label={t('btn_back')}
-          onClick={() => navigate('/vote')}
+          onClick={handleBack}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.10] transition-colors flex-shrink-0"
         >
           <img src={keyboardArrowLeft} alt="" className="w-6 h-6 invert" />
