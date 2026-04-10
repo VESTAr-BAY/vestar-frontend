@@ -454,7 +454,7 @@ export function VoteListPage() {
   return (
     <>
       {/* Hero Banner */}
-      <div className="h-80 relative -mt-14 overflow-hidden px-5 pb-8 pt-[calc(56px+24px)] bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB]">
+      <div className="relative h-[17.5rem] -mt-14 overflow-hidden bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] px-5 pb-5 pt-[calc(56px+14px)]">
         {/* Decorative: large faint circle ring — top-right, partially clipped */}
         <svg
           aria-hidden="true"
@@ -505,7 +505,7 @@ export function VoteListPage() {
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7140FF]/25 to-transparent" />
 
         {/* Content */}
-        <div className="relative mt-20">
+        <div className="relative mt-10">
           {/* Eyebrow badge */}
           <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-[#7140FF]/20 bg-[rgba(113,64,255,0.07)] px-3 py-[5px]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#7140FF]" />
