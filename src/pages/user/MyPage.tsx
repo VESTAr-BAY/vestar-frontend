@@ -192,7 +192,7 @@ export function MyPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="h-80 relative px-5 pb-8 pt-[calc(56px+24px)] -mt-14 bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] overflow-hidden">
+      <div className="relative h-[17.5rem] -mt-14 overflow-hidden bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] px-5 pb-5 pt-[calc(56px+14px)]">
         {/* Decorative: large circle ring — top-right */}
         <svg aria-hidden="true" className="pointer-events-none absolute -right-12 -top-12 opacity-[0.08]" width="200" height="200" viewBox="0 0 200 200" fill="none">
           <circle cx="100" cy="100" r="92" stroke="#7140FF" strokeWidth="10" />
@@ -208,7 +208,7 @@ export function MyPage() {
         {/* Bottom separator */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#7140FF]/25 to-transparent" />
 
-        <div className="relative">
+        <div className="relative mt-10">
           <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-[#7140FF]/20 bg-[rgba(113,64,255,0.07)] px-3 py-[5px]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#7140FF]" />
             <span className="font-mono text-[10px] font-bold uppercase tracking-[1.2px] text-[#7140FF]">My Page</span>
@@ -217,7 +217,7 @@ export function MyPage() {
             {isConnected && address ? truncateAddress(address) : t('pp_not_connected')}
           </h1>
           <p className="text-[13px] leading-relaxed text-violet-600/60">
-            {tier.label} · {total.toLocaleString()} Karma
+            {tier.label}
           </p>
         </div>
       </div>
