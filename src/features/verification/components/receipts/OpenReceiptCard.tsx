@@ -1,7 +1,7 @@
 import { useLanguage } from '../../../../providers/LanguageProvider'
-import { resolveIpfsUrl } from '../../../../utils/ipfs'
 import type { VerificationReceipt } from '../../vestar'
 import { PortalButton } from '../ui/PortalButton'
+import { IpfsImage } from '../ui/IpfsImage'
 import { PortalPanel } from '../ui/PortalPanel'
 import { PortalPill } from '../ui/PortalPill'
 
@@ -41,8 +41,8 @@ export function OpenReceiptCard({ order, receipt }: OpenReceiptCardProps) {
             <PortalPill key={`${receipt.id}-${selection.key}`} tone="neutral" size="sm">
               <span className="inline-flex items-center gap-1.5">
                 {selection.imageUrl ? (
-                  <img
-                    src={resolveIpfsUrl(selection.imageUrl)}
+                  <IpfsImage
+                    uri={selection.imageUrl}
                     alt=""
                     className="h-4 w-4 rounded-full object-cover"
                   />

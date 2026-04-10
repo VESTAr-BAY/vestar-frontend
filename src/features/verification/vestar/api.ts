@@ -103,11 +103,13 @@ export async function syncVerificationElectionSummaries() {
 
     cachedMap.set(electionAddress.toLowerCase(), {
       id: truncateAddress(electionAddress),
+      chainSeriesId: '0x' as Hex,
       mode: log.args.visibilityMode === 1 ? 'PRIVATE' : 'OPEN',
       modeLabel: formatModeLabel(log.args.visibilityMode === 1 ? 'PRIVATE' : 'OPEN', lang),
       state: 0,
       stateLabel: lang === 'ko' ? '상태 확인 중' : 'Checking status',
       isFinalized: false,
+      seriesTitle: null,
       title: lang === 'ko' ? '불러오는 중' : 'Loading',
       description:
         lang === 'ko'
@@ -178,7 +180,7 @@ async function hydrateFallbackElectionSummaries(
 ): Promise<VerificationElectionSummary[]> {
   return Promise.all(
     elections.map(async (election) => {
-      if (hasResolvedElectionTitle(election)) {
+      if (hasResolvedElectionTitle(election) && election.seriesTitle) {
         return election
       }
 
@@ -197,10 +199,8 @@ async function hydrateFallbackElectionSummaries(
 
       return {
         ...election,
-        title:
-          getCandidateManifestTitle(candidateManifest) ||
-          getCandidateManifestSeriesPreimage(candidateManifest) ||
-          election.title,
+        seriesTitle: getCandidateManifestSeriesPreimage(candidateManifest) || election.seriesTitle,
+        title: getCandidateManifestTitle(candidateManifest) || election.title,
         category: candidateManifest.election?.category ?? election.category,
         coverImageUrl: getCandidateManifestCoverImageUrl(candidateManifest) ?? election.coverImageUrl,
       }
@@ -338,7 +338,7 @@ async function loadElectionSummary(
     previous.resultManifestURI !== result.resultManifestURI ||
     previous.resultManifestHash !== result.resultManifestHash
   const candidateManifest =
-    hasResolvedElectionTitle(previous) && !previousManifestChanged
+    hasResolvedElectionTitle(previous) && previous.seriesTitle && !previousManifestChanged
       ? null
       : await readCandidateManifest(config.candidateManifestURI, config.candidateManifestHash)
   const resultManifest =
@@ -405,10 +405,10 @@ async function loadElectionSummary(
       : totalReceipts === previous.receiptCount
         ? previous.topCandidate
         : detailTopCandidate
-  const manifestTitle =
-    candidateManifest &&
-    (getCandidateManifestTitle(candidateManifest) ||
-      getCandidateManifestSeriesPreimage(candidateManifest))
+  const manifestTitle = candidateManifest ? getCandidateManifestTitle(candidateManifest) : ''
+  const manifestSeriesTitle = candidateManifest
+    ? getCandidateManifestSeriesPreimage(candidateManifest)
+    : ''
   const manifestCoverImageUrl = candidateManifest
     ? getCandidateManifestCoverImageUrl(candidateManifest)
     : null
@@ -417,12 +417,14 @@ async function loadElectionSummary(
   return {
     ...previous,
     id: formatElectionId(electionId, electionAddress),
+    chainSeriesId: config.seriesId,
     mode,
     modeLabel: formatModeLabel(mode),
     state: Number(state),
     stateLabel: formatStateLabel(Number(state)),
     isFinalized,
-    title: manifestTitle ?? previousTitle ?? formatElectionTitle(electionId, electionAddress),
+    seriesTitle: manifestSeriesTitle || previous.seriesTitle,
+    title: manifestTitle || previousTitle || formatElectionTitle(electionId, electionAddress),
     description:
       resultManifest?.summary ??
       previousDescription ??

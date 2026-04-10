@@ -36,6 +36,13 @@ export type PinataJsonUploadArtifact<T> = PinataUploadArtifact & {
 }
 
 export const PINATA_GATEWAY_URL = 'https://chocolate-elegant-otter-530.mypinata.cloud'
+const PUBLIC_IPFS_GATEWAY_URLS = [
+  PINATA_GATEWAY_URL,
+  'https://gateway.pinata.cloud',
+  'https://cloudflare-ipfs.com',
+  'https://ipfs.io',
+  'https://dweb.link',
+]
 
 const PINATA_API_URL = 'https://uploads.pinata.cloud/v3/files'
 const VERIFY_RETRY_COUNT = 8
@@ -56,6 +63,10 @@ function normalizeGatewayUrl(value: string) {
   }
 
   return `https://${trimmed}`
+}
+
+function dedupeUrls(values: string[]) {
+  return [...new Set(values.filter(Boolean))]
 }
 
 function getPinataJwt() {
@@ -81,11 +92,7 @@ function getConfiguredPinataGateways() {
     .map(normalizeGatewayUrl)
     .filter(Boolean)
 
-  if (configured.length > 0) {
-    return configured
-  }
-
-  return [PINATA_GATEWAY_URL]
+  return dedupeUrls([...configured, ...PUBLIC_IPFS_GATEWAY_URLS])
 }
 
 function getGatewayBaseUrl() {
@@ -100,6 +107,13 @@ export function resolveIpfsUrls(uri: string): string[] {
 
   const cid = uri.replace('ipfs://', '')
   return getConfiguredPinataGateways().map((gateway) => `${gateway}/ipfs/${cid}`)
+}
+
+export function resolveReadableIpfsUrls(uri: string): string[] {
+  const resolved = resolveIpfsUrls(uri)
+  const publicUrls = resolved.filter((url) => !url.startsWith(PINATA_GATEWAY_URL))
+  const customUrls = resolved.filter((url) => url.startsWith(PINATA_GATEWAY_URL))
+  return dedupeUrls([...publicUrls, ...customUrls])
 }
 
 function createBrowserFile(parts: BlobPart[], fileName: string, type: string) {
@@ -253,4 +267,8 @@ export async function uploadFileToPinata(file: File): Promise<PinataUploadArtifa
 
 export function resolveIpfsUrl(uri: string): string {
   return resolveIpfsUrls(uri)[0]
+}
+
+export function resolvePublicIpfsUrl(uri: string): string {
+  return resolveReadableIpfsUrls(uri)[0] ?? uri
 }

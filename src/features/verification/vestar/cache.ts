@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import type { Address, Hex } from 'viem'
 import { DETAIL_CACHE_PREFIX, INDEX_CACHE_KEY } from './constants'
 import type {
   StoredIndexCache,
@@ -64,6 +64,8 @@ export function normalizeElectionSummary(election: VerificationElectionSummary) 
 
   return {
     ...election,
+    chainSeriesId: election.chainSeriesId ?? ('0x' as Hex),
+    seriesTitle: election.seriesTitle ?? null,
     modeLabel: formatModeLabel(election.mode, lang),
     stateLabel: formatStateLabel(election.state, lang),
     title: localizedTitle,

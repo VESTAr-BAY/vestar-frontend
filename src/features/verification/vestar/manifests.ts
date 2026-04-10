@@ -1,6 +1,7 @@
 import { keccak256, stringToHex, type Hex } from 'viem'
 import { parseCandidateManifest } from '../../../utils/candidateManifest'
-import { MANIFEST_CACHE_PREFIX, PINATA_GATEWAY_URL, ZERO_HASH } from './constants'
+import { resolveReadableIpfsUrls } from '../../../utils/ipfs'
+import { MANIFEST_CACHE_PREFIX, ZERO_HASH } from './constants'
 import { readStoredItem, removeStoredItem, writeStoredItem } from './cache'
 import type { CandidateManifest, ResultManifest } from './types'
 import { isLikelyCid } from './utils'
@@ -48,22 +49,26 @@ async function readVerifiedManifest<T extends CandidateManifest | ResultManifest
     const resolved = await resolveManifestUrl(uri)
     if (!resolved) return null
 
-    try {
-      const response = await fetch(resolved.url)
-      if (!response.ok) {
-        return null
-      }
+    for (const url of resolved.urls) {
+      try {
+        const response = await fetch(url)
+        if (!response.ok) {
+          continue
+        }
 
-      const body = await response.text()
-      if (!resolved.skipHashVerification && keccak256(stringToHex(body)) !== expectedHash) {
-        return null
-      }
+        const body = await response.text()
+        if (!resolved.skipHashVerification && keccak256(stringToHex(body)) !== expectedHash) {
+          continue
+        }
 
-      writeStoredItem(manifestCacheKey, body)
-      return JSON.parse(body) as T
-    } catch {
-      return null
+        writeStoredItem(manifestCacheKey, body)
+        return JSON.parse(body) as T
+      } catch {
+        continue
+      }
     }
+
+    return null
   })()
 
   manifestRequestCache.set(manifestRequestKey, pending)
@@ -104,27 +109,31 @@ async function readVerifiedCandidateManifest(
     const resolved = await resolveManifestUrl(uri)
     if (!resolved) return null
 
-    try {
-      const response = await fetch(resolved.url)
-      if (!response.ok) {
-        return null
-      }
+    for (const url of resolved.urls) {
+      try {
+        const response = await fetch(url)
+        if (!response.ok) {
+          continue
+        }
 
-      const body = await response.text()
-      if (!resolved.skipHashVerification && keccak256(stringToHex(body)) !== expectedHash) {
-        return null
-      }
+        const body = await response.text()
+        if (!resolved.skipHashVerification && keccak256(stringToHex(body)) !== expectedHash) {
+          continue
+        }
 
-      const parsed = parseCandidateManifest(JSON.parse(body))
-      if (!parsed) {
-        return null
-      }
+        const parsed = parseCandidateManifest(JSON.parse(body))
+        if (!parsed) {
+          continue
+        }
 
-      writeStoredItem(manifestCacheKey, body)
-      return parsed
-    } catch {
-      return null
+        writeStoredItem(manifestCacheKey, body)
+        return parsed
+      } catch {
+        continue
+      }
     }
+
+    return null
   })()
 
   manifestRequestCache.set(manifestRequestKey, pending)
@@ -141,7 +150,7 @@ async function resolveManifestUrl(uri: string) {
   if (!uri) return null
 
   if (uri.startsWith('https://') || uri.startsWith('http://')) {
-    return { url: uri, skipHashVerification: false }
+    return { urls: [uri], skipHashVerification: false }
   }
 
   if (uri.startsWith('ipfs://')) {
@@ -150,7 +159,10 @@ async function resolveManifestUrl(uri: string) {
       return null
     }
 
-    return { url: `${PINATA_GATEWAY_URL}/ipfs/${cid}`, skipHashVerification: false }
+    return {
+      urls: resolveReadableIpfsUrls(uri),
+      skipHashVerification: false,
+    }
   }
 
   return null

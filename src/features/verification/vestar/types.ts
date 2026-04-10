@@ -112,11 +112,13 @@ export type VerificationCandidate = {
 
 export type VerificationElectionSummary = {
   id: string
+  chainSeriesId: Hex
   mode: VisibilityMode
   modeLabel: string
   state: number
   stateLabel: string
   isFinalized: boolean
+  seriesTitle: string | null
   title: string
   description: string
   hostName: string

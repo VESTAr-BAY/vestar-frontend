@@ -1,6 +1,6 @@
 import { keccak256, stringToHex, type Hex } from 'viem'
 import { parseCandidateManifest, type CandidateManifest } from '../utils/candidateManifest'
-import { resolveIpfsUrls } from '../utils/ipfs'
+import { resolveReadableIpfsUrls } from '../utils/ipfs'
 
 const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000' as const
 
@@ -28,44 +28,46 @@ export async function fetchCandidateManifest(
   }
 
   const pending = (async () => {
-    try {
-      const resolvedUrl = resolveIpfsUrls(uri)[0]
-      const response = await fetch(resolvedUrl)
-      if (!response.ok) {
-        console.warn('[candidateManifest] fetch failed', {
-          uri,
-          resolvedUrl,
-          status: response.status,
-          statusText: response.statusText,
-        })
-        return null
-      }
+    for (const resolvedUrl of resolveReadableIpfsUrls(uri)) {
+      try {
+        const response = await fetch(resolvedUrl)
+        if (!response.ok) {
+          console.warn('[candidateManifest] fetch failed', {
+            uri,
+            resolvedUrl,
+            status: response.status,
+            statusText: response.statusText,
+          })
+          continue
+        }
 
-      const body = await response.text()
-      const parsed = parseManifestBody(body)
-      if (!parsed) {
-        console.warn('[candidateManifest] parse failed', { uri, resolvedUrl, body })
-        return null
-      }
+        const body = await response.text()
+        const parsed = parseManifestBody(body)
+        if (!parsed) {
+          console.warn('[candidateManifest] parse failed', { uri, resolvedUrl, body })
+          continue
+        }
 
-      if (
-        expectedHash &&
-        expectedHash !== ZERO_HASH &&
-        keccak256(stringToHex(body)) !== (expectedHash as Hex)
-      ) {
-        console.warn('[candidateManifest] hash mismatch', {
-          uri,
-          resolvedUrl,
-          expectedHash,
-          actualHash: keccak256(stringToHex(body)),
-        })
-      }
+        if (
+          expectedHash &&
+          expectedHash !== ZERO_HASH &&
+          keccak256(stringToHex(body)) !== (expectedHash as Hex)
+        ) {
+          console.warn('[candidateManifest] hash mismatch', {
+            uri,
+            resolvedUrl,
+            expectedHash,
+            actualHash: keccak256(stringToHex(body)),
+          })
+        }
 
-      return parsed
-    } catch (error) {
-      console.warn('[candidateManifest] request threw', { uri, error })
-      return null
+        return parsed
+      } catch (error) {
+        console.warn('[candidateManifest] request threw', { uri, resolvedUrl, error })
+      }
     }
+
+    return null
   })()
 
   manifestRequestCache.set(cacheKey, pending)

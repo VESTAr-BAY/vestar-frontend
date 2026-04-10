@@ -1,5 +1,5 @@
 import { useLanguage } from '../../../../providers/LanguageProvider'
-import { resolveIpfsUrl } from '../../../../utils/ipfs'
+import { IpfsImage } from '../ui/IpfsImage'
 import { PortalPanel } from '../ui/PortalPanel'
 
 type ResultCardProps = {
@@ -33,8 +33,8 @@ export function ResultCard({
           {rank}
         </div>
         {imageUrl ? (
-          <img
-            src={resolveIpfsUrl(imageUrl)}
+          <IpfsImage
+            uri={imageUrl}
             alt=""
             className="h-10 w-10 rounded-xl bg-[#F0EDFF] object-cover"
           />

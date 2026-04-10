@@ -1,11 +1,12 @@
 import { startTransition, useEffect, useMemo, useState } from 'react'
 import { useLanguage } from '../../providers/LanguageProvider'
-import { resolveIpfsUrl } from '../../utils/ipfs'
+import { resolvePublicIpfsUrl } from '../../utils/ipfs'
 import { ProofItem } from './components/cards/ProofItem'
 import { ResultCard } from './components/cards/ResultCard'
 import { ValueCard } from './components/cards/ValueCard'
 import { OpenReceiptCard } from './components/receipts/OpenReceiptCard'
 import { PrivateReceiptCard } from './components/receipts/PrivateReceiptCard'
+import { IpfsImage } from './components/ui/IpfsImage'
 import { HeroMetric, StatCard } from './components/ui/MetricCard'
 import { PortalButton } from './components/ui/PortalButton'
 import { PortalPanel } from './components/ui/PortalPanel'
@@ -33,6 +34,16 @@ type SelectedStats = {
   completionRate: number
 }
 
+type VerificationSeriesGroup = {
+  key: string
+  title: string
+  items: VerificationElectionSummary[]
+  coverImageUrl: string | null
+  latestCreatedBlock: bigint
+  totalReceipts: number
+  totalValidVotes: number
+}
+
 function hasRevealedPrivateKey(
   election: Pick<VerificationElectionSummary, 'mode' | 'state' | 'revealedPrivateKey'>,
 ) {
@@ -56,12 +67,86 @@ function getPrivateKeyStatusLabel(
       : 'Private key hidden'
 }
 
+function compareBigIntString(left: string, right: string) {
+  const leftBlock = BigInt(left)
+  const rightBlock = BigInt(right)
+
+  if (leftBlock === rightBlock) {
+    return 0
+  }
+
+  return leftBlock > rightBlock ? -1 : 1
+}
+
+function buildSeriesGroups(
+  elections: VerificationElectionSummary[],
+  lang: 'en' | 'ko',
+): VerificationSeriesGroup[] {
+  const groups = new Map<string, VerificationSeriesGroup>()
+
+  elections.forEach((election) => {
+    const hasSeriesId =
+      election.chainSeriesId &&
+      election.chainSeriesId !== '0x' &&
+      !/^0x0+$/i.test(election.chainSeriesId)
+    const key = hasSeriesId
+      ? election.chainSeriesId.toLowerCase()
+      : `single:${election.address.toLowerCase()}`
+    const existing = groups.get(key)
+
+    if (existing) {
+      existing.items.push(election)
+      existing.coverImageUrl = existing.coverImageUrl ?? election.coverImageUrl
+      existing.totalReceipts += election.receiptCount
+      existing.totalValidVotes += election.validVotes
+      if (BigInt(election.createdBlock) > existing.latestCreatedBlock) {
+        existing.latestCreatedBlock = BigInt(election.createdBlock)
+      }
+      return
+    }
+
+    groups.set(key, {
+      key,
+      title:
+        election.seriesTitle?.trim() ||
+        election.title ||
+        (lang === 'ko' ? '이름 없는 시리즈' : 'Untitled series'),
+      items: [election],
+      coverImageUrl: election.coverImageUrl,
+      latestCreatedBlock: BigInt(election.createdBlock),
+      totalReceipts: election.receiptCount,
+      totalValidVotes: election.validVotes,
+    })
+  })
+
+  return [...groups.values()]
+    .map((group) => ({
+      ...group,
+      title:
+        group.items.find((item) => item.seriesTitle?.trim())?.seriesTitle?.trim() ||
+        (group.items.length === 1
+          ? group.items[0]?.title
+          : group.title),
+      items: [...group.items].sort((left, right) => compareBigIntString(left.createdBlock, right.createdBlock)),
+    }))
+    .sort((left, right) => {
+      if (left.latestCreatedBlock === right.latestCreatedBlock) {
+        return left.title.localeCompare(right.title)
+      }
+
+      return left.latestCreatedBlock > right.latestCreatedBlock ? -1 : 1
+    })
+}
+
 function App() {
   const { lang } = useLanguage()
   const initialCache = readCachedVerificationElectionSummaries()
   const [elections, setElections] = useState<VerificationElectionSummary[]>(initialCache.elections)
   const [viewTab, setViewTab] = useState<ViewTab>('current')
-  const [selectedId, setSelectedId] = useState<string | null>(initialCache.elections[0]?.id ?? null)
+  const [selectedSeriesKey, setSelectedSeriesKey] = useState<string | null>(null)
+  const [selectedElectionId, setSelectedElectionId] = useState<string | null>(
+    initialCache.elections[0]?.id ?? null,
+  )
   const [tab, setTab] = useState<PortalTab>('receipts')
   const [selectedElectionDetail, setSelectedElectionDetail] = useState<VerificationElectionDetail | null>(null)
   const [isLoading, setIsLoading] = useState(initialCache.elections.length === 0)
@@ -97,10 +182,6 @@ function App() {
         if (ignore) return
 
         setElections(next)
-        setSelectedId((current) => {
-          if (!current) return next[0]?.id ?? null
-          return next.some((entry) => entry.id === current) ? current : (next[0]?.id ?? null)
-        })
         setLastSyncedAt(syncedAt)
       } catch (loadError) {
         if (ignore) return
@@ -134,8 +215,41 @@ function App() {
     [elections, viewTab],
   )
 
+  const visibleSeries = useMemo(() => buildSeriesGroups(visibleElections, lang), [lang, visibleElections])
+
+  useEffect(() => {
+    if (visibleSeries.length === 0) {
+      setSelectedSeriesKey(null)
+      return
+    }
+
+    setSelectedSeriesKey((current) =>
+      current && visibleSeries.some((series) => series.key === current)
+        ? current
+        : visibleSeries[0]?.key ?? null,
+    )
+  }, [visibleSeries])
+
+  const selectedSeries =
+    visibleSeries.find((series) => series.key === selectedSeriesKey) ?? visibleSeries[0] ?? null
+
+  useEffect(() => {
+    if (!selectedSeries) {
+      setSelectedElectionId(null)
+      return
+    }
+
+    setSelectedElectionId((current) =>
+      current && selectedSeries.items.some((election) => election.id === current)
+        ? current
+        : selectedSeries.items[0]?.id ?? null,
+    )
+  }, [selectedSeries])
+
   const selectedElection =
-    visibleElections.find((election) => election.id === selectedId) ?? visibleElections[0] ?? null
+    selectedSeries?.items.find((election) => election.id === selectedElectionId) ??
+    selectedSeries?.items[0] ??
+    null
 
   useEffect(() => {
     let ignore = false
@@ -226,6 +340,8 @@ function App() {
     [visibleElections],
   )
 
+  const totalSeries = visibleSeries.length
+
   const selectedStats = useMemo(() => {
     if (!selectedElection) return null
 
@@ -314,8 +430,8 @@ function App() {
             </div>
             <PortalPill tone="dark" size="md">
               {lang === 'ko'
-                ? `${visibleElections.length}건 확인 가능`
-                : `${visibleElections.length} available`}
+                ? `${totalSeries}개 시리즈`
+                : `${totalSeries} series`}
             </PortalPill>
           </div>
 
@@ -324,13 +440,13 @@ function App() {
               label={
                 viewTab === 'finished'
                   ? lang === 'ko'
-                    ? '종료된 투표'
-                    : 'Ended votes'
+                    ? '종료된 시리즈'
+                    : 'Ended series'
                   : lang === 'ko'
-                    ? '진행 중인 투표'
-                    : 'Active votes'
+                    ? '진행 중인 시리즈'
+                    : 'Active series'
               }
-              value={lang === 'ko' ? `${visibleElections.length}건` : visibleElections.length.toString()}
+              value={lang === 'ko' ? `${totalSeries}개` : totalSeries.toString()}
             />
             <HeroMetric
               label={
@@ -381,7 +497,9 @@ function App() {
                   type="button"
                   onClick={() => {
                     setViewTab(item.id)
-                    setSelectedId(null)
+                    setSelectedSeriesKey(null)
+                    setSelectedElectionId(null)
+                    setTab('receipts')
                   }}
                   className={cn(
                     'rounded-[18px] px-3 py-3 text-[14px] font-semibold transition-colors',
@@ -405,12 +523,234 @@ function App() {
           <EmptyView viewTab={viewTab} />
         ) : selectedElection && selectedStats ? (
           <>
+            <section>
+              <SectionTitle
+                eyebrow={lang === 'ko' ? '검증 시리즈' : 'Verification series'}
+                title={
+                  viewTab === 'finished'
+                    ? lang === 'ko'
+                      ? '최근에 생성된 시리즈부터 골라 확인해보세요'
+                      : 'Pick the most recently created series first'
+                    : lang === 'ko'
+                      ? '최근에 열린 시리즈부터 둘러보세요'
+                      : 'Browse the newest active series first'
+                }
+              />
+              {isDetailLoading && selectedElectionDetail?.id === selectedElection?.id ? (
+                <div className="mt-2 text-[12px] text-[#707070]">
+                  {lang === 'ko'
+                    ? '선택한 투표의 최신 기록을 뒤에서 다시 맞추고 있어요'
+                    : 'Refreshing the latest records for the selected vote'}
+                </div>
+              ) : null}
+              <div className="mt-3 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {visibleSeries.map((series) => {
+                  const latestElection = series.items[0]
+                  const isSelected = selectedSeries?.key === series.key
+
+                  return (
+                    <button
+                      key={series.key}
+                      type="button"
+                      onClick={() =>
+                        startTransition(() => {
+                          setSelectedSeriesKey(series.key)
+                          setSelectedElectionId(series.items[0]?.id ?? null)
+                          setTab('receipts')
+                        })
+                      }
+                      className={cn(
+                        'w-[296px] shrink-0 rounded-[24px] border p-4 text-left transition',
+                        isSelected
+                          ? 'border-[#13141A] bg-[#13141A] text-white shadow-[0_16px_40px_rgba(17,20,30,0.20)]'
+                          : 'border-[#E7E9ED] bg-white text-[#090A0B]',
+                      )}
+                    >
+                      {series.coverImageUrl ? (
+                        <IpfsImage
+                          uri={series.coverImageUrl}
+                          alt=""
+                          className="mb-4 h-28 w-full rounded-[20px] object-cover"
+                        />
+                      ) : null}
+
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <PortalPill tone={isSelected ? 'dark' : 'accent'} size="sm">
+                            {series.items.length === 1
+                              ? latestElection.modeLabel
+                              : lang === 'ko'
+                                ? `${series.items.length}개 투표`
+                                : `${series.items.length} votes`}
+                          </PortalPill>
+                          <div className="mt-2 text-[18px] font-semibold leading-[1.35]">
+                            {series.title}
+                          </div>
+                        </div>
+                        <PortalPill tone={isSelected ? 'dark' : 'accent'} size="sm">
+                          {lang === 'ko'
+                            ? `${series.totalReceipts.toLocaleString()}건`
+                            : `${series.totalReceipts.toLocaleString()} receipts`}
+                        </PortalPill>
+                      </div>
+
+                      <p
+                        className={cn(
+                          'mt-3 text-[13px] leading-[1.6]',
+                          isSelected ? 'text-white/65' : 'text-[#707070]',
+                        )}
+                      >
+                        {series.items.length === 1
+                          ? latestElection.description
+                          : lang === 'ko'
+                            ? `가장 최근 투표는 "${latestElection.title}"이고, 이 시리즈 안에 ${series.items.length}개의 투표가 연결돼 있어요.`
+                            : `The latest vote is "${latestElection.title}", and this series groups ${series.items.length} connected votes.`}
+                      </p>
+
+                      <div className="mt-4 flex items-center justify-between gap-3 text-[12px]">
+                        <span className={isSelected ? 'text-white/55' : 'text-[#707070]'}>
+                          {latestElection.hostName}
+                        </span>
+                        <span className="shrink-0 font-mono">
+                          {latestElection.endedAtLabel}
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            {selectedSeries && selectedSeries.items.length > 1 ? (
+              <section className="mt-5">
+                <SectionTitle
+                  eyebrow={lang === 'ko' ? '시리즈 안 투표' : 'Votes in this series'}
+                  title={
+                    lang === 'ko'
+                      ? `${selectedSeries.title} 안의 투표를 고르세요`
+                      : `Choose a vote from ${selectedSeries.title}`
+                  }
+                />
+                <div className="mt-3 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {selectedSeries.items.map((election) => {
+                    const winner = election.topCandidate
+                    const isSelected = selectedElection.id === election.id
+
+                    return (
+                      <button
+                        key={`${election.address}-${election.id}`}
+                        type="button"
+                        onClick={() =>
+                          startTransition(() => {
+                            setSelectedElectionId(election.id)
+                            setTab('receipts')
+                          })
+                        }
+                        className={cn(
+                          'w-[272px] shrink-0 rounded-[24px] border p-4 text-left transition',
+                          isSelected
+                            ? 'border-[#13141A] bg-[#13141A] text-white shadow-[0_16px_40px_rgba(17,20,30,0.20)]'
+                            : 'border-[#E7E9ED] bg-white text-[#090A0B]',
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <PortalPill tone={isSelected ? 'dark' : 'accent'} size="sm">
+                              {election.modeLabel}
+                            </PortalPill>
+                            <div className="mt-2 text-[16px] font-semibold leading-[1.35]">
+                              {election.title}
+                            </div>
+                          </div>
+                          <PortalPill tone={isSelected ? 'dark' : 'accent'} size="sm">
+                            {election.isFinalized ? election.hostBadge : election.stateLabel}
+                          </PortalPill>
+                        </div>
+
+                        <PortalPanel
+                          tone={isSelected ? 'dark' : 'muted'}
+                          className={cn(
+                            'mt-4 rounded-[20px] px-3 py-3',
+                            isSelected && 'bg-white/[0.06] text-white',
+                          )}
+                        >
+                          {election.mode === 'OPEN' ? (
+                            <>
+                              <div
+                                className={cn(
+                                  'text-[11px] font-mono uppercase tracking-[1px]',
+                                  isSelected ? 'text-white/45' : 'text-[#707070]',
+                                )}
+                              >
+                                {lang === 'ko' ? '최다 득표' : 'Top result'}
+                              </div>
+                              <div className="mt-1 flex items-center justify-between gap-3">
+                                {winner ? (
+                                  <>
+                                    <div className="min-w-0 flex items-center gap-2">
+                                      <span className="text-[18px]">{winner.emoji}</span>
+                                      <span className="truncate text-[14px] font-semibold">
+                                        {winner.name}
+                                      </span>
+                                    </div>
+                                    <span className="shrink-0 font-mono text-[12px]">
+                                      {lang === 'ko'
+                                        ? `${winner.votes.toLocaleString()}표`
+                                        : `${winner.votes.toLocaleString()} votes`}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <div className="text-[13px] font-medium">
+                                    {lang === 'ko'
+                                      ? `${election.receiptCount.toLocaleString()}건 제출`
+                                      : `${election.receiptCount.toLocaleString()} submitted`}
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div
+                                className={cn(
+                                  'text-[11px] font-mono uppercase tracking-[1px]',
+                                  isSelected ? 'text-white/45' : 'text-[#707070]',
+                                )}
+                              >
+                                {lang === 'ko' ? '복호화 준비 상태' : 'Decryption status'}
+                              </div>
+                              <div className="mt-1 flex items-center justify-between gap-3">
+                                <div className="text-[14px] font-semibold">
+                                  {getPrivateKeyStatusLabel(election, lang)}
+                                </div>
+                                <span className="shrink-0 font-mono text-[12px]">
+                                  {lang === 'ko'
+                                    ? `${election.receiptCount.toLocaleString()}건 제출`
+                                    : `${election.receiptCount.toLocaleString()} submitted`}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </PortalPanel>
+
+                        <div className="mt-4 flex items-center justify-between gap-3 text-[12px]">
+                          <span className={isSelected ? 'text-white/55' : 'text-[#707070]'}>
+                            {election.hostName}
+                          </span>
+                          <span className="shrink-0 font-mono">{election.endedAtLabel}</span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+            ) : null}
+
             <section className="rounded-[28px] border border-[#E7E9ED] bg-white p-5 shadow-[0_12px_30px_rgba(9,10,11,0.04)] [animation:softRise_0.45s_ease-out]">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   {selectedElection.coverImageUrl ? (
-                    <img
-                      src={resolveIpfsUrl(selectedElection.coverImageUrl)}
+                    <IpfsImage
+                      uri={selectedElection.coverImageUrl}
                       alt=""
                       className="mb-3 h-28 w-full rounded-[20px] object-cover"
                     />
@@ -418,6 +758,13 @@ function App() {
                   <div className="text-[11px] font-mono uppercase tracking-[1px] text-[#7140FF]">
                     {lang === 'ko' ? '지금 보고 있는 투표' : 'Selected vote'}
                   </div>
+                  {selectedSeries && selectedSeries.items.length > 1 ? (
+                    <div className="mt-2 text-[13px] font-medium text-[#707070]">
+                      {lang === 'ko'
+                        ? `${selectedSeries.title} 시리즈`
+                        : `${selectedSeries.title} series`}
+                    </div>
+                  ) : null}
                   <h1 className="mt-1 text-[22px] font-semibold leading-[1.3] text-[#090A0B]">
                     {selectedElection.title}
                   </h1>
@@ -447,8 +794,8 @@ function App() {
                   </div>
                   <div className="mt-2 flex items-center gap-3">
                     {selectedStats.winner?.imageUrl ? (
-                      <img
-                        src={resolveIpfsUrl(selectedStats.winner.imageUrl)}
+                      <IpfsImage
+                        uri={selectedStats.winner.imageUrl}
                         alt=""
                         className="h-12 w-12 rounded-2xl bg-white/[0.10] object-cover"
                       />
@@ -546,151 +893,6 @@ function App() {
                 <PortalButton href={selectedElection.addressExplorerUrl} size="sm">
                   {lang === 'ko' ? '블록체인에서 보기' : 'View on blockchain'}
                 </PortalButton>
-              </div>
-            </section>
-
-            <section className="mt-5">
-              <SectionTitle
-                eyebrow={lang === 'ko' ? '검증 대상' : 'Verification targets'}
-                title={
-                  viewTab === 'finished'
-                    ? lang === 'ko'
-                      ? '끝난 투표를 골라 확인해보세요!'
-                      : 'Pick an ended vote to inspect'
-                    : lang === 'ko'
-                      ? '현재 체인 투표를 둘러보세요!'
-                      : 'Browse active on-chain votes'
-                }
-              />
-              {isDetailLoading && selectedElectionDetail?.id === selectedElection?.id ? (
-                <div className="mt-2 text-[12px] text-[#707070]">
-                  {lang === 'ko'
-                    ? '선택한 투표의 최신 기록을 뒤에서 다시 맞추고 있어요'
-                    : 'Refreshing the latest records for the selected vote'}
-                </div>
-              ) : null}
-              <div className="mt-3 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {visibleElections.map((election) => {
-                  const winner = election.topCandidate
-                  const isSelected = selectedElection.id === election.id
-
-                  return (
-                    <button
-                      key={`${election.address}-${election.id}`}
-                      type="button"
-                      onClick={() =>
-                        startTransition(() => {
-                          setSelectedId(election.id)
-                          setTab('receipts')
-                        })
-                      }
-                      className={cn(
-                        'w-[292px] shrink-0 rounded-[24px] border p-4 text-left transition',
-                        isSelected
-                          ? 'border-[#13141A] bg-[#13141A] text-white shadow-[0_16px_40px_rgba(17,20,30,0.20)]'
-                          : 'border-[#E7E9ED] bg-white text-[#090A0B]',
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <PortalPill
-                            tone={isSelected ? 'dark' : 'accent'}
-                            size="sm"
-                          >
-                            {election.modeLabel}
-                          </PortalPill>
-                          <div className="mt-1 text-[16px] font-semibold leading-[1.35]">
-                            {election.title}
-                          </div>
-                        </div>
-                        <PortalPill tone={isSelected ? 'dark' : 'accent'} size="sm">
-                          {election.isFinalized ? election.hostBadge : election.stateLabel}
-                        </PortalPill>
-                      </div>
-
-                      <p
-                        className={cn(
-                          'mt-3 text-[13px] leading-[1.6]',
-                          isSelected ? 'text-white/65' : 'text-[#707070]',
-                        )}
-                      >
-                        {election.description}
-                      </p>
-
-                      <PortalPanel
-                        tone={isSelected ? 'dark' : 'muted'}
-                        className={cn(
-                          'mt-4 rounded-[20px] px-3 py-3',
-                          isSelected && 'bg-white/[0.06] text-white',
-                        )}
-                      >
-                        {election.mode === 'OPEN' ? (
-                          <>
-                            <div
-                              className={cn(
-                                'text-[11px] font-mono uppercase tracking-[1px]',
-                                isSelected ? 'text-white/45' : 'text-[#707070]',
-                              )}
-                            >
-                              {lang === 'ko' ? '최다 득표' : 'Top result'}
-                            </div>
-                            <div className="mt-1 flex items-center justify-between gap-3">
-                              {winner ? (
-                                <>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[18px]">{winner.emoji}</span>
-                                    <span className="text-[14px] font-semibold">
-                                      {winner.name}
-                                    </span>
-                                  </div>
-                                  <span className="font-mono text-[12px]">
-                                    {lang === 'ko'
-                                      ? `${winner.votes.toLocaleString()}표`
-                                      : `${winner.votes.toLocaleString()} votes`}
-                                  </span>
-                                </>
-                              ) : (
-                                <div className="text-[13px] font-medium">
-                                  {lang === 'ko'
-                                    ? `${election.receiptCount.toLocaleString()}건 제출`
-                                    : `${election.receiptCount.toLocaleString()} submitted`}
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div
-                              className={cn(
-                                'text-[11px] font-mono uppercase tracking-[1px]',
-                                isSelected ? 'text-white/45' : 'text-[#707070]',
-                              )}
-                            >
-                              {lang === 'ko' ? '복호화 준비 상태' : 'Decryption status'}
-                            </div>
-                            <div className="mt-1 flex items-center justify-between gap-3">
-                              <div className="text-[14px] font-semibold">
-                                {getPrivateKeyStatusLabel(election, lang)}
-                              </div>
-                              <span className="font-mono text-[12px]">
-                                {lang === 'ko'
-                                  ? `${election.receiptCount}건 제출`
-                                  : `${election.receiptCount.toLocaleString()} submitted`}
-                              </span>
-                            </div>
-                          </>
-                        )}
-                      </PortalPanel>
-
-                      <div className="mt-4 flex items-center justify-between gap-3 text-[12px]">
-                        <span className={isSelected ? 'text-white/55' : 'text-[#707070]'}>
-                          {election.hostName}
-                        </span>
-                        <span className="shrink-0 font-mono">{election.endedAtLabel}</span>
-                      </div>
-                    </button>
-                  )
-                })}
               </div>
             </section>
 
@@ -1257,7 +1459,7 @@ function ProofTab({
         <ValueCard
           label={lang === 'ko' ? '후보 메타데이터 IPFS 링크' : 'Candidate metadata IPFS link'}
           value={election.candidateManifestURI}
-          actionHref={resolveIpfsUrl(election.candidateManifestURI)}
+          actionHref={resolvePublicIpfsUrl(election.candidateManifestURI)}
           actionLabel={lang === 'ko' ? 'IPFS 파일 열기' : 'Open IPFS file'}
         />
       ) : null}
@@ -1266,7 +1468,7 @@ function ProofTab({
         <ValueCard
           label={lang === 'ko' ? '결과 메타데이터 IPFS 링크' : 'Result metadata IPFS link'}
           value={election.resultManifestURI}
-          actionHref={resolveIpfsUrl(election.resultManifestURI)}
+          actionHref={resolvePublicIpfsUrl(election.resultManifestURI)}
           actionLabel={lang === 'ko' ? 'IPFS 파일 열기' : 'Open IPFS file'}
         />
       ) : null}
