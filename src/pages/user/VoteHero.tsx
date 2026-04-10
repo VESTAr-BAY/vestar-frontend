@@ -46,11 +46,13 @@ export function VoteHero({ vote }: VoteHeroProps) {
           >
             {vote.badge === 'end' ? t('badge_end') : BADGE_LABEL[vote.badge]}
           </span>
-          <span
-            className={`text-[12px] font-mono ${vote.urgent ? 'text-[#FCA5A5]' : 'text-white/74'}`}
-          >
-            {vote.deadlineLabel}
-          </span>
+          {vote.deadlineLabel ? (
+            <span
+              className={`text-[12px] font-mono ${vote.urgent ? 'text-[#FCA5A5]' : 'text-white/74'}`}
+            >
+              {vote.deadlineLabel}
+            </span>
+          ) : null}
         </div>
 
         <div className="mb-2 flex items-center gap-1">

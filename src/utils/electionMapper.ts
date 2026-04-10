@@ -38,7 +38,7 @@ export function formatVoteDate(iso: string): string {
 export function deadlineLabel(endAt: string): string {
   const diff = new Date(endAt).getTime() - Date.now()
 
-  if (diff <= 0) return 'Ended'
+  if (diff <= 0) return ''
 
   const days = Math.floor(diff / 86_400_000)
   const hours = Math.floor((diff % 86_400_000) / 3_600_000)

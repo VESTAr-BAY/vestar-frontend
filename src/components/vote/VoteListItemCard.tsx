@@ -63,11 +63,13 @@ export function VoteListItemCard({ item, onNavigate, isVoted }: VoteListItemCard
         >
           {badgeLabel}
         </span>
-        <span
-          className={`text-[11px] font-mono ${item.urgent ? 'text-[#dc2626] font-semibold' : 'text-[#707070]'}`}
-        >
-          {item.deadline}
-        </span>
+        {item.deadline ? (
+          <span
+            className={`text-[11px] font-mono ${item.urgent ? 'text-[#dc2626] font-semibold' : 'text-[#707070]'}`}
+          >
+            {item.deadline}
+          </span>
+        ) : null}
         {isVoted ? (
           <img
             src={completeVoteIcon}
