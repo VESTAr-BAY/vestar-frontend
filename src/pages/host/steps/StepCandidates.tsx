@@ -418,7 +418,7 @@ export function StepCandidates({
               htmlFor="vote-election-cover-image"
               className="flex items-center gap-1.5 text-[13px] font-semibold text-[#090A0B] mb-2"
             >
-              <span>투표 대표 이미지</span>
+              <span>{lang === 'ko' ? '투표 대표 이미지' : 'Vote Cover Image'}</span>
               {isElectionCoverChanged && (
                 <span className="text-[10px] font-bold text-[#7140FF] bg-[#7140FF]/10 px-1.5 py-0.5 rounded-md">
                   {lang === 'ko' ? '수정됨' : 'Edited'}
