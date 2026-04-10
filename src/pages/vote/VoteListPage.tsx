@@ -645,7 +645,7 @@ export function VoteListPage() {
             </div>
           </div>
           <span className="text-[12px] text-[#7140FF]">
-            {lang === 'ko' ? '시리즈 최신순' : 'Latest series first'}
+            {lang === 'ko' ? '최신순' : 'Latest series first'}
           </span>
         </div>
         <div className="px-5 flex flex-col gap-4 pb-2">
