@@ -9,6 +9,7 @@ import { useMyVotes } from '../../hooks/user/useMyVotes'
 import { useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { KarmaEvent, KarmaEventType, MyVoteItem } from '../../types/user'
+import { resolveIpfsUrl } from '../../utils/ipfs'
 
 function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -84,11 +85,12 @@ function VoteHistoryList({
           }
           className="bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px] text-left transition-colors hover:border-[#d9ddf3]"
         >
-          <div
-            className="w-[48px] h-[48px] rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
-            style={{ background: '#F0EDFF' }}
-          >
-            <img src={completeVoteIcon} alt="" className="w-6 h-6" />
+          <div className="w-[48px] h-[48px] rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-[#F0EDFF]">
+            {item.imageUrl ? (
+              <img src={resolveIpfsUrl(item.imageUrl)} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <img src={completeVoteIcon} alt="" className="w-6 h-6" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[11px] text-[#707070] font-mono mb-[2px] truncate">{item.org}</div>

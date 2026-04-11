@@ -7,6 +7,7 @@ export interface MyVoteItem {
   voteId: string
   title: string
   org: string
+  imageUrl: string | null
   date: string
   status: 'active' | 'ended'
   submissionStatus: 'confirmed' | 'invalid' | 'pending'

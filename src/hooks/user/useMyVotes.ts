@@ -10,6 +10,7 @@ import type {
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { MyVoteItem } from '../../types/user'
 import {
+  getCandidateManifestCoverImageUrl,
   getCandidateManifestSeriesPreimage,
   getCandidateManifestTitle,
 } from '../../utils/candidateManifest'
@@ -170,6 +171,7 @@ async function mapToMyVoteItem(
     voteId: item.onchainElection?.id ?? item.id,
     title: getCandidateManifestTitle(manifest) || 'Untitled vote',
     org: getCandidateManifestSeriesPreimage(manifest) || 'Unknown series',
+    imageUrl: getCandidateManifestCoverImageUrl(manifest),
     date: formatDate(item.blockTimestamp),
     status,
     submissionStatus,
