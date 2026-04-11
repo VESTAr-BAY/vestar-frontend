@@ -42,7 +42,7 @@ export function requestVerifiedOrganizer(body: {
   organizationName: string
   contactEmail?: string | null
 }) {
-  return apiFetch<ApiVerifiedOrganizer>('/verified-organizers/request', {
+  return apiFetch<ApiVerifiedOrganizer | null>('/verified-organizers/request', {
     method: 'POST',
     body: JSON.stringify(body),
   })

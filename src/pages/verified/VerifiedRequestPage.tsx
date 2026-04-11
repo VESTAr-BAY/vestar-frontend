@@ -72,7 +72,12 @@ export function VerifiedRequestPage() {
         contactEmail: contactEmail.trim() || null,
         organizationName,
       })
-      setRequestInfo(result)
+      if (result) {
+        setRequestInfo(result)
+      } else {
+        const refreshed = await fetchVerifiedOrganizerRequestStatus(address)
+        setRequestInfo(refreshed)
+      }
       setMessage('verified organizer 요청이 접수되었습니다.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '요청 접수에 실패했습니다.')

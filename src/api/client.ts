@@ -50,5 +50,14 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     }
   }
 
-  return res.json() as Promise<T>
+  if (res.status === 204 || res.headers.get('Content-Length') === '0') {
+    return null as T
+  }
+
+  const rawBody = await res.text()
+  if (!rawBody.trim()) {
+    return null as T
+  }
+
+  return JSON.parse(rawBody) as T
 }

@@ -53,4 +53,18 @@ describe('apiFetch', () => {
 
     expect(headers.get('Content-Type')).toBe('application/json')
   })
+
+  it('returns null for successful empty responses', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 200,
+      }),
+    )
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { apiFetch } = await import('./client')
+
+    await expect(apiFetch('/verified-organizers/request-status')).resolves.toBeNull()
+  })
 })
