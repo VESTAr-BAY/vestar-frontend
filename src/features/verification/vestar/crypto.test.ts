@@ -73,4 +73,61 @@ describe('decryptCanonicalBallotPayload', () => {
     expect(decrypted?.electionAddress).toBe(electionAddress)
     expect(decrypted?.voterAddress).toBe(voterAddress)
   })
+
+  it('encrypts ballots even when Web Crypto subtle is unavailable', async () => {
+    const { publicKey, privateKey } = generateKeyPairSync('ec', {
+      namedCurve: 'prime256v1',
+      publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem',
+      },
+      privateKeyEncoding: {
+        type: 'pkcs8',
+        format: 'pem',
+      },
+    })
+
+    const originalCrypto = globalThis.crypto
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      value: {
+        getRandomValues: originalCrypto.getRandomValues.bind(originalCrypto),
+      },
+    })
+
+    try {
+      const electionId =
+        '0x2222222222222222222222222222222222222222222222222222222222222222' as const
+      const electionAddress = getAddress('0x88297833b1b316272d182541337f87d7dab25f01')
+      const voterAddress = getAddress('0xafEdA9845D663bCdC295d98E798CB024f5B76ca1')
+      const encryptedBallot = await encryptBallotWithPublicKey({
+        publicKeyPem: publicKey.toString(),
+        payload: {
+          schemaVersion: 1,
+          electionId,
+          chainId: vestarStatusTestnetChain.id,
+          electionAddress,
+          voterAddress,
+          candidateKeys: ['candidate-a', 'candidate-b'],
+          nonce: randomNonceHex(),
+        },
+      })
+
+      const decrypted = await decryptCanonicalBallotPayload(
+        electionId,
+        electionAddress,
+        voterAddress,
+        encryptedBallot,
+        toHex(privateKey.toString()),
+      )
+
+      expect(decrypted).not.toBeNull()
+      expect(decrypted?.candidateKeys).toEqual(['candidate-a', 'candidate-b'])
+    } finally {
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: originalCrypto,
+      })
+    }
+  })
 })
