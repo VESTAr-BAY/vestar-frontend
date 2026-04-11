@@ -13,6 +13,7 @@ import {
   getCandidateManifestSeriesPreimage,
   getCandidateManifestTitle,
 } from '../../utils/candidateManifest'
+import { formatBallotCostLabel } from '../../utils/paymentDisplay'
 
 export interface UseMyVotesResult {
   votes: MyVoteItem[]
@@ -132,6 +133,19 @@ function mapSubmissionStatus(item: ApiVoteHistoryItem): MyVoteItem['submissionSt
   return 'confirmed'
 }
 
+function resolveSpentLabel(
+  lang: 'en' | 'ko',
+  paymentMode?: 'FREE' | 'PAID',
+  costPerBallot?: string | null,
+) {
+  if (paymentMode !== 'PAID') {
+    return null
+  }
+
+  const label = formatBallotCostLabel(costPerBallot ?? '0', lang)
+  return label === '무료' || label === 'Free' ? null : `-${label}`
+}
+
 async function mapToMyVoteItem(
   item: ApiVoteHistoryItem,
   lang: 'en' | 'ko',
@@ -159,7 +173,7 @@ async function mapToMyVoteItem(
     date: formatDate(item.blockTimestamp),
     status,
     submissionStatus,
-    karmaEarned: 0,
+    spentLabel: resolveSpentLabel(lang, latestElection?.paymentMode, latestElection?.costPerBallot),
     choice: mapChoiceLabel(item, lang),
     invalidReason:
       item.selection.isValid === false

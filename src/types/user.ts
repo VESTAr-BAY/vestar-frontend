@@ -10,7 +10,7 @@ export interface MyVoteItem {
   date: string
   status: 'active' | 'ended'
   submissionStatus: 'confirmed' | 'invalid' | 'pending'
-  karmaEarned: number
+  spentLabel: string | null
   choice: string
   invalidReason: string | null
   selectedCandidateKeys: string[]

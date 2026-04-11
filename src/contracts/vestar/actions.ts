@@ -232,6 +232,15 @@ export async function getMockUsdtBalance(account: Address): Promise<bigint> {
   })
 }
 
+export async function getErc20Balance(tokenAddress: Address, owner: Address): Promise<bigint> {
+  return readVestarContract<bigint>({
+    abi: mockUsdtAbi,
+    address: tokenAddress,
+    functionName: 'balanceOf',
+    args: [owner],
+  })
+}
+
 export async function getErc20Allowance(
   tokenAddress: Address,
   owner: Address,

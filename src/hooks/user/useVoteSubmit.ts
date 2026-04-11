@@ -5,6 +5,7 @@ import {
   approveErc20Spender,
   canAccountSubmitBallot,
   getErc20Allowance,
+  getErc20Balance,
   getElectionRemainingBallots,
   getElectionState,
   quoteElectionPayment,
@@ -17,6 +18,7 @@ import { VESTAR_ELECTION_STATE } from '../../contracts/vestar/types'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { VoteDetailData } from '../../types/vote'
 import { encryptBallotWithPublicKey, randomNonceHex } from '../../utils/privateBallot'
+import { formatBallotCostLabel } from '../../utils/paymentDisplay'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
 const VOTE_SUBMIT_PREFLIGHT_DEBOUNCE_MS = 350
@@ -33,7 +35,16 @@ type PreparedVoteSubmission = {
   remainingBallots?: number
   quotedPayment: bigint
   allowance?: bigint
+  balance?: bigint
   encryptedBallot?: Hex
+}
+
+function getInsufficientPaidVoteBalanceMessage(requiredAmount: bigint, lang: 'ko' | 'en') {
+  const amountLabel = formatBallotCostLabel(requiredAmount, lang)
+
+  return lang === 'ko'
+    ? `잔액이 부족합니다. 이 유료 투표에는 ${amountLabel}이 필요합니다. 충전한 뒤 다시 시도해주세요.`
+    : `Insufficient balance. This paid vote requires ${amountLabel}. Add funds and try again.`
 }
 
 export interface VoteSubmitResult {
@@ -109,6 +120,7 @@ async function prepareVoteSubmission(
 
   let quotedPayment = 0n
   let allowance: bigint | undefined
+  let balance: bigint | undefined
 
   if (
     vote.paymentMode === 'PAID' &&
@@ -117,11 +129,10 @@ async function prepareVoteSubmission(
   ) {
     quotedPayment = await quoteElectionPayment(vote.electionAddress as Address, 1)
     if (quotedPayment > 0n) {
-      allowance = await getErc20Allowance(
-        vote.paymentToken,
-        voterAddress,
-        vote.electionAddress as Address,
-      )
+      ;[allowance, balance] = await Promise.all([
+        getErc20Allowance(vote.paymentToken, voterAddress, vote.electionAddress as Address),
+        getErc20Balance(vote.paymentToken, voterAddress),
+      ])
     }
   }
 
@@ -154,6 +165,7 @@ async function prepareVoteSubmission(
     remainingBallots,
     quotedPayment,
     allowance,
+    balance,
     encryptedBallot,
   }
 }
@@ -341,7 +353,23 @@ export function useVoteSubmit(
           })
 
           if (quotedPayment > 0n) {
+            let balance = prepared.balance
             let allowance = prepared.allowance
+
+            if (balance === undefined || balance < quotedPayment) {
+              balance = await getErc20Balance(vote.paymentToken, walletClient.account.address)
+            }
+
+            console.info('[useVoteSubmit] token balance', {
+              tokenAddress: vote.paymentToken,
+              owner: walletClient.account.address,
+              balance: balance.toString(),
+              required: quotedPayment.toString(),
+            })
+
+            if (balance < quotedPayment) {
+              throw new Error(getInsufficientPaidVoteBalanceMessage(quotedPayment, lang))
+            }
 
             if (allowance === undefined || allowance < quotedPayment) {
               allowance = await getErc20Allowance(
@@ -377,6 +405,7 @@ export function useVoteSubmit(
               preparedSubmissionCacheRef.current.set(prepared.key, {
                 ...prepared,
                 createdAt: Date.now(),
+                balance,
                 allowance: quotedPayment,
               })
             }

@@ -103,15 +103,17 @@ function VoteHistoryList({
               <span className="text-[12px] text-[#707070]">{item.date}</span>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-[6px] flex-shrink-0">
+          <div className="flex h-full min-h-[48px] flex-col items-end justify-between flex-shrink-0">
             <span
               className={`text-[10px] font-bold px-2 py-[3px] rounded-[10px] tracking-[0.1px] ${SUBMISSION_BADGE_STYLES[item.submissionStatus]}`}
             >
               {submissionBadgeLabel[item.submissionStatus]}
             </span>
-            <span className="text-[12px] font-semibold text-[#7140FF] font-mono">
-              +{item.karmaEarned}
-            </span>
+            {item.spentLabel ? (
+              <span className="text-[12px] font-semibold text-[#7140FF] font-mono">
+                {item.spentLabel}
+              </span>
+            ) : null}
           </div>
         </button>
       ))}

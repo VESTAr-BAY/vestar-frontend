@@ -100,6 +100,16 @@ export function getWalletActionErrorMessage(
       : 'Switch to Status Network Testnet and try again.'
   }
 
+  if (
+    /insufficient balance|erc20insufficientbalance|transfer amount exceeds balance|exceeds balance|잔액이 부족/i.test(
+      text,
+    )
+  ) {
+    return lang === 'ko'
+      ? '잔액이 부족합니다. 유료 투표에 필요한 금액을 충전한 뒤 다시 시도해주세요.'
+      : 'Insufficient balance. Add funds for this paid vote and try again.'
+  }
+
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message
   }
