@@ -389,45 +389,12 @@ export function VoteListPage() {
       ? (category as HomeCategoryFilter)
       : 'all'
   }, [searchParams])
-  const seriesTab = searchParams.get('tab') === 'ended' ? 'ended' : 'active'
-  const activeVisibilityFilter =
-    searchParams.get('visibility') === 'OPEN' || searchParams.get('visibility') === 'PRIVATE'
-      ? (searchParams.get('visibility') as 'OPEN' | 'PRIVATE')
-      : 'all'
-  const activePaymentFilter =
-    searchParams.get('payment') === 'FREE' || searchParams.get('payment') === 'PAID'
-      ? (searchParams.get('payment') as 'FREE' | 'PAID')
-      : 'all'
   const heroCopy = getHeroCopy(activeCategory, lang)
-  const updateFilters = (next: {
-    category?: HomeCategoryFilter
-    tab?: 'active' | 'ended'
-    visibility?: 'all' | 'OPEN' | 'PRIVATE'
-    payment?: 'all' | 'FREE' | 'PAID'
-  }) => {
+  const updateCategory = (category: HomeCategoryFilter) => {
     const params = new URLSearchParams(searchParams)
-    const category = next.category ?? activeCategory
-    const tab = next.tab ?? seriesTab
-    const visibility = next.visibility ?? activeVisibilityFilter
-    const payment = next.payment ?? activePaymentFilter
-
     category === 'all' ? params.delete('category') : params.set('category', category)
-    tab === 'active' ? params.delete('tab') : params.set('tab', tab)
-    visibility === 'all' ? params.delete('visibility') : params.set('visibility', visibility)
-    payment === 'all' ? params.delete('payment') : params.set('payment', payment)
-
     setSearchParams(params, { replace: true })
   }
-  const activeVisibilityChips = [
-    { key: 'all' as const, label: lang === 'ko' ? '전체' : 'All' },
-    { key: 'OPEN' as const, label: 'OPEN' },
-    { key: 'PRIVATE' as const, label: 'PRIVATE' },
-  ]
-  const activePaymentChips = [
-    { key: 'all' as const, label: lang === 'ko' ? '전체' : 'All' },
-    { key: 'FREE' as const, label: lang === 'ko' ? '무료' : 'FREE' },
-    { key: 'PAID' as const, label: lang === 'ko' ? '유료' : 'PAID' },
-  ]
 
   const handleHotNavigate = (vote: HotVote) => {
     navigate(
@@ -545,7 +512,7 @@ export function VoteListPage() {
             <button
               key={filter}
               type="button"
-              onClick={() => updateFilters({ category: filter })}
+              onClick={() => updateCategory(filter)}
               className={`inline-flex items-center px-[14px] py-[6px] rounded-[20px] text-[13px] font-medium whitespace-nowrap cursor-pointer transition-all flex-shrink-0 border ${
                 activeCategory === filter
                   ? "bg-[#7140FF] text-white border-[#7140FF]"
@@ -586,77 +553,10 @@ export function VoteListPage() {
           </>
         ) : null}
 
-        <div className="flex items-center justify-between gap-3 px-5 pt-[20px] pb-[10px]">
-          <div className="flex flex-col gap-2">
-            <div className="inline-flex w-fit self-start rounded-full bg-[#F4F5F7] p-1">
-              <button
-                type="button"
-                onClick={() => updateFilters({ tab: 'active' })}
-                className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
-                  seriesTab === 'active'
-                    ? 'bg-white text-[#090A0B] shadow-[0_4px_12px_rgba(15,23,42,0.08)]'
-                    : 'text-[#707070]'
-                }`}
-              >
-                {t('vl_active_section')}
-              </button>
-              <button
-                type="button"
-                onClick={() => updateFilters({ tab: 'ended' })}
-                className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
-                  seriesTab === 'ended'
-                    ? 'bg-white text-[#090A0B] shadow-[0_4px_12px_rgba(15,23,42,0.08)]'
-                    : 'text-[#707070]'
-                }`}
-              >
-                {t('vl_ended_section')}
-              </button>
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <span className="shrink-0 text-[11px] font-semibold text-[#7140FF]">
-                  {lang === 'ko' ? '공개 방식' : 'Visibility'}
-                </span>
-                <div className="flex flex-wrap items-center gap-2">
-                  {activeVisibilityChips.map((chip) => (
-                    <button
-                      key={chip.key}
-                      type="button"
-                      onClick={() => updateFilters({ visibility: chip.key })}
-                      className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
-                        activeVisibilityFilter === chip.key
-                          ? 'border-[#7140FF] bg-[#F0EDFF] text-[#7140FF]'
-                          : 'border-[#E7E9ED] bg-white text-[#707070]'
-                      }`}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="shrink-0 text-[11px] font-semibold text-[#7140FF]">
-                  {lang === 'ko' ? '결제 방식' : 'Payment'}
-                </span>
-                <div className="flex flex-wrap items-center gap-2">
-                  {activePaymentChips.map((chip) => (
-                    <button
-                      key={chip.key}
-                      type="button"
-                      onClick={() => updateFilters({ payment: chip.key })}
-                      className={`rounded-full border px-3 py-1 text-[11px] font-semibold transition-colors ${
-                        activePaymentFilter === chip.key
-                          ? 'border-[#7140FF] bg-[#F0EDFF] text-[#7140FF]'
-                          : 'border-[#E7E9ED] bg-white text-[#707070]'
-                      }`}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="flex items-center justify-between px-5 pt-[20px] pb-[10px]">
+          <span className="text-[15px] font-semibold text-[#090A0B]">
+            {t('vl_active_section')}
+          </span>
           <span className="text-[12px] text-[#7140FF]">
             {lang === 'ko' ? '최신순' : 'Latest'}
           </span>
