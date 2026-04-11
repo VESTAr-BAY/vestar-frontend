@@ -26,6 +26,7 @@ import {
   waitForVestarTransactionReceipt,
 } from '../../contracts/vestar/actions'
 import { useMyKarma } from '../../hooks/user/useMyKarma'
+import { useMyVotes } from '../../hooks/user/useMyVotes'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
@@ -112,10 +113,9 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   const { t, lang, toggleLang } = useLanguage()
   const { addToast } = useToast()
   const { tier } = useMyKarma()
+  const { votes } = useMyVotes()
   const [isMintingMockUsdt, setIsMintingMockUsdt] = useState(false)
   const [mockUsdtBalance, setMockUsdtBalance] = useState('—')
-
-  const votes = isConnected ? 14 : 0
   const verificationPortalPath = `${import.meta.env.BASE_URL}verification`
 
   useEffect(() => {
@@ -291,7 +291,9 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
           </div>
           <div className="bg-white px-4 py-[14px]">
             <div className="text-[11px] text-[#707070] mb-1">{t('pp_votes_stat')}</div>
-            <div className="text-[17px] font-bold text-[#090A0B] font-mono">{votes}</div>
+            <div className="text-[17px] font-bold text-[#090A0B] font-mono">
+              {isConnected ? votes.length : 0}
+            </div>
           </div>
           <div className="bg-white px-4 py-[14px]">
             <div className="text-[11px] text-[#707070] mb-1">{t('pp_mock_usdt_stat')}</div>

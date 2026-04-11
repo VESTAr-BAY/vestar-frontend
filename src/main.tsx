@@ -6,6 +6,35 @@ import { LanguageProvider } from './providers/LanguageProvider'
 import { ToastProvider } from './providers/ToastProvider'
 import { WalletProvider } from './providers/WalletProvider'
 
+const INITIAL_ROUTE_SESSION_KEY = 'vestar:initial-route-redirected:v1'
+
+function normalizeAppPath(path: string) {
+  return path.replace(/\/{2,}/g, '/')
+}
+
+function redirectInitialEntryToVote() {
+  if (typeof window === 'undefined') return
+
+  try {
+    const alreadyRedirected = window.sessionStorage.getItem(INITIAL_ROUTE_SESSION_KEY)
+    if (alreadyRedirected) return
+
+    window.sessionStorage.setItem(INITIAL_ROUTE_SESSION_KEY, '1')
+
+    const basePath = import.meta.env.BASE_URL ?? '/'
+    const votePath = normalizeAppPath(`${basePath}/vote`)
+    const currentPath = window.location.pathname
+
+    if (currentPath !== votePath) {
+      window.history.replaceState(null, '', votePath)
+    }
+  } catch {
+    // If sessionStorage is unavailable, fall back to the current route without interrupting boot.
+  }
+}
+
+redirectInitialEntryToVote()
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LanguageProvider>
