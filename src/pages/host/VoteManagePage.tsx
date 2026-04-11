@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { type Address } from 'viem'
+import { VoteDetailHeaderContext } from '../../components/layout/VoteDetailLayout'
 import { getElectionSnapshot } from '../../contracts/vestar/actions'
 import { useVoteManage } from '../../hooks/host/useVoteManage'
 import { useHostLiveTally } from '../../hooks/host/useHostLiveTally'
+import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
 import { VoteHero } from '../user/VoteHero'
 import { VoteInfoSection } from '../user/VoteInfoSection'
@@ -47,6 +49,8 @@ export function VoteManagePage() {
   const { vote, isLoading } = useVoteManage(id)
   const { vote: liveVote, rankedCandidates } = useHostLiveTally(id)
   const { addToast } = useToast()
+  const { lang } = useLanguage()
+  const { scrollState } = useContext(VoteDetailHeaderContext)
   const [isSettlementSettled, setIsSettlementSettled] = useState(false)
 
   useEffect(() => {
@@ -106,52 +110,93 @@ export function VoteManagePage() {
     navigate(`/host/${id}/result`)
   }
 
+  const primaryLabel = isSettlementSettled
+    ? lang === 'ko' ? '정산 결과' : 'Settlement Result'
+    : isFinalized
+      ? lang === 'ko' ? '정산 실행' : 'Run Settlement'
+      : lang === 'ko' ? '최종 집계 보기' : 'View Final Tally'
+
+  const onchainStateBadge = vote.onchainState
+    ? {
+        ACTIVE: { label: lang === 'ko' ? '진행 중' : 'Active', cls: 'bg-green-100 text-green-700' },
+        ENDED: { label: lang === 'ko' ? '종료' : 'Ended', cls: 'bg-[#F7F8FA] text-[#707070]' },
+        KEY_REVEAL_PENDING: { label: 'Key Reveal Pending', cls: 'bg-amber-100 text-amber-700' },
+        FINALIZED: { label: lang === 'ko' ? '정산 완료' : 'Finalized', cls: 'bg-[#F0EDFF] text-[#7140FF]' },
+      }[vote.onchainState as string]
+    : null
+
   return (
     <>
       <VoteHero vote={vote} />
-      <VoteInfoSection vote={vote} />
 
-      <div className="h-2 bg-[#F7F8FA]" />
+      <div className="bg-[#FFFFFF]">
+        <VoteInfoSection vote={vote} />
 
-      <div className="mx-5 mt-5 rounded-3xl border border-[#E7E9ED] bg-white px-5 py-4">
-        <div className="text-[11px] font-semibold uppercase tracking-[1px] text-[#7140FF] font-mono">
-          Host Detail
+        <div className="h-2 bg-[#F7F8FA] my-3" />
+
+        {/* Host management header card */}
+        <div className="mx-5 rounded-2xl border border-[#E7E9ED] bg-white px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[11px] font-semibold uppercase tracking-[1px] text-[#7140FF] font-mono mb-1">
+                Host Panel
+              </div>
+              <div className="text-[15px] font-semibold text-[#090A0B]">
+                {lang === 'ko' ? '생성자 전용 관리 화면' : 'Host Management'}
+              </div>
+              <div className="mt-1 text-[13px] text-[#707070]">
+                {lang === 'ko'
+                  ? '실시간 집계 확인과 finalize를 여기서 처리할 수 있습니다.'
+                  : 'Check live tallies and run finalization from here.'}
+              </div>
+            </div>
+            {onchainStateBadge ? (
+              <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${onchainStateBadge.cls}`}>
+                {onchainStateBadge.label}
+              </span>
+            ) : null}
+          </div>
+          {finalizeBlockingMessage ? (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-700 leading-relaxed">
+              {finalizeBlockingMessage}
+            </div>
+          ) : null}
         </div>
-        <div className="mt-2 text-[15px] font-semibold text-[#090A0B]">생성자 전용 상세 화면</div>
-        <div className="mt-1 text-[13px] text-[#707070]">
-          진행 중 집계 확인과 finalize를 여기서 이어서 처리할 수 있습니다.
-        </div>
+
+        {/* 현재 투표 현황 */}
+        <VoteResultRankings rankedCandidates={rankedCandidates} />
       </div>
 
-      {/* 현재 투표 현황 */}
-      <VoteResultRankings
-        rankedCandidates={rankedCandidates}
-      />
-
-      <div className="px-5 py-6 bg-[#F7F8FA] flex flex-col gap-3">
-        <button
-          type="button"
-          disabled={!isLiveTallyAvailable}
-          onClick={() => navigate(`/host/${id}/live`)}
-          className="w-full bg-white text-[#090A0B] border border-[#E7E9ED] rounded-2xl py-4 text-[15px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:border-transparent disabled:cursor-default hover:enabled:border-[#d9ddf3] transition-colors active:enabled:scale-[0.99] flex items-center justify-center gap-2"
-        >
-          실시간 집계 보기
-        </button>
-        <button
-          type="button"
-          disabled={isSettlementSettled ? false : isFinalized ? false : Boolean(finalizeBlockingMessage)}
-          onClick={() => {
-            if (isSettlementSettled || isFinalized) {
-              navigate(`/host/${id}/settlement`)
-              return
-            }
-
-            void handleOpenFinalTally()
-          }}
-          className="w-full bg-[#090A0B] text-white rounded-2xl py-4 text-[15px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:cursor-default hover:enabled:opacity-85 transition-opacity active:enabled:scale-[0.99] flex items-center justify-center gap-2"
-        >
-          {isSettlementSettled ? '정산 결과' : isFinalized ? '정산 실행' : '최종 집계 보기'}
-        </button>
+      {/* Fixed bottom action bar — mirrors VoteDetailPage style */}
+      <div
+        className={`fixed left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[90] px-5 pt-4 pb-[calc(1.5rem+var(--safe-bottom))] bg-[#F7F8FA] border-t border-[#E7E9ED] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          scrollState === 'hidden' ? 'translate-y-full bottom-0' : 'translate-y-0 bottom-0'
+        }`}
+      >
+        <div className="flex gap-3">
+          <button
+            type="button"
+            disabled={!isLiveTallyAvailable}
+            onClick={() => navigate(`/host/${id}/live`)}
+            className="flex-1 bg-white text-[#090A0B] border border-[#E7E9ED] rounded-2xl py-4 text-[14px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:border-transparent disabled:cursor-default hover:enabled:border-[#d9ddf3] transition-colors active:enabled:scale-[0.99]"
+          >
+            {lang === 'ko' ? '실시간 집계' : 'Live Tally'}
+          </button>
+          <button
+            type="button"
+            disabled={isSettlementSettled ? false : isFinalized ? false : Boolean(finalizeBlockingMessage)}
+            onClick={() => {
+              if (isSettlementSettled || isFinalized) {
+                navigate(`/host/${id}/settlement`)
+                return
+              }
+              void handleOpenFinalTally()
+            }}
+            className="flex-1 bg-[#090A0B] text-white rounded-2xl py-4 text-[14px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:cursor-default hover:enabled:opacity-85 transition-opacity active:enabled:scale-[0.99]"
+          >
+            {primaryLabel}
+          </button>
+        </div>
       </div>
     </>
   )

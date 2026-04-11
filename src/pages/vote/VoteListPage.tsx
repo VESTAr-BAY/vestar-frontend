@@ -434,7 +434,7 @@ export function VoteListPage() {
   return (
     <>
       {/* Hero Banner */}
-      <div className="relative h-[17.5rem] -mt-14 overflow-hidden bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] px-5 pb-5 pt-[calc(56px+14px)]">
+      <div className="relative h-[17.5rem] [margin-top:calc(var(--header-h)*-1)] overflow-hidden bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] px-5 pb-5 pt-[calc(var(--header-h)+14px)]">
         {/* Decorative: large faint circle ring — top-right, partially clipped */}
         <svg
           aria-hidden="true"
@@ -469,7 +469,7 @@ export function VoteListPage() {
         {/* Decorative: sparkle star — right of content area */}
         <svg
           aria-hidden="true"
-          className="pointer-events-none absolute right-8 top-[calc(56px+30px)] opacity-[0.18] animate-pulse"
+          className="pointer-events-none absolute right-8 top-[calc(var(--header-h)+30px)] opacity-[0.18] animate-pulse"
           width="14"
           height="14"
           viewBox="0 0 14 14"

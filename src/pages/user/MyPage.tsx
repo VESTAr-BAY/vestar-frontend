@@ -176,12 +176,12 @@ export function MyPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="relative h-[17.5rem] -mt-14 overflow-hidden bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] px-5 pb-5 pt-[calc(56px+14px)]">
+      <div className="relative h-[17.5rem] [margin-top:calc(var(--header-h)*-1)] overflow-hidden bg-gradient-to-r from-[#EBFBFA] to-[#F2E9FB] px-5 pb-5 pt-[calc(var(--header-h)+14px)]">
         <button
           type="button"
           aria-label={t('btn_back')}
           onClick={navigateBack}
-          className="absolute left-5 top-[calc(56px+8px)] z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-[#13141A] shadow-sm backdrop-blur-sm transition-colors hover:bg-white"
+          className="absolute left-5 top-[calc(var(--header-h)+8px)] z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-[#13141A] shadow-sm backdrop-blur-sm transition-colors hover:bg-white"
         >
           <svg
             aria-hidden="true"
@@ -207,7 +207,7 @@ export function MyPage() {
           <circle cx="60" cy="60" r="52" stroke="#7140FF" strokeWidth="5" strokeDasharray="4 8" />
         </svg>
         {/* Decorative: sparkle star */}
-        <svg aria-hidden="true" className="pointer-events-none absolute right-8 top-[calc(56px+30px)] opacity-[0.18] animate-pulse" width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <svg aria-hidden="true" className="pointer-events-none absolute right-8 top-[calc(var(--header-h)+30px)] opacity-[0.18] animate-pulse" width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M7 0L8.3 5.7L14 7L8.3 8.3L7 14L5.7 8.3L0 7L5.7 5.7Z" fill="#7140FF" />
         </svg>
         {/* Bottom separator */}

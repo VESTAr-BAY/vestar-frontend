@@ -38,6 +38,7 @@ interface DateTimePickerProps {
 }
 
 function DateTimePicker({ value, onChange, min }: DateTimePickerProps) {
+  const { lang } = useLanguage()
   const [datePart, timePart] = (value ?? '').split('T')
   const minDate = min?.split('T')[0]
   // Only apply min-time restriction when the same date is selected
@@ -45,22 +46,37 @@ function DateTimePicker({ value, onChange, min }: DateTimePickerProps) {
 
   const emit = (d: string, t: string) => onChange(`${d}T${t}`)
 
+  const dateEmpty = !datePart
+  const dateInputClass = `${INPUT_CLASS} ${dateEmpty ? 'border-amber-300 focus:border-amber-400 focus:ring-amber-400/10' : ''}`
+
   return (
     <div className="flex gap-2">
-      <input
-        type="date"
-        value={datePart ?? ''}
-        min={minDate}
-        onChange={(e) => emit(e.target.value, timePart ?? '00:00')}
-        className={`${INPUT_CLASS} flex-1`}
-      />
-      <input
-        type="time"
-        value={timePart ?? ''}
-        min={minTime}
-        onChange={(e) => emit(datePart ?? '', e.target.value)}
-        className={`${INPUT_CLASS} w-[120px] flex-none`}
-      />
+      <div className="flex-1 flex flex-col gap-1">
+        <span className="text-[11px] font-semibold text-[#707070]">
+          {lang === 'ko' ? '날짜' : 'Date'}
+          {dateEmpty && <span className="ml-1 text-amber-500">*</span>}
+        </span>
+        <input
+          type="date"
+          value={datePart ?? ''}
+          min={minDate}
+          required
+          onChange={(e) => emit(e.target.value, timePart ?? '00:00')}
+          className={dateInputClass}
+        />
+      </div>
+      <div className="w-[120px] flex-none flex flex-col gap-1">
+        <span className="text-[11px] font-semibold text-[#707070]">
+          {lang === 'ko' ? '시간' : 'Time'}
+        </span>
+        <input
+          type="time"
+          value={timePart ?? ''}
+          min={minTime}
+          onChange={(e) => emit(datePart ?? '', e.target.value)}
+          className={INPUT_CLASS}
+        />
+      </div>
     </div>
   )
 }
