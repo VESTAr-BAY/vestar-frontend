@@ -108,6 +108,12 @@ describe('useCreateVoteDraft', () => {
     expect(result.current.isCurrentStepValid).toBe(true)
   })
 
+  it('exposes a validation message when the series title is missing', () => {
+    const { result } = renderHook(() => useCreateVoteDraft())
+
+    expect(result.current.currentStepValidationMessage).toBe('Enter the series title to continue.')
+  })
+
   it('nextStep does not advance while current step is invalid', () => {
     const { result } = renderHook(() => useCreateVoteDraft())
 
@@ -128,6 +134,29 @@ describe('useCreateVoteDraft', () => {
     act(() => result.current.updateCandidate(second.id, 'name', '아티스트A'))
 
     expect(result.current.isCurrentStepValid).toBe(false)
+    expect(result.current.currentStepValidationMessage).toBe(
+      'Candidate names must be unique within the same vote.',
+    )
+  })
+
+  it('exposes a validation message when schedule order is invalid', () => {
+    const { result } = renderHook(() => useCreateVoteDraft())
+
+    act(() => result.current.updateField('title', 'MAMA 2026'))
+    act(() => result.current.nextStep())
+    act(() => result.current.updateField('electionTitle', '남자 그룹 인기상'))
+
+    const [first, second] = result.current.draft.candidates
+    act(() => result.current.updateCandidate(first.id, 'name', '아티스트A'))
+    act(() => result.current.updateCandidate(second.id, 'name', '아티스트B'))
+    act(() => result.current.nextStep())
+    act(() => result.current.updateField('startDate', '2026-05-08T10:00'))
+    act(() => result.current.updateField('endDate', '2026-05-07T10:00'))
+
+    expect(result.current.isCurrentStepValid).toBe(false)
+    expect(result.current.currentStepValidationMessage).toBe(
+      'The start time must be earlier than the end time.',
+    )
   })
 
   it('unlimited paid voting forces paid single-choice configuration', () => {

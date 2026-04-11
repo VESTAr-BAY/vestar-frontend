@@ -99,11 +99,18 @@ function CandidateCard({
       </div>
 
       {/* Name */}
+      <label
+        htmlFor={`candidate-name-${candidate.id}`}
+        className="block text-[13px] font-semibold text-[#090A0B] mb-2"
+      >
+        {lang === 'ko' ? '후보 이름' : 'Candidate Name'} <span className="text-[#7140FF]">*</span>
+      </label>
       <input
+        id={`candidate-name-${candidate.id}`}
         type="text"
         value={candidate.name}
         onChange={(e) => onUpdate('name', e.target.value)}
-        placeholder={lang === 'ko' ? '아티스트 이름 *' : 'Artist name *'}
+        placeholder={lang === 'ko' ? '예: NewJeans' : 'e.g. NewJeans'}
         maxLength={30}
         className="w-full bg-[#F7F8FA] border border-[#E7E9ED] rounded-xl px-3 py-2.5 text-[14px] text-[#090A0B] placeholder:text-[#C0C4CC] outline-none focus:border-[#7140FF] focus:bg-white transition-all mb-3"
       />
@@ -222,13 +229,18 @@ function SectionCard({
       </div>
 
       {/* Section name */}
+      <label
+        htmlFor={`section-name-${section.id}`}
+        className="block text-[13px] font-semibold text-[#090A0B] mb-2"
+      >
+        {lang === 'ko' ? '섹션 이름' : 'Section Name'} <span className="text-[#7140FF]">*</span>
+      </label>
       <input
+        id={`section-name-${section.id}`}
         type="text"
         value={section.name}
         onChange={(e) => onUpdateSectionName(e.target.value)}
-        placeholder={
-          lang === 'ko' ? '섹션 이름 * (예: 남자 그룹)' : 'Section name * (e.g. Boy Group)'
-        }
+        placeholder={lang === 'ko' ? '예: 남자 그룹' : 'e.g. Boy Group'}
         maxLength={30}
         className="w-full bg-white border border-[#E7E9ED] rounded-xl px-3 py-2.5 text-[14px] text-[#090A0B] placeholder:text-[#C0C4CC] outline-none focus:border-[#7140FF] focus:bg-white transition-all mb-3"
       />

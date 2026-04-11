@@ -64,6 +64,7 @@ export function VoteCreatePage() {
     draft,
     step,
     isCurrentStepValid,
+    currentStepValidationMessage,
     submissionProgress,
     updateField,
     addCandidate,
@@ -181,6 +182,12 @@ export function VoteCreatePage() {
             onUpdateSectionField={updateSectionField}
           />
         )}
+        {!isCurrentStepValid && currentStepValidationMessage ? (
+          <div className="flex items-start gap-1.5 px-5 pb-5 text-[12px] leading-relaxed text-[#707070]">
+            <span className="text-[#7140FF]">*</span>
+            <span>{currentStepValidationMessage}</span>
+          </div>
+        ) : null}
       </main>
 
       {/* Bottom action bar */}
@@ -188,7 +195,7 @@ export function VoteCreatePage() {
         <button
           type="button"
           disabled={!isCurrentStepValid || isSubmitting}
-          onClick={step === 3 ? handleSubmit : nextStep}
+          onClick={step === 3 ? () => void handleSubmit() : nextStep}
           className="w-full bg-[#7140FF] text-white rounded-2xl py-4 text-[15px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:cursor-default hover:enabled:opacity-85 transition-opacity active:enabled:scale-[0.99] flex items-center justify-center gap-2"
         >
           {isSubmitting ? (

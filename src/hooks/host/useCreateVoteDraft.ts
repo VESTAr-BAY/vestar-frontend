@@ -197,6 +197,16 @@ function isStep1Valid(draft: VoteCreateDraft): boolean {
   return draft.title.trim().length > 0
 }
 
+function getStep1ValidationMessage(draft: VoteCreateDraft, lang: 'ko' | 'en'): string | null {
+  if (draft.title.trim().length === 0) {
+    return lang === 'ko'
+      ? '시리즈명을 입력해야 합니다.'
+      : 'Enter the series title to continue.'
+  }
+
+  return null
+}
+
 function hasDuplicateCandidateNames(draft: VoteCreateDraft) {
   if (draft.sections.length > 0) {
     return draft.sections.some((section) => {
@@ -209,6 +219,72 @@ function hasDuplicateCandidateNames(draft: VoteCreateDraft) {
 
   const normalized = draft.candidates.map((candidate) => candidate.name.trim()).filter(Boolean)
   return new Set(normalized).size !== normalized.length
+}
+
+function getStep2ValidationMessage(draft: VoteCreateDraft, lang: 'ko' | 'en'): string | null {
+  if (draft.sections.length > 0) {
+    for (const section of draft.sections) {
+      if (section.name.trim().length === 0) {
+        return lang === 'ko'
+          ? '모든 섹션에 섹션 이름을 입력해야 합니다.'
+          : 'Each section needs a section name.'
+      }
+
+      if (section.candidates.length < 2) {
+        return lang === 'ko'
+          ? '각 섹션에는 후보를 최소 2명 이상 등록해야 합니다.'
+          : 'Each section must have at least 2 candidates.'
+      }
+
+      for (const candidate of section.candidates) {
+        if (candidate.name.trim().length === 0) {
+          return lang === 'ko'
+            ? '모든 후보 이름을 입력해야 합니다.'
+            : 'Enter every candidate name to continue.'
+        }
+      }
+
+      const normalized = section.candidates
+        .map((candidate) => candidate.name.trim())
+        .filter(Boolean)
+
+      if (new Set(normalized).size !== normalized.length) {
+        return lang === 'ko'
+          ? '같은 섹션 안에서는 후보 이름이 중복될 수 없습니다.'
+          : 'Candidate names must be unique within a section.'
+      }
+    }
+
+    return null
+  }
+
+  if (draft.electionTitle.trim().length === 0) {
+    return lang === 'ko'
+      ? '투표 제목을 입력해야 합니다.'
+      : 'Enter the vote title to continue.'
+  }
+
+  if (draft.candidates.length < 2) {
+    return lang === 'ko'
+      ? '후보를 최소 2명 이상 등록해야 합니다.'
+      : 'Add at least 2 candidates.'
+  }
+
+  for (const candidate of draft.candidates) {
+    if (candidate.name.trim().length === 0) {
+      return lang === 'ko'
+        ? '모든 후보 이름을 입력해야 합니다.'
+        : 'Enter every candidate name to continue.'
+    }
+  }
+
+  if (hasDuplicateCandidateNames(draft)) {
+    return lang === 'ko'
+      ? '같은 투표 안에서는 후보 이름이 중복될 수 없습니다.'
+      : 'Candidate names must be unique within the same vote.'
+  }
+
+  return null
 }
 
 function isStep2Valid(draft: VoteCreateDraft): boolean {
@@ -229,6 +305,75 @@ function isStep2Valid(draft: VoteCreateDraft): boolean {
     draft.candidates.length >= 2 &&
     draft.candidates.every((candidate) => candidate.name.trim().length > 0)
   )
+}
+
+function getSettingsValidationMessage(
+  settings: ElectionSettingsDraft,
+  candidateCount: number,
+  lang: 'ko' | 'en',
+  scopeLabel?: string,
+) {
+  const normalizedSettings = normalizeElectionSettingsDraft(settings)
+  const effectiveResultRevealAt = getEffectiveResultRevealAt(normalizedSettings)
+  const scopePrefix = scopeLabel ? `${scopeLabel}: ` : ''
+
+  if (
+    !normalizedSettings.startDate.trim() ||
+    !normalizedSettings.endDate.trim() ||
+    !effectiveResultRevealAt.trim()
+  ) {
+    return lang === 'ko'
+      ? `${scopePrefix}시작, 종료, 결과 공개 시간을 모두 입력해야 합니다.`
+      : `${scopePrefix}Fill in the start, end, and result reveal times.`
+  }
+
+  const startAt = Date.parse(normalizedSettings.startDate)
+  const endAt = Date.parse(normalizedSettings.endDate)
+  const resultRevealAt = Date.parse(effectiveResultRevealAt)
+
+  if (!Number.isFinite(startAt) || !Number.isFinite(endAt) || !Number.isFinite(resultRevealAt)) {
+    return lang === 'ko'
+      ? `${scopePrefix}시간 형식이 올바르지 않습니다.`
+      : `${scopePrefix}One or more date values are invalid.`
+  }
+
+  if (startAt >= endAt) {
+    return lang === 'ko'
+      ? `${scopePrefix}투표 시작 시간은 종료 시간보다 빨라야 합니다.`
+      : `${scopePrefix}The start time must be earlier than the end time.`
+  }
+
+  if (resultRevealAt < endAt) {
+    return lang === 'ko'
+      ? `${scopePrefix}결과 공개 시간은 종료 시간보다 늦거나 같아야 합니다.`
+      : `${scopePrefix}The result reveal time must be at or after the end time.`
+  }
+
+  if (normalizedSettings.ballotPolicy === 'ONE_PER_INTERVAL') {
+    const interval = Number(normalizedSettings.resetIntervalValue)
+    if (!Number.isFinite(interval) || interval <= 0) {
+      return lang === 'ko'
+        ? `${scopePrefix}투표권 갱신 주기를 올바르게 입력해야 합니다.`
+        : `${scopePrefix}Enter a valid vote reset interval.`
+    }
+  }
+
+  if (normalizedSettings.paymentMode === 'PAID') {
+    const price = Number(normalizedSettings.costPerBallotEth)
+    if (!Number.isFinite(price) || price <= 0) {
+      return lang === 'ko'
+        ? `${scopePrefix}유료 투표 금액을 올바르게 입력해야 합니다.`
+        : `${scopePrefix}Enter a valid paid vote amount.`
+    }
+  }
+
+  if (normalizedSettings.maxChoices < 1 || normalizedSettings.maxChoices > Math.max(candidateCount, 1)) {
+    return lang === 'ko'
+      ? `${scopePrefix}최대 선택 수가 후보 수보다 많을 수 없습니다.`
+      : `${scopePrefix}Max selections cannot exceed the number of candidates.`
+  }
+
+  return null
 }
 
 function isStep3Valid(draft: VoteCreateDraft): boolean {
@@ -278,10 +423,38 @@ function isStep3Valid(draft: VoteCreateDraft): boolean {
   return validateSettings(draft, draft.candidates.length)
 }
 
+function getStep3ValidationMessage(draft: VoteCreateDraft, lang: 'ko' | 'en'): string | null {
+  if (draft.sections.length > 0) {
+    for (const section of draft.sections) {
+      const scopeLabel = lang === 'ko' ? `${section.name.trim() || '섹션'} 설정` : `${section.name.trim() || 'Section'} settings`
+      const message = getSettingsValidationMessage(
+        section,
+        section.candidates.length,
+        lang,
+        scopeLabel,
+      )
+      if (message) return message
+    }
+    return null
+  }
+
+  return getSettingsValidationMessage(draft, draft.candidates.length, lang)
+}
+
 function validateStep(step: CreateStep, draft: VoteCreateDraft): boolean {
   if (step === 1) return isStep1Valid(draft)
   if (step === 2) return isStep2Valid(draft)
   return isStep3Valid(draft)
+}
+
+function getStepValidationMessage(
+  step: CreateStep,
+  draft: VoteCreateDraft,
+  lang: 'ko' | 'en',
+): string | null {
+  if (step === 1) return getStep1ValidationMessage(draft, lang)
+  if (step === 2) return getStep2ValidationMessage(draft, lang)
+  return getStep3ValidationMessage(draft, lang)
 }
 
 async function uploadImageToIpfs(file: File): Promise<string | null> {
@@ -660,6 +833,7 @@ export interface UseCreateVoteDraftResult {
   organizationName: string
   step: CreateStep
   isCurrentStepValid: boolean
+  currentStepValidationMessage: string | null
   submissionProgress: SubmissionProgressState
   updateField: <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => void
   addCandidate: () => void
@@ -715,6 +889,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
   const { addToast } = useToast()
 
   const isCurrentStepValid = validateStep(step, draft)
+  const currentStepValidationMessage = getStepValidationMessage(step, draft, lang)
   const currentPreparationSignature =
     step === 3 && validateStep(3, draft) ? buildDraftPreparationSignature(draft) : null
 
@@ -1190,6 +1365,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     organizationName: draft.group,
     step,
     isCurrentStepValid,
+    currentStepValidationMessage,
     submissionProgress,
     updateField,
     addCandidate,
