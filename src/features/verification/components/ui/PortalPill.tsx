@@ -22,10 +22,6 @@ const SIZE_CLASS = {
   md: 'min-h-9 px-4 text-[13px]',
 } as const
 
-export function PortalPill({
-  children,
-  tone = 'neutral',
-  size = 'md',
-}: PortalPillProps) {
+export function PortalPill({ children, tone = 'neutral', size = 'md' }: PortalPillProps) {
   return <span className={cn(BASE_CLASS, TONE_CLASS[tone], SIZE_CLASS[size])}>{children}</span>
 }

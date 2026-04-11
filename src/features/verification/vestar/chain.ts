@@ -30,7 +30,8 @@ export async function getLogsChunked<TLog>({
   let cursor = fromBlock
 
   while (cursor <= latestBlock) {
-    const chunkEnd = cursor + LOG_BLOCK_CHUNK_SIZE > latestBlock ? latestBlock : cursor + LOG_BLOCK_CHUNK_SIZE
+    const chunkEnd =
+      cursor + LOG_BLOCK_CHUNK_SIZE > latestBlock ? latestBlock : cursor + LOG_BLOCK_CHUNK_SIZE
     const chunkLogs = (await publicClient.getLogs({
       address,
       event: event as never,

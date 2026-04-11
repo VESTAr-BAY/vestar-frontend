@@ -75,21 +75,17 @@ export function PwaUpdatePrompt() {
 
   const handleUpdate = async () => {
     if (isUpdating) return
+    setIsUpdating(true)
 
     try {
-      setIsUpdating(true)
+      // Tell the waiting SW to activate (sw.js handles 'SKIP_WAITING' message).
       const registration = await navigator.serviceWorker.getRegistration(import.meta.env.BASE_URL)
-      if (registration?.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' })
-        return
-      }
-
-      await registration?.update()
-      setIsUpdating(false)
-    } catch (error) {
-      console.error('Failed to update service worker', error)
-      setIsUpdating(false)
+      registration?.waiting?.postMessage({ type: 'SKIP_WAITING' })
+    } catch {
+      // Ignore — reload regardless so the user always gets fresh content.
     }
+
+    window.location.reload()
   }
 
   return (

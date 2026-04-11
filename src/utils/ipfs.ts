@@ -83,12 +83,7 @@ function getPinataGatewayEnvValue() {
 }
 
 function getConfiguredPinataGateways() {
-  return dedupeUrls(
-    getPinataGatewayEnvValue()
-    .split(',')
-    .map(normalizeGatewayUrl)
-    .filter(Boolean),
-  )
+  return dedupeUrls(getPinataGatewayEnvValue().split(',').map(normalizeGatewayUrl).filter(Boolean))
 }
 
 function getGatewayBaseUrl() {

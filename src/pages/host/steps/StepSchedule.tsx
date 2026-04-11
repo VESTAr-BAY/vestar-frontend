@@ -6,29 +6,79 @@ import {
   UNLIMITED_PAID_COST_PER_BALLOT,
 } from '../../../utils/hostElectionSettings'
 import { formatBallotCostLabel } from '../../../utils/paymentDisplay'
+import { getKarmaTierDisplay } from '../../../utils/karmaTier'
 
 const INPUT_CLASS =
   'block min-w-0 w-full max-w-full appearance-none bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all'
 
 const HELPER_TEXT_CLASS = 'mt-1 text-[12px] leading-5 text-[#7140FF]'
 
-function getKarmaTierOptions(lang: 'en' | 'ko') {
-  return [
-    { value: '0', label: lang === 'ko' ? '누구나 참여 가능' : 'Anyone can join' },
-    { value: '1', label: lang === 'ko' ? '티어 1 · entry' : 'Tier 1 · entry' },
-    { value: '2', label: lang === 'ko' ? '티어 2 · newbie' : 'Tier 2 · newbie' },
-    { value: '3', label: lang === 'ko' ? '티어 3 · basic' : 'Tier 3 · basic' },
-    { value: '4', label: lang === 'ko' ? '티어 4 · active' : 'Tier 4 · active' },
-    { value: '5', label: lang === 'ko' ? '티어 5 · regular' : 'Tier 5 · regular' },
-    { value: '6', label: lang === 'ko' ? '티어 6 · power' : 'Tier 6 · power' },
-    { value: '7', label: lang === 'ko' ? '티어 7 · pro' : 'Tier 7 · pro' },
-    {
-      value: '8',
-      label: lang === 'ko' ? '티어 8 · high-throughput' : 'Tier 8 · high-throughput',
-    },
-    { value: '9', label: lang === 'ko' ? '티어 9 · s-tier' : 'Tier 9 · s-tier' },
-    { value: '10', label: lang === 'ko' ? '티어 10 · legendary' : 'Tier 10 · legendary' },
-  ] as const
+// ── Karma tier options derived from the shared utility (no local duplication) ──
+function buildKarmaTierOptions(lang: 'en' | 'ko') {
+  const TIER_COUNT = 11 // tiers 0–10, matching karmaTier.ts
+  return Array.from({ length: TIER_COUNT }, (_, i) => {
+    const tier = getKarmaTierDisplay(i)
+    const label =
+      i === 0
+        ? lang === 'ko'
+          ? '누구나 참여 가능'
+          : 'Anyone can join'
+        : lang === 'ko'
+          ? `티어 ${tier.id} · ${tier.label.toLowerCase()}`
+          : `Tier ${tier.id} · ${tier.label.toLowerCase()}`
+    return { value: String(tier.id), label }
+  })
+}
+
+// ── Mobile-friendly date + time split input ────────────────────────────────────
+interface DateTimePickerProps {
+  value: string // "YYYY-MM-DDTHH:mm"
+  onChange: (value: string) => void
+  min?: string
+}
+
+function DateTimePicker({ value, onChange, min }: DateTimePickerProps) {
+  const { lang } = useLanguage()
+  const [datePart, timePart] = (value ?? '').split('T')
+  const minDate = min?.split('T')[0]
+  // Only apply min-time restriction when the same date is selected
+  const minTime = min && datePart === min.split('T')[0] ? min.split('T')[1] : undefined
+
+  const emit = (d: string, t: string) => onChange(`${d}T${t}`)
+
+  const dateEmpty = !datePart
+  const dateInputClass = `${INPUT_CLASS} ${dateEmpty ? 'border-amber-300 focus:border-amber-400 focus:ring-amber-400/10' : ''}`
+
+  return (
+    <div className="flex gap-2">
+      <div className="flex-1 flex flex-col gap-1">
+        <span className="text-[11px] font-semibold text-[#707070]">
+          {lang === 'ko' ? '날짜' : 'Date'}
+          {dateEmpty && <span className="ml-1 text-amber-500">*</span>}
+        </span>
+        <input
+          type="date"
+          value={datePart ?? ''}
+          min={minDate}
+          required
+          onChange={(e) => emit(e.target.value, timePart ?? '00:00')}
+          className={dateInputClass}
+        />
+      </div>
+      <div className="w-[120px] flex-none flex flex-col gap-1">
+        <span className="text-[11px] font-semibold text-[#707070]">
+          {lang === 'ko' ? '시간' : 'Time'}
+        </span>
+        <input
+          type="time"
+          value={timePart ?? ''}
+          min={minTime}
+          onChange={(e) => emit(datePart ?? '', e.target.value)}
+          className={INPUT_CLASS}
+        />
+      </div>
+    </div>
+  )
 }
 
 interface StepScheduleProps {
@@ -123,12 +173,12 @@ function SettingsEditor({
   description?: string
 }) {
   const { lang } = useLanguage()
-  const karmaTierOptions = getKarmaTierOptions(lang)
+  const karmaTierOptions = buildKarmaTierOptions(lang)
   const isIntervalPolicy = settings.ballotPolicy === 'ONE_PER_INTERVAL'
   const isUnlimitedPaid = settings.ballotPolicy === 'UNLIMITED_PAID'
   const allowMultipleChoice = settings.maxChoices > 1 && !isUnlimitedPaid
   const isOpenVote = settings.visibilityMode === 'OPEN'
-  const minKarmaTierValue = karmaTierOptions.some((option) => option.value === settings.minKarmaTier)
+  const minKarmaTierValue = karmaTierOptions.some((opt) => opt.value === settings.minKarmaTier)
     ? settings.minKarmaTier
     : '0'
   const displayedCostPerBallot =
@@ -138,85 +188,92 @@ function SettingsEditor({
         ? UNLIMITED_PAID_COST_PER_BALLOT
         : FIXED_PAID_COST_PER_BALLOT
   const displayedCostPerBallotLabel = formatBallotCostLabel(displayedCostPerBallot, lang)
-  const copy = lang === 'ko'
-    ? {
-        visibilityLabel: '공개 방식',
-        openTitle: '공개 투표',
-        openDescription: '투표 중에도 현재 집계와 순위를 확인할 수 있습니다.',
-        privateTitle: '비공개 투표',
-        privateDescription: '암호화된 투표로 진행되고 종료 후 key reveal 이후 결과를 확인합니다.',
-        startLabel: '시작 일시',
-        endLabel: '종료 일시',
-        openRevealNotice: '공개 투표는 종료되면 바로 닫히고, 결과 공개 기준 시각은 따로 입력하지 않습니다.',
-        revealLabel: '결과 공개 시각',
-        revealHelp: '비공개 투표는 result reveal 시각 이후 key reveal pending 단계로 이동합니다.',
-        ballotPolicyLabel: '투표 정책',
-        onePerElectionTitle: '선거당 1회',
-        onePerElectionDescription: '선거 전체 기간 동안 한 번만 투표할 수 있습니다.',
-        onePerIntervalTitle: '주기마다 1회',
-        onePerIntervalDescription: '설정한 갱신 주기마다 다시 투표할 수 있습니다.',
-        unlimitedPaidTitle: '유료 반복 투표',
-        unlimitedPaidDescription: '결제를 전제로 반복 투표를 허용합니다.',
-        intervalValueLabel: '갱신 주기 값',
-        intervalUnitLabel: '단위',
-        minuteOption: '분',
-        hourOption: '시간',
-        dayOption: '일',
-        noIntervalHelp: '현재 정책에서는 투표권 갱신 주기 설정이 필요 없습니다.',
-        maxChoicesLabel: '한 번에 선택할 인원',
-        maxChoicesOptions: (value: number) => `${value}명`,
-        minRequirementLabel: '참여 조건',
-        minKarmaLabel: '최소 참여 카르마 티어',
-        minKarmaHelp: 'Status Karma 기준으로 참여 가능한 최소 티어를 고를 수 있어요.',
-        paymentLabel: '결제 설정',
-        freeTitle: '무료 투표',
-        freeDescription: '별도 결제 없이 참여할 수 있습니다.',
-        paidTitle: '유료 투표',
-        paidDescription: '투표 1회당 비용을 받고 참여를 허용합니다.',
-        costLabel: '투표 1회당 비용',
-        freeCostHelp: '무료 투표는 비용이 없습니다.',
-        unlimitedPaidCostHelp: `유료 반복 투표는 컨트랙트 규칙상 ${displayedCostPerBallotLabel} 고정 비용으로 생성됩니다.`,
-        fixedPaidCostHelp: '일반 유료 투표는 100으로 고정됩니다.',
-      }
-    : {
-        visibilityLabel: 'Visibility',
-        openTitle: 'Open Vote',
-        openDescription: 'Live totals and rankings stay visible while voting is open.',
-        privateTitle: 'Private Vote',
-        privateDescription: 'Votes stay encrypted and become readable after key reveal.',
-        startLabel: 'Start Time',
-        endLabel: 'End Time',
-        openRevealNotice: 'Open votes close at the end time, so no separate result reveal time is needed.',
-        revealLabel: 'Result Reveal Time',
-        revealHelp: 'Private votes move into key reveal pending after the result reveal time.',
-        ballotPolicyLabel: 'Ballot Policy',
-        onePerElectionTitle: 'One per Election',
-        onePerElectionDescription: 'Each wallet can vote once during the full election period.',
-        onePerIntervalTitle: 'One per Interval',
-        onePerIntervalDescription: 'Voting rights reset on the interval you set below.',
-        unlimitedPaidTitle: 'Unlimited Paid Voting',
-        unlimitedPaidDescription: 'Repeat voting is allowed as long as the fee is paid each time.',
-        intervalValueLabel: 'Interval Value',
-        intervalUnitLabel: 'Unit',
-        minuteOption: 'Minute',
-        hourOption: 'Hour',
-        dayOption: 'Day',
-        noIntervalHelp: 'This policy does not require an interval reset setting.',
-        maxChoicesLabel: 'Selections per Ballot',
-        maxChoicesOptions: (value: number) => `${value} pick${value > 1 ? 's' : ''}`,
-        minRequirementLabel: 'Eligibility',
-        minKarmaLabel: 'Minimum Karma Tier',
-        minKarmaHelp: 'Choose the minimum Status Karma tier required to join this vote.',
-        paymentLabel: 'Payment',
-        freeTitle: 'Free Vote',
-        freeDescription: 'Anyone eligible can join without paying.',
-        paidTitle: 'Paid Vote',
-        paidDescription: 'Participants pay the fee shown below for each ballot.',
-        costLabel: 'Cost per Ballot',
-        freeCostHelp: 'Free votes do not charge a fee.',
-        unlimitedPaidCostHelp: `Unlimited paid voting uses the fixed on-chain cost of ${displayedCostPerBallotLabel}.`,
-        fixedPaidCostHelp: 'Standard paid votes are fixed at 100.',
-      }
+  const copy =
+    lang === 'ko'
+      ? {
+          visibilityLabel: '공개 방식',
+          openTitle: '공개 투표',
+          openDescription: '투표 중에도 현재 집계와 순위를 확인할 수 있습니다.',
+          privateTitle: '비공개 투표',
+          privateDescription: '암호화된 투표로 진행되고 종료 후 key reveal 이후 결과를 확인합니다.',
+          startLabel: '시작 일시',
+          endLabel: '종료 일시',
+          openRevealNotice:
+            '공개 투표는 종료되면 바로 닫히고, 결과 공개 기준 시각은 따로 입력하지 않습니다.',
+          revealLabel: '결과 공개 시각',
+          revealHelp: '비공개 투표는 result reveal 시각 이후 key reveal pending 단계로 이동합니다.',
+          ballotPolicyLabel: '투표 정책',
+          onePerElectionTitle: '선거당 1회',
+          onePerElectionDescription: '선거 전체 기간 동안 한 번만 투표할 수 있습니다.',
+          onePerIntervalTitle: '주기마다 1회',
+          onePerIntervalDescription: '설정한 갱신 주기마다 다시 투표할 수 있습니다.',
+          unlimitedPaidTitle: '유료 반복 투표',
+          unlimitedPaidDescription: '결제를 전제로 반복 투표를 허용합니다.',
+          intervalValueLabel: '갱신 주기 값',
+          intervalUnitLabel: '단위',
+          minuteOption: '분',
+          hourOption: '시간',
+          dayOption: '일',
+          noIntervalHelp: '현재 정책에서는 투표권 갱신 주기 설정이 필요 없습니다.',
+          maxChoicesLabel: '한 번에 선택할 인원',
+          maxChoicesOptions: (value: number) => `${value}명`,
+          minRequirementLabel: '참여 조건',
+          minKarmaLabel: '최소 카르마 티어',
+          minKarmaHelp: 'Status Karma 기준으로 참여 가능한 최소 티어를 고를 수 있어요.',
+          paymentLabel: '결제 설정',
+          freeTitle: '무료 투표',
+          freeDescription: '별도 결제 없이 참여할 수 있습니다.',
+          paidTitle: '유료 투표',
+          paidDescription: `투표 1회당 비용을 받고 참여를 허용합니다. 유료 투표 비용은 ${formatBallotCostLabel(FIXED_PAID_COST_PER_BALLOT, 'ko')} 입니다.`,
+          costLabel: '투표 1회당 비용',
+          freeCostHelp: '무료 투표는 비용이 없습니다.',
+          unlimitedPaidCostHelp: `유료 반복 투표는 컨트랙트 규칙상 ${displayedCostPerBallotLabel} 고정 비용으로 생성됩니다.`,
+          fixedPaidCostHelp: '일반 유료 투표는 100원으로 고정됩니다.',
+          unlimitedPaidPaymentNotice: `이 정책은 결제가 필수입니다. 비용: ${formatBallotCostLabel(UNLIMITED_PAID_COST_PER_BALLOT, 'ko')} / 1회`,
+        }
+      : {
+          visibilityLabel: 'Visibility',
+          openTitle: 'Open Vote',
+          openDescription: 'Live totals and rankings stay visible while voting is open.',
+          privateTitle: 'Private Vote',
+          privateDescription: 'Votes stay encrypted and become readable after key reveal.',
+          startLabel: 'Start Time',
+          endLabel: 'End Time',
+          openRevealNotice:
+            'Open votes close at the end time, so no separate result reveal time is needed.',
+          revealLabel: 'Result Reveal Time',
+          revealHelp: 'Private votes move into key reveal pending after the result reveal time.',
+          ballotPolicyLabel: 'Ballot Policy',
+          onePerElectionTitle: 'One per Election',
+          onePerElectionDescription: 'Each wallet can vote once during the full election period.',
+          onePerIntervalTitle: 'One per Interval',
+          onePerIntervalDescription: 'Voting rights reset on the interval you set below.',
+          unlimitedPaidTitle: 'Unlimited Paid Voting',
+          unlimitedPaidDescription:
+            'Repeat voting is allowed as long as the fee is paid each time.',
+          intervalValueLabel: 'Interval Value',
+          intervalUnitLabel: 'Unit',
+          minuteOption: 'Minute',
+          hourOption: 'Hour',
+          dayOption: 'Day',
+          noIntervalHelp: 'This policy does not require an interval reset setting.',
+          maxChoicesLabel: 'Selections per Ballot',
+          maxChoicesOptions: (value: number) => `${value} pick${value > 1 ? 's' : ''}`,
+          minRequirementLabel: 'Eligibility',
+          minKarmaLabel: 'Minimum Karma Tier',
+          minKarmaHelp: 'Choose the minimum Status Karma tier required to join this vote.',
+          paymentLabel: 'Payment',
+          freeTitle: 'Free Vote',
+          freeDescription: 'Anyone eligible can join without paying.',
+          paidTitle: 'Paid Vote',
+          paidDescription: `Participants pay the fee shown below for each ballot. Cost: ${formatBallotCostLabel(FIXED_PAID_COST_PER_BALLOT, 'en')} per vote.`,
+          costLabel: 'Cost per Ballot',
+          freeCostHelp: 'Free votes do not charge a fee.',
+          unlimitedPaidCostHelp: `Unlimited paid voting uses the fixed on-chain cost of ${displayedCostPerBallotLabel}.`,
+          fixedPaidCostHelp: `Standard paid votes are fixed at ${formatBallotCostLabel(FIXED_PAID_COST_PER_BALLOT, 'en')}.`,
+          unlimitedPaidPaymentNotice: `This policy requires payment. Cost: ${formatBallotCostLabel(UNLIMITED_PAID_COST_PER_BALLOT, 'en')} per vote.`,
+        }
+
   const maxChoicesOptions = Array.from({ length: Math.max(candidateCount, 1) }, (_, index) => {
     const value = index + 1
     return { value, label: copy.maxChoicesOptions(value) }
@@ -250,11 +307,12 @@ function SettingsEditor({
         </div>
       ) : null}
 
+      {/* 공개 방식 — single-column so descriptions are fully readable on mobile */}
       <div>
         <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">
           {copy.visibilityLabel}
         </span>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3">
           <ChoiceCard
             selected={settings.visibilityMode === 'OPEN'}
             title={copy.openTitle}
@@ -270,22 +328,16 @@ function SettingsEditor({
         </div>
       </div>
 
+      {/* 시작/종료 일시 — split date + time inputs for mobile */}
       <Field label={copy.startLabel}>
-        <input
-          type="datetime-local"
-          value={settings.startDate}
-          onChange={(event) => onUpdate('startDate', event.target.value)}
-          className={INPUT_CLASS}
-        />
+        <DateTimePicker value={settings.startDate} onChange={(v) => onUpdate('startDate', v)} />
       </Field>
 
       <Field label={copy.endLabel}>
-        <input
-          type="datetime-local"
+        <DateTimePicker
           value={settings.endDate}
           min={settings.startDate}
-          onChange={(event) => onUpdate('endDate', event.target.value)}
-          className={INPUT_CLASS}
+          onChange={(v) => onUpdate('endDate', v)}
         />
       </Field>
 
@@ -295,17 +347,16 @@ function SettingsEditor({
         </div>
       ) : (
         <Field label={copy.revealLabel}>
-          <input
-            type="datetime-local"
+          <DateTimePicker
             value={settings.resultRevealAt}
             min={settings.endDate}
-            onChange={(event) => onUpdate('resultRevealAt', event.target.value)}
-            className={INPUT_CLASS}
+            onChange={(v) => onUpdate('resultRevealAt', v)}
           />
           <div className="mt-2 text-[12px] text-[#707070]">{copy.revealHelp}</div>
         </Field>
       )}
 
+      {/* 투표 정책 */}
       <div>
         <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">
           {copy.ballotPolicyLabel}
@@ -327,9 +378,7 @@ function SettingsEditor({
             selected={settings.ballotPolicy === 'UNLIMITED_PAID'}
             title={copy.unlimitedPaidTitle}
             description={copy.unlimitedPaidDescription}
-            onClick={() => {
-              onUpdate('ballotPolicy', 'UNLIMITED_PAID')
-            }}
+            onClick={() => onUpdate('ballotPolicy', 'UNLIMITED_PAID')}
           />
         </div>
       </div>
@@ -368,6 +417,7 @@ function SettingsEditor({
         </div>
       )}
 
+      {/* 한 번에 선택할 인원 */}
       <div>
         <div className="mb-2">
           <span className="block text-[13px] font-semibold text-[#090A0B]">
@@ -394,14 +444,12 @@ function SettingsEditor({
         </div>
       </div>
 
+      {/* 참여 조건 — karma tier select with help text below the control */}
       <div>
         <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">
           {copy.minRequirementLabel}
         </span>
         <Field label={copy.minKarmaLabel}>
-          <div className={HELPER_TEXT_CLASS}>
-            {copy.minKarmaHelp}
-          </div>
           <select
             value={minKarmaTierValue}
             onChange={(event) => onUpdate('minKarmaTier', event.target.value)}
@@ -413,27 +461,35 @@ function SettingsEditor({
               </option>
             ))}
           </select>
+          <div className="mt-2 text-[12px] text-[#707070]">{copy.minKarmaHelp}</div>
         </Field>
       </div>
 
+      {/* 결제 설정 — hide FREE/PAID choice cards when UNLIMITED_PAID forces payment */}
       <div>
         <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">
           {copy.paymentLabel}
         </span>
-        <div className="grid gap-3">
-          <ChoiceCard
-            selected={settings.paymentMode === 'FREE'}
-            title={copy.freeTitle}
-            description={copy.freeDescription}
-            onClick={() => onUpdate('paymentMode', 'FREE')}
-          />
-          <ChoiceCard
-            selected={settings.paymentMode === 'PAID'}
-            title={copy.paidTitle}
-            description={copy.paidDescription}
-            onClick={() => onUpdate('paymentMode', 'PAID')}
-          />
-        </div>
+        {isUnlimitedPaid ? (
+          <div className="rounded-2xl border border-dashed border-[#7140FF]/30 bg-[#F0EDFF]/60 px-4 py-4 text-[12px] text-[#7140FF]">
+            {copy.unlimitedPaidPaymentNotice}
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            <ChoiceCard
+              selected={settings.paymentMode === 'FREE'}
+              title={copy.freeTitle}
+              description={copy.freeDescription}
+              onClick={() => onUpdate('paymentMode', 'FREE')}
+            />
+            <ChoiceCard
+              selected={settings.paymentMode === 'PAID'}
+              title={copy.paidTitle}
+              description={copy.paidDescription}
+              onClick={() => onUpdate('paymentMode', 'PAID')}
+            />
+          </div>
+        )}
         <div className="mt-4">
           <Field label={copy.costLabel}>
             <input
@@ -593,9 +649,7 @@ export function StepSchedule({ draft, onUpdate, onUpdateSectionField }: StepSche
         settings={draft}
         candidateCount={draft.candidates.length}
         onUpdate={handleUpdateSingleField}
-        title={
-          draft.electionTitle || (lang === 'ko' ? '투표 이름 미입력' : 'Untitled vote')
-        }
+        title={draft.electionTitle || (lang === 'ko' ? '투표 이름 미입력' : 'Untitled vote')}
         description={
           lang === 'ko'
             ? '단일 투표 모드에서는 아래 설정이 하나의 election에 그대로 반영됩니다.'

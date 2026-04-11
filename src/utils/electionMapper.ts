@@ -6,10 +6,7 @@ import {
   findLocalOpenElectionMetadata,
   type LocalOpenElectionMetadata,
 } from './localOpenElectionMetadata'
-import {
-  getCandidateManifestSeriesPreimage,
-  getCandidateManifestTitle,
-} from './candidateManifest'
+import { getCandidateManifestSeriesPreimage, getCandidateManifestTitle } from './candidateManifest'
 
 export function mapApiStateToBadge(state: ApiElectionState): BadgeVariant {
   switch (state) {
@@ -160,7 +157,8 @@ export function applyManifestToElection(
     title: manifestTitle || null,
     category: manifest?.election?.category ?? rawElection.category ?? null,
     coverImageUrl: manifest?.election?.coverImageUrl ?? rawElection.coverImageUrl,
-    series: manifestSeriesPreimage || manifest?.series?.coverImageUrl
+    series:
+      manifestSeriesPreimage || manifest?.series?.coverImageUrl
         ? {
             ...(rawElection.series ?? {}),
             id: rawElection.series?.id ?? `manifest-${rawElection.onchainElectionId}`,

@@ -17,7 +17,7 @@ export function VoteDetailLayout() {
 
   return (
     <VoteDetailHeaderContext value={{ scrollState }}>
-      <div className="relative mx-auto h-screen w-full max-w-[430px] overflow-hidden bg-[#ffffff] shadow-[0_0_60px_rgba(0,0,0,0.12)]">
+      <div className="relative mx-auto h-screen w-full max-w-[430px] overflow-hidden bg-[#1C1D22] shadow-[0_0_60px_rgba(0,0,0,0.12)]">
         <Header
           scrollState={scrollState}
           onOpenPanel={() => setPanelOpen(true)}

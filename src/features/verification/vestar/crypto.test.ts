@@ -19,8 +19,7 @@ describe('decryptCanonicalBallotPayload', () => {
       },
     })
 
-    const electionId =
-      '0x1111111111111111111111111111111111111111111111111111111111111111' as const
+    const electionId = '0x1111111111111111111111111111111111111111111111111111111111111111' as const
     const checksummedElectionAddress = getAddress('0x88297833b1b316272d182541337f87d7dab25f01')
     const checksummedVoterAddress = getAddress('0xafEdA9845D663bCdC295d98E798CB024f5B76ca1')
     const encryptedBallot = await encryptBallotWithPublicKey({
@@ -51,8 +50,7 @@ describe('decryptCanonicalBallotPayload', () => {
   })
 
   it('decrypts recorded private ballots with canonical candidate keys', async () => {
-    const electionId =
-      '0xa01d236533d63e4a96139e71c91a91308ba95de1f0d7e0d02f48e01efe55fae5' as const
+    const electionId = '0xa01d236533d63e4a96139e71c91a91308ba95de1f0d7e0d02f48e01efe55fae5' as const
     const electionAddress = getAddress('0x885AC0b0850bBDF93827b65a0bfaD2112424DCf7')
     const voterAddress = getAddress('0x81c2C42BD4A2a5F08f70E4e69E7edf790A815CDC')
     const encryptedBallot =

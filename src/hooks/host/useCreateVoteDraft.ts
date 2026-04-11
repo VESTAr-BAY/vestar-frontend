@@ -503,7 +503,9 @@ async function prepareSubmissionArtifacts(
 
   await Promise.all([
     ensureUploadedImage(draft.bannerImageFile),
-    draft.sections.length === 0 ? ensureUploadedImage(draft.electionCoverImageFile) : Promise.resolve(),
+    draft.sections.length === 0
+      ? ensureUploadedImage(draft.electionCoverImageFile)
+      : Promise.resolve(),
     ...elections.map((election) => ensureUploadedImage(election.electionCoverImageFile)),
     ...allCandidates.map((candidate) => ensureUploadedImage(candidate.imageFile)),
   ])
@@ -562,13 +564,20 @@ async function prepareSubmissionArtifacts(
         bannerImageUrl,
         electionCoverImageUrl,
       )
-      const manifestFileName = buildCandidateManifestFileName(draft.title, election.title, index + 1)
+      const manifestFileName = buildCandidateManifestFileName(
+        draft.title,
+        election.title,
+        index + 1,
+      )
       const localManifestArtifact = createJsonArtifact(manifestFileName, manifest)
 
       let candidateManifestURI = buildManifestUriFallback(localManifestArtifact.rawJson)
 
       try {
-        const uploadedManifestArtifact = await uploadJsonArtifactToPinata(manifestFileName, manifest)
+        const uploadedManifestArtifact = await uploadJsonArtifactToPinata(
+          manifestFileName,
+          manifest,
+        )
         candidateManifestURI = uploadedManifestArtifact.uri
       } catch {
         candidateManifestURI = buildManifestUriFallback(localManifestArtifact.rawJson)
@@ -846,7 +855,9 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
       setDraft((prev) => ({
         ...prev,
         sections: prev.sections.map((section) =>
-          section.id === sectionId ? { ...section, electionCoverImage: image, electionCoverImageFile: imageFile } : section,
+          section.id === sectionId
+            ? { ...section, electionCoverImage: image, electionCoverImageFile: imageFile }
+            : section,
         ),
       }))
     },
@@ -1163,7 +1174,16 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         currentTitle: null,
       })
     }
-  }, [address, addToast, chainId, draft, ensurePreparedSubmission, lang, switchChainAsync, walletClient])
+  }, [
+    address,
+    addToast,
+    chainId,
+    draft,
+    ensurePreparedSubmission,
+    lang,
+    switchChainAsync,
+    walletClient,
+  ])
 
   return {
     draft,

@@ -14,7 +14,9 @@ function LoadingSkeleton() {
 function EmptyState() {
   return (
     <div className="mx-5 mt-10 rounded-3xl border border-[#E7E9ED] bg-white px-6 py-10 text-center">
-      <div className="text-[16px] font-semibold text-[#090A0B]">아직 표시할 실시간 집계가 없습니다.</div>
+      <div className="text-[16px] font-semibold text-[#090A0B]">
+        아직 표시할 실시간 집계가 없습니다.
+      </div>
       <div className="mt-2 text-[13px] text-[#707070]">
         집계 데이터가 반영되면 이 화면에서 실시간 순위를 볼 수 있습니다.
       </div>

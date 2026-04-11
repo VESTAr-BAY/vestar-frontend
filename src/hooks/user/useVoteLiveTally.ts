@@ -44,7 +44,7 @@ export function useVoteLiveTally(id: string): UseVoteLiveTallyResult {
             ...candidate,
             votes:
               vote.visibilityMode === 'OPEN'
-                ? candidate.votes ?? 0
+                ? (candidate.votes ?? 0)
                 : (tallyMap.get(candidate.id) ?? 0),
             percentage: 0,
             rank: 0,
@@ -55,13 +55,15 @@ export function useVoteLiveTally(id: string): UseVoteLiveTallyResult {
           vote.visibilityMode === 'OPEN'
             ? nextRankedCandidates.reduce((sum, candidate) => sum + candidate.votes, 0)
             : (summary?.totalValidVotes ??
-                nextRankedCandidates.reduce((sum, candidate) => sum + candidate.votes, 0))
+              nextRankedCandidates.reduce((sum, candidate) => sum + candidate.votes, 0))
 
-        const rankedCandidates: RankedCandidate[] = nextRankedCandidates.map((candidate, index) => ({
-          ...candidate,
-          percentage: nextTotalVotes > 0 ? (candidate.votes / nextTotalVotes) * 100 : 0,
-          rank: index + 1,
-        }))
+        const rankedCandidates: RankedCandidate[] = nextRankedCandidates.map(
+          (candidate, index) => ({
+            ...candidate,
+            percentage: nextTotalVotes > 0 ? (candidate.votes / nextTotalVotes) * 100 : 0,
+            rank: index + 1,
+          }),
+        )
 
         setResult({
           id: vote.id,

@@ -220,7 +220,9 @@ describe('useCreateVoteDraft', () => {
 
     const [firstSection, secondSection] = result.current.draft.sections
 
-    act(() => result.current.updateSectionField(firstSection.id, 'ballotPolicy', 'ONE_PER_INTERVAL'))
+    act(() =>
+      result.current.updateSectionField(firstSection.id, 'ballotPolicy', 'ONE_PER_INTERVAL'),
+    )
 
     expect(result.current.draft.sections[0].ballotPolicy).toBe('ONE_PER_INTERVAL')
     expect(result.current.draft.sections[1].ballotPolicy).toBe('ONE_PER_INTERVAL')
@@ -242,7 +244,9 @@ describe('useCreateVoteDraft', () => {
 
     const [firstSection, secondSection] = result.current.draft.sections
 
-    act(() => result.current.updateSectionField(firstSection.id, 'ballotPolicy', 'ONE_PER_INTERVAL'))
+    act(() =>
+      result.current.updateSectionField(firstSection.id, 'ballotPolicy', 'ONE_PER_INTERVAL'),
+    )
 
     expect(result.current.draft.sections[0].ballotPolicy).toBe('ONE_PER_INTERVAL')
     expect(result.current.draft.sections[1].ballotPolicy).toBe('ONE_PER_ELECTION')
@@ -262,7 +266,9 @@ describe('useCreateVoteDraft', () => {
 
     const [firstSection, secondSection] = result.current.draft.sections
 
-    act(() => result.current.updateSectionField(firstSection.id, 'ballotPolicy', 'ONE_PER_INTERVAL'))
+    act(() =>
+      result.current.updateSectionField(firstSection.id, 'ballotPolicy', 'ONE_PER_INTERVAL'),
+    )
     act(() => result.current.updateSectionField(firstSection.id, 'resetIntervalUnit', 'DAY'))
     act(() => result.current.updateSectionField(secondSection.id, 'visibilityMode', 'OPEN'))
     act(() => result.current.updateSectionField(secondSection.id, 'paymentMode', 'PAID'))

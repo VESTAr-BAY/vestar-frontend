@@ -25,7 +25,7 @@ export function VoteHero({ vote }: VoteHeroProps) {
   const { t } = useLanguage()
 
   return (
-    <div className="relative min-h-[360px] overflow-hidden bg-[#1C1D22] px-5 pb-7 pt-[calc(56px+24px)] -mt-14">
+    <div className="relative min-h-[360px] overflow-hidden bg-[#1C1D22] px-5 pb-7 pt-[calc(var(--header-h)+24px)] [margin-top:calc(var(--header-h)*-1)]">
       {vote.imageUrl ? (
         <img
           src={resolveIpfsUrl(vote.imageUrl)}

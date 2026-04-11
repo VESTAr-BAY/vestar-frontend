@@ -15,10 +15,8 @@ const BASE_CLASS =
   'inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full border text-center font-semibold leading-none transition-colors duration-200'
 
 const VARIANT_CLASS = {
-  surface:
-    'border-[#D8DCEF] bg-white text-[#5C4FE5] hover:border-[#7140FF] hover:text-[#7140FF]',
-  header:
-    'border-white/10 bg-white/[0.08] text-white/80 hover:bg-white/[0.14] hover:text-white',
+  surface: 'border-[#D8DCEF] bg-white text-[#5C4FE5] hover:border-[#7140FF] hover:text-[#7140FF]',
+  header: 'border-white/10 bg-white/[0.08] text-white/80 hover:bg-white/[0.14] hover:text-white',
 } as const
 
 const SIZE_CLASS = {

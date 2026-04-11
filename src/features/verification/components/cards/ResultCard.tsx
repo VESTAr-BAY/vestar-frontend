@@ -22,14 +22,15 @@ export function ResultCard({
   percentage,
 }: ResultCardProps) {
   const { lang } = useLanguage()
-  const rankColor =
-    rank === 1 ? 'text-[#F59E0B]' : rank === 2 ? 'text-[#9CA3AF]' : 'text-[#CD7C3A]'
+  const rankColor = rank === 1 ? 'text-[#F59E0B]' : rank === 2 ? 'text-[#9CA3AF]' : 'text-[#CD7C3A]'
   const barColor = rank === 1 ? 'bg-[#F59E0B]' : rank === 2 ? 'bg-[#7140FF]' : 'bg-[#8B5CF6]'
 
   return (
     <PortalPanel className="rounded-[22px]">
       <div className="flex items-center gap-3">
-        <div className={`flex h-8 w-8 items-center justify-center font-mono text-[14px] font-bold ${rankColor}`}>
+        <div
+          className={`flex h-8 w-8 items-center justify-center font-mono text-[14px] font-bold ${rankColor}`}
+        >
           {rank}
         </div>
         {imageUrl ? (
@@ -48,7 +49,9 @@ export function ResultCard({
           <div className="truncate text-[12px] text-[#707070]">{subtitle}</div>
         </div>
         <div className="text-right">
-          <div className={`font-mono text-[15px] font-bold ${rankColor}`}>{percentage.toFixed(1)}%</div>
+          <div className={`font-mono text-[15px] font-bold ${rankColor}`}>
+            {percentage.toFixed(1)}%
+          </div>
           <div className="font-mono text-[12px] text-[#707070]">
             {lang === 'ko' ? `${votes.toLocaleString()}표` : `${votes.toLocaleString()} votes`}
           </div>

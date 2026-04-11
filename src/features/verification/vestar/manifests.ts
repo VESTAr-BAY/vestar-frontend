@@ -64,7 +64,6 @@ async function readVerifiedManifest<T extends CandidateManifest | ResultManifest
         writeStoredItem(manifestCacheKey, body)
         return JSON.parse(body) as T
       } catch {
-        continue
       }
     }
 
@@ -129,7 +128,6 @@ async function readVerifiedCandidateManifest(
         writeStoredItem(manifestCacheKey, body)
         return parsed
       } catch {
-        continue
       }
     }
 

@@ -77,7 +77,10 @@ function writeKarmaProfileToStorage(cacheKey: string, value: CachedKarmaProfile)
   }
 }
 
-async function readOnchainKarmaProfile(address: Address, force = false): Promise<CachedKarmaProfile> {
+async function readOnchainKarmaProfile(
+  address: Address,
+  force = false,
+): Promise<CachedKarmaProfile> {
   const cacheKey = buildKarmaCacheKey(address)
 
   if (!force) {
@@ -133,43 +136,46 @@ export function useMyKarma(): UseMyKarmaResult {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | undefined>(undefined)
 
-  const fetchKarma = useCallback(async (force = false) => {
-    if (!isConnected || !address) {
-      setTotal(0)
-      setTierId(0)
-      setIsLoading(false)
+  const fetchKarma = useCallback(
+    async (force = false) => {
+      if (!isConnected || !address) {
+        setTotal(0)
+        setTierId(0)
+        setIsLoading(false)
+        setError(undefined)
+        return
+      }
+
       setError(undefined)
-      return
-    }
+      const cachedProfile = force ? null : readFreshCachedKarmaProfile(address)
 
-    setError(undefined)
-    const cachedProfile = force ? null : readFreshCachedKarmaProfile(address)
+      if (cachedProfile) {
+        setTotal(cachedProfile.total)
+        setTierId(cachedProfile.tierId)
+        setIsLoading(false)
+        return
+      }
 
-    if (cachedProfile) {
-      setTotal(cachedProfile.total)
-      setTierId(cachedProfile.tierId)
-      setIsLoading(false)
-      return
-    }
-
-    // Reset immediately when the connected wallet changes so the previous wallet's tier
-    // does not linger while the next read is in flight.
-    setTotal(0)
-    setTierId(0)
-    setIsLoading(true)
-
-    try {
-      const profile = await readOnchainKarmaProfile(address, force)
-      setTotal(profile.total)
-      setTierId(profile.tierId)
-    } catch (err) {
+      // Reset immediately when the connected wallet changes so the previous wallet's tier
+      // does not linger while the next read is in flight.
       setTotal(0)
       setTierId(0)
-      setError(err instanceof Error ? err : new Error('Failed to fetch karma balance'))
-    } finally {
-      setIsLoading(false)
-    }
-  }, [address, isConnected])
+      setIsLoading(true)
+
+      try {
+        const profile = await readOnchainKarmaProfile(address, force)
+        setTotal(profile.total)
+        setTierId(profile.tierId)
+      } catch (err) {
+        setTotal(0)
+        setTierId(0)
+        setError(err instanceof Error ? err : new Error('Failed to fetch karma balance'))
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [address, isConnected],
+  )
 
   useEffect(() => {
     void fetchKarma()

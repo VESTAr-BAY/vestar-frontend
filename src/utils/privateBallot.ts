@@ -31,7 +31,9 @@ export async function encryptBallotWithPublicKey(args: {
   const ephemeralPublicKeySpki = encodeSpkiEcPublicPoint(
     p256.getPublicKey(ephemeralPrivateKey, false),
   )
-  const sharedSecret = p256.getSharedSecret(ephemeralPrivateKey, recipientPublicPoint, true).slice(1)
+  const sharedSecret = p256
+    .getSharedSecret(ephemeralPrivateKey, recipientPublicPoint, true)
+    .slice(1)
   const symmetricKeyBytes = sha256(sharedSecret)
   const iv = randomBytes(12)
   const plaintextBytes = new TextEncoder().encode(JSON.stringify(args.payload))
@@ -73,32 +75,8 @@ function bytesToBase64(bytes: Uint8Array) {
 }
 
 const P256_SPKI_PREFIX = Uint8Array.from([
-  0x30,
-  0x59,
-  0x30,
-  0x13,
-  0x06,
-  0x07,
-  0x2a,
-  0x86,
-  0x48,
-  0xce,
-  0x3d,
-  0x02,
-  0x01,
-  0x06,
-  0x08,
-  0x2a,
-  0x86,
-  0x48,
-  0xce,
-  0x3d,
-  0x03,
-  0x01,
-  0x07,
-  0x03,
-  0x42,
-  0x00,
+  0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a,
+  0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00,
 ])
 
 type DerElement = {
@@ -112,7 +90,10 @@ type DerElement = {
 function randomBytes(length: number) {
   const output = new Uint8Array(length)
 
-  if (typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.getRandomValues === 'function') {
+  if (
+    typeof globalThis.crypto !== 'undefined' &&
+    typeof globalThis.crypto.getRandomValues === 'function'
+  ) {
     globalThis.crypto.getRandomValues(output)
     return output
   }

@@ -14,11 +14,11 @@ interface DetailHeaderProps {
 
 const STATE_CLASSES: Record<ScrollState, string> = {
   default:
-    'top-0 w-full max-w-[430px] h-14 bg-[#13141A] backdrop-blur-md border-b border-white/[0.07] px-4',
+    'top-0 w-full max-w-[430px] h-[var(--header-h)] pt-[var(--safe-top)] bg-[#13141A] backdrop-blur-md border-b border-white/[0.07] px-4',
   hidden:
-    '-top-[66px] w-full max-w-[430px] h-14 bg-[#13141A] backdrop-blur-md border-b border-white/[0.07] px-4',
+    '-top-[var(--header-h)] w-full max-w-[430px] h-[var(--header-h)] pt-[var(--safe-top)] bg-[#13141A] backdrop-blur-md border-b border-white/[0.07] px-4',
   floating:
-    'top-[10px] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-12 rounded-2xl bg-[#1C2033]/90 backdrop-blur-md border border-white/[0.10] shadow-[0_8px_32px_rgba(0,0,0,0.35),0_2px_8px_rgba(0,0,0,0.25)] px-4',
+    'top-[calc(var(--safe-top)+10px)] w-[calc(100%-32px)] max-w-[calc(430px-32px)] h-12 rounded-2xl bg-[#1C2033]/90 backdrop-blur-md border border-white/[0.10] shadow-[0_8px_32px_rgba(0,0,0,0.35),0_2px_8px_rgba(0,0,0,0.25)] px-4',
 }
 
 export function DetailHeader({

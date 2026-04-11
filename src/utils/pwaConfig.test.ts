@@ -89,9 +89,12 @@ describe('NETLIFY_REDIRECT_RULES', () => {
     expect(portalRule).toBeDefined()
     expect(appRule).toBeDefined()
     // portal rule must come before the catch-all /vote/* rule
-    const portalIdx = NETLIFY_REDIRECT_RULES.indexOf(portalRule as (typeof NETLIFY_REDIRECT_RULES)[number])
-    const appIdx = NETLIFY_REDIRECT_RULES.indexOf(appRule as (typeof NETLIFY_REDIRECT_RULES)[number])
+    const portalIdx = NETLIFY_REDIRECT_RULES.indexOf(
+      portalRule as (typeof NETLIFY_REDIRECT_RULES)[number],
+    )
+    const appIdx = NETLIFY_REDIRECT_RULES.indexOf(
+      appRule as (typeof NETLIFY_REDIRECT_RULES)[number],
+    )
     expect(portalIdx).toBeLessThan(appIdx)
   })
 })
-

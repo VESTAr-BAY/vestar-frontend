@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { formatUnits } from 'viem'
-import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain, useWalletClient } from 'wagmi'
+import {
+  useAccount,
+  useChainId,
+  useConnect,
+  useDisconnect,
+  useSwitchChain,
+  useWalletClient,
+} from 'wagmi'
 import accountCircleIcon from '../../assets/account_circle.svg'
+import file_download from '../../assets/file_download_done.svg'
 import connectWalletIcon from '../../assets/account_connect_wallet.svg'
 import disconnectWalletIcon from '../../assets/account_disconnect_wallet.svg'
 import completeVoteIcon from '../../assets/complete_vote.svg'
@@ -31,22 +39,14 @@ interface ProfilePanelProps {
 type MenuItem =
   | {
       kind: 'internal'
-      labelKey:
-        | 'pp_my_votes'
-        | 'pp_karma_history'
-        | 'pp_stt_staking'
-        | 'pp_verified_organizer'
+      labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking' | 'pp_verified_organizer'
       icon: string
       bg: string
       to: string
     }
   | {
       kind: 'external'
-      labelKey:
-        | 'pp_my_votes'
-        | 'pp_karma_history'
-        | 'pp_stt_staking'
-        | 'pp_verified_organizer'
+      labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking' | 'pp_verified_organizer'
       icon: string
       bg: string
       href: string
@@ -451,7 +451,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
               className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors cursor-pointer text-left"
             >
               <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#E8F0FF]">
-                <ActionIcon src={completeVoteIcon} alt="" />
+                <ActionIcon src={file_download} alt="" />
               </span>
               <span className="text-[14px] font-medium text-[#090A0B]">
                 {t('mp_verification_cta')}

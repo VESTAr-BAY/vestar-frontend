@@ -76,9 +76,7 @@ export type EcdhP256Aes256GcmEnvelope = {
   ciphertext: string
 }
 
-export type EncryptedBallotEnvelope =
-  | RsaOaepAes256GcmEnvelope
-  | EcdhP256Aes256GcmEnvelope
+export type EncryptedBallotEnvelope = RsaOaepAes256GcmEnvelope | EcdhP256Aes256GcmEnvelope
 
 export type ReceiptSelection = {
   key: string
