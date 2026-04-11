@@ -97,12 +97,12 @@ export function VoteManagePage() {
   })
   const isLiveTallyAvailable = vote.badge !== 'end'
   const isFinalized = vote.onchainState === 'FINALIZED'
+
   const handleOpenFinalTally = async () => {
     if (isFinalized) {
       navigate(`/host/${id}/settlement`)
       return
     }
-
     if (finalizeBlockingMessage) {
       addToast({ type: 'info', message: finalizeBlockingMessage })
       return
@@ -129,12 +129,13 @@ export function VoteManagePage() {
     <>
       <VoteHero vote={vote} />
 
-      <div className="bg-[#FFFFFF]">
+      {/* Scrollable white content — pb clears the fixed action bar */}
+      <div className="bg-[#FFFFFF] pb-[calc(5rem+var(--safe-bottom))]">
         <VoteInfoSection vote={vote} />
 
         <div className="h-2 bg-[#F7F8FA] my-3" />
 
-        {/* Host management header card */}
+        {/* Host management panel card */}
         <div className="mx-5 rounded-2xl border border-[#E7E9ED] bg-white px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -167,9 +168,9 @@ export function VoteManagePage() {
         <VoteResultRankings rankedCandidates={rankedCandidates} />
       </div>
 
-      {/* Fixed bottom action bar — mirrors VoteDetailPage style */}
+      {/* Fixed action bar — same pattern as VoteDetailPage */}
       <div
-        className={`fixed left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[90] px-5 pt-4 pb-[calc(1.5rem+var(--safe-bottom))] bg-[#F7F8FA] border-t border-[#E7E9ED] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`fixed left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[90] px-5 pt-4 pb-[calc(1.5rem+var(--safe-bottom))] bg-[#FFFFFF] border-t border-[#E7E9ED] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           scrollState === 'hidden' ? 'translate-y-full bottom-0' : 'translate-y-0 bottom-0'
         }`}
       >
@@ -178,7 +179,7 @@ export function VoteManagePage() {
             type="button"
             disabled={!isLiveTallyAvailable}
             onClick={() => navigate(`/host/${id}/live`)}
-            className="flex-1 bg-white text-[#090A0B] border border-[#E7E9ED] rounded-2xl py-4 text-[14px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:border-transparent disabled:cursor-default hover:enabled:border-[#d9ddf3] transition-colors active:enabled:scale-[0.99]"
+            className="flex-1 bg-[#F7F8FA] text-[#090A0B] border border-[#E7E9ED] rounded-2xl py-4 text-[14px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:border-transparent disabled:cursor-default hover:enabled:border-[#d9ddf3] transition-colors active:enabled:scale-[0.99]"
           >
             {lang === 'ko' ? '실시간 집계' : 'Live Tally'}
           </button>

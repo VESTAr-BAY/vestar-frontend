@@ -18,12 +18,6 @@ export function VoteDetailLayout() {
   return (
     <VoteDetailHeaderContext value={{ scrollState }}>
       <div className="relative mx-auto h-screen w-full max-w-[430px] overflow-hidden bg-[#1C1D22] shadow-[0_0_60px_rgba(0,0,0,0.12)]">
-        {/* Hero-coloured fill: always covers the header zone so the area stays
-            dark when the header slides up or transitions to the floating pill. */}
-        <div
-          data-testid="hero-bg-strip"
-          className="fixed left-1/2 -translate-x-1/2 top-0 w-full max-w-[430px] h-[var(--header-h)] bg-[#1C1D22] z-[99] pointer-events-none"
-        />
         <Header
           scrollState={scrollState}
           onOpenPanel={() => setPanelOpen(true)}
