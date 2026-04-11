@@ -35,15 +35,6 @@ export type PinataJsonUploadArtifact<T> = PinataUploadArtifact & {
   hash: Hex
 }
 
-export const PINATA_GATEWAY_URL = 'https://chocolate-elegant-otter-530.mypinata.cloud'
-const PUBLIC_IPFS_GATEWAY_URLS = [
-  PINATA_GATEWAY_URL,
-  'https://gateway.pinata.cloud',
-  'https://cloudflare-ipfs.com',
-  'https://ipfs.io',
-  'https://dweb.link',
-]
-
 const PINATA_API_URL = 'https://uploads.pinata.cloud/v3/files'
 const VERIFY_RETRY_COUNT = 8
 const VERIFY_RETRY_DELAY_MS = 1_500
@@ -82,21 +73,32 @@ function getPinataJwt() {
   return value.trim()
 }
 
-function getConfiguredPinataGateways() {
-  const configured = (
+function getPinataGatewayEnvValue() {
+  return (
     (import.meta.env.VITE_PINATA_GATEWAY_URL as string | undefined) ||
     (import.meta.env.PINATA_GATEWAYS as string | undefined) ||
+    __PINATA_GATEWAYS__ ||
     ''
   )
+}
+
+function getConfiguredPinataGateways() {
+  return dedupeUrls(
+    getPinataGatewayEnvValue()
     .split(',')
     .map(normalizeGatewayUrl)
-    .filter(Boolean)
-
-  return dedupeUrls([...configured, ...PUBLIC_IPFS_GATEWAY_URLS])
+    .filter(Boolean),
+  )
 }
 
 function getGatewayBaseUrl() {
-  return getConfiguredPinataGateways()[0]
+  const gatewayUrl = getConfiguredPinataGateways()[0]
+
+  if (!gatewayUrl) {
+    throw new Error('PINATA_GATEWAYS 또는 VITE_PINATA_GATEWAY_URL 설정이 필요합니다.')
+  }
+
+  return gatewayUrl
 }
 
 export function resolveIpfsUrls(uri: string): string[] {
@@ -106,14 +108,16 @@ export function resolveIpfsUrls(uri: string): string[] {
   }
 
   const cid = uri.replace('ipfs://', '')
-  return getConfiguredPinataGateways().map((gateway) => `${gateway}/ipfs/${cid}`)
+  const gateways = getConfiguredPinataGateways()
+  if (gateways.length === 0) {
+    return []
+  }
+
+  return gateways.map((gateway) => `${gateway}/ipfs/${cid}`)
 }
 
 export function resolveReadableIpfsUrls(uri: string): string[] {
-  const resolved = resolveIpfsUrls(uri)
-  const publicUrls = resolved.filter((url) => !url.startsWith(PINATA_GATEWAY_URL))
-  const customUrls = resolved.filter((url) => url.startsWith(PINATA_GATEWAY_URL))
-  return dedupeUrls([...publicUrls, ...customUrls])
+  return resolveIpfsUrls(uri)
 }
 
 function createBrowserFile(parts: BlobPart[], fileName: string, type: string) {

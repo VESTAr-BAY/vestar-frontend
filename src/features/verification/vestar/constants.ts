@@ -9,7 +9,6 @@ import {
 export const STATUS_CHAIN_ID = 1660990954
 export const STATUS_RPC_URL = vestarStatusTestnet.rpcUrl
 export const STATUS_EXPLORER_URL = 'https://sepoliascan.status.network'
-export const PINATA_GATEWAY_URL = 'https://chocolate-elegant-otter-530.mypinata.cloud'
 export const VERIFICATION_FACTORY = getAddress(vestarContractAddresses.electionFactory)
 export const KEY_REVEALED_STATE = 4
 export const FINALIZED_STATE = 5
