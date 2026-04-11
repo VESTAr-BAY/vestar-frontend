@@ -1,41 +1,37 @@
-import { useRef } from "react";
-import { useLanguage } from "../../../providers/LanguageProvider";
-import type { VoteCreateDraft } from "../../../types/host";
+import { useRef } from 'react'
+import { useLanguage } from '../../../providers/LanguageProvider'
+import type { VoteCreateDraft } from '../../../types/host'
 
 const CATEGORIES = [
-  { value: "음악방송", ko: "음악방송", en: "Music Show" },
-  { value: "시상식", ko: "시상식", en: "Awards" },
-  { value: "팬투표", ko: "팬투표", en: "Fan Vote" },
-  { value: "기타", ko: "기타", en: "Other" },
-] as const;
+  { value: '음악방송', ko: '음악방송', en: 'Music Show' },
+  { value: '시상식', ko: '시상식', en: 'Awards' },
+  { value: '팬투표', ko: '팬투표', en: 'Fan Vote' },
+  { value: '기타', ko: '기타', en: 'Other' },
+] as const
 
 function VoteHeroPreview({
   title,
   bannerImage,
   lang,
 }: {
-  title: string;
-  bannerImage: string;
-  lang: "en" | "ko";
+  title: string
+  bannerImage: string
+  lang: 'en' | 'ko'
 }) {
   const previewTitle =
     title.trim() ||
-    (lang === "ko"
-      ? "시리즈명이 여기에 표시됩니다"
-      : "Your series name appears here");
+    (lang === 'ko' ? '시리즈명이 여기에 표시됩니다' : 'Your series name appears here')
 
   return (
     <div className="overflow-hidden rounded-[28px] border border-[#E7E9ED] bg-white shadow-[0_14px_40px_rgba(9,10,11,0.08)]">
       <div className="px-4 py-3 text-[12px] font-semibold text-[#707070]">
-        {lang === "ko" ? "미리보기" : "Preview"}
+        {lang === 'ko' ? '미리보기' : 'Preview'}
       </div>
       <div className="relative min-h-[360px] overflow-hidden bg-[#1C1D22] px-5 pb-7 pt-6">
         {bannerImage ? (
           <img
             src={bannerImage}
-            alt={
-              lang === "ko" ? "미리보기 배너 이미지" : "Preview banner image"
-            }
+            alt={lang === 'ko' ? '미리보기 배너 이미지' : 'Preview banner image'}
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
@@ -47,51 +43,37 @@ function VoteHeroPreview({
 
         <div className="relative flex min-h-[296px] flex-col justify-end">
           <div className="mb-2 text-[11px] font-mono text-white/76">SERIES</div>
-          <h2 className="text-[22px] font-bold text-white leading-tight mb-4">
-            {previewTitle}
-          </h2>
+          <h2 className="text-[22px] font-bold text-white leading-tight mb-4">{previewTitle}</h2>
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 interface StepBasicInfoProps {
-  draft: VoteCreateDraft;
-  onUpdate: <K extends keyof VoteCreateDraft>(
-    key: K,
-    value: VoteCreateDraft[K],
-  ) => void;
-  initialDraft?: VoteCreateDraft | null;
+  draft: VoteCreateDraft
+  onUpdate: <K extends keyof VoteCreateDraft>(key: K, value: VoteCreateDraft[K]) => void
+  initialDraft?: VoteCreateDraft | null
 }
 
-export function StepBasicInfo({
-  draft,
-  onUpdate,
-  initialDraft,
-}: StepBasicInfoProps) {
-  const { lang } = useLanguage();
-  const isBannerChanged =
-    initialDraft && initialDraft.bannerImage !== draft.bannerImage;
+export function StepBasicInfo({ draft, onUpdate, initialDraft }: StepBasicInfoProps) {
+  const { lang } = useLanguage()
+  const isBannerChanged = initialDraft && initialDraft.bannerImage !== draft.bannerImage
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
-      const file = e.target.files[0];
-      const url = URL.createObjectURL(file);
-      onUpdate("bannerImage", url);
-      onUpdate("bannerImageFile", file);
+      const file = e.target.files[0]
+      const url = URL.createObjectURL(file)
+      onUpdate('bannerImage', url)
+      onUpdate('bannerImageFile', file)
     }
-  };
+  }
 
   return (
     <div className="px-5 py-6 flex flex-col gap-6">
-      <VoteHeroPreview
-        title={draft.title}
-        bannerImage={draft.bannerImage}
-        lang={lang}
-      />
+      <VoteHeroPreview title={draft.title} bannerImage={draft.bannerImage} lang={lang} />
 
       {/* Banner Image */}
       <div>
@@ -99,10 +81,10 @@ export function StepBasicInfo({
           htmlFor="vote-banner-image"
           className="flex items-center gap-1.5 text-[13px] font-semibold text-[#090A0B] mb-2"
         >
-          <span>{lang === "ko" ? "배너 이미지" : "Banner Image"}</span>
+          <span>{lang === 'ko' ? '배너 이미지' : 'Banner Image'}</span>
           {isBannerChanged && (
             <span className="text-[10px] font-bold text-[#7140FF] bg-[#7140FF]/10 px-1.5 py-0.5 rounded-md">
-              {lang === "ko" ? "수정됨" : "Edited"}
+              {lang === 'ko' ? '수정됨' : 'Edited'}
             </span>
           )}
         </label>
@@ -114,7 +96,7 @@ export function StepBasicInfo({
           {draft.bannerImage ? (
             <img
               src={draft.bannerImage}
-              alt={lang === "ko" ? "배너 이미지" : "Banner image"}
+              alt={lang === 'ko' ? '배너 이미지' : 'Banner image'}
               className="w-full h-full object-cover"
             />
           ) : (
@@ -130,15 +112,13 @@ export function StepBasicInfo({
                 strokeLinejoin="round"
                 aria-hidden="true"
               >
-                <title>
-                  {lang === "ko" ? "이미지 업로드" : "Upload image"}
-                </title>
+                <title>{lang === 'ko' ? '이미지 업로드' : 'Upload image'}</title>
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
               </svg>
               <span className="text-[13px] font-medium">
-                {lang === "ko" ? "이미지 업로드" : "Upload image"}
+                {lang === 'ko' ? '이미지 업로드' : 'Upload image'}
               </span>
             </div>
           )}
@@ -155,48 +135,42 @@ export function StepBasicInfo({
 
       {/* Series name */}
       <div>
-        <label
-          htmlFor="vote-title"
-          className="block text-[13px] font-semibold text-[#090A0B] mb-2"
-        >
-          {lang === "ko" ? "시리즈명" : "Series Name"}{" "}
-          <span className="text-[#7140FF]">*</span>
+        <label htmlFor="vote-title" className="block text-[13px] font-semibold text-[#090A0B] mb-2">
+          {lang === 'ko' ? '시리즈명' : 'Series Name'} <span className="text-[#7140FF]">*</span>
         </label>
         <input
           id="vote-title"
           type="text"
           value={draft.title}
-          onChange={(e) => onUpdate("title", e.target.value)}
-          placeholder={lang === "ko" ? "예: MAMA 2026" : "e.g. MAMA 2026"}
+          onChange={(e) => onUpdate('title', e.target.value)}
+          placeholder={lang === 'ko' ? '예: MAMA 2026' : 'e.g. MAMA 2026'}
           maxLength={60}
           className="w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] placeholder:text-[#C0C4CC] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all"
         />
-        <div className="text-right text-[11px] text-[#707070] mt-1">
-          {draft.title.length}/60
-        </div>
+        <div className="text-right text-[11px] text-[#707070] mt-1">{draft.title.length}/60</div>
       </div>
       {/* Category */}
       <div>
         <span className="block text-[13px] font-semibold text-[#090A0B] mb-2">
-          {lang === "ko" ? "카테고리" : "Category"}
+          {lang === 'ko' ? '카테고리' : 'Category'}
         </span>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.value}
               type="button"
-              onClick={() => onUpdate("category", cat.value)}
+              onClick={() => onUpdate('category', cat.value)}
               className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${
                 draft.category === cat.value
-                  ? "bg-[#7140FF] text-white border-[#7140FF]"
-                  : "bg-white text-[#707070] border-[#E7E9ED] hover:border-[#7140FF] hover:text-[#7140FF]"
+                  ? 'bg-[#7140FF] text-white border-[#7140FF]'
+                  : 'bg-white text-[#707070] border-[#E7E9ED] hover:border-[#7140FF] hover:text-[#7140FF]'
               }`}
             >
-              {lang === "ko" ? cat.ko : cat.en}
+              {lang === 'ko' ? cat.ko : cat.en}
             </button>
           ))}
         </div>
       </div>
     </div>
-  );
+  )
 }

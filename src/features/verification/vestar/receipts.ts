@@ -312,7 +312,10 @@ async function decryptPrivateSelections(
   )
 }
 
-function makeOpenSelection(key: string, candidateManifest: CandidateManifest | null): ReceiptSelection {
+function makeOpenSelection(
+  key: string,
+  candidateManifest: CandidateManifest | null,
+): ReceiptSelection {
   const normalizedKey = key.trim() || 'candidate'
   const manifestCandidate = getOrderedManifestCandidates(candidateManifest).find(
     (candidate) => candidate.candidateKey === normalizedKey,
@@ -336,7 +339,8 @@ function makePrivateSelectionByIndex(
   return {
     key: manifestCandidate?.candidateKey ?? `private-candidate-${index + 1}`,
     name:
-      manifestCandidate?.displayName ?? (lang === 'ko' ? `후보 ${index + 1}` : `Candidate ${index + 1}`),
+      manifestCandidate?.displayName ??
+      (lang === 'ko' ? `후보 ${index + 1}` : `Candidate ${index + 1}`),
     emoji: '🔐',
     imageUrl: manifestCandidate?.imageUrl ?? null,
     index,

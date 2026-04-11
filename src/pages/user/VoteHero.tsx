@@ -1,28 +1,28 @@
-import verifiedIcon from "../../assets/verified.svg";
-import { useLanguage } from "../../providers/LanguageProvider";
-import type { BadgeVariant, VoteDetailData } from "../../types/vote";
-import { resolveIpfsUrl } from "../../utils/ipfs";
+import verifiedIcon from '../../assets/verified.svg'
+import { useLanguage } from '../../providers/LanguageProvider'
+import type { BadgeVariant, VoteDetailData } from '../../types/vote'
+import { resolveIpfsUrl } from '../../utils/ipfs'
 
 const BADGE_STYLES: Record<BadgeVariant, string> = {
-  live: "bg-[rgba(34,197,94,0.12)] text-[#16a34a] border border-[rgba(34,197,94,0.2)]",
-  hot: "bg-[rgba(239,68,68,0.10)] text-[#dc2626] border border-[rgba(239,68,68,0.2)]",
-  new: "bg-[rgba(113,64,255,0.09)] text-[#7140FF] border border-[rgba(113,64,255,0.2)]",
-  end: "bg-black/5 text-[#707070]",
-};
+  live: 'bg-[rgba(34,197,94,0.12)] text-[#16a34a] border border-[rgba(34,197,94,0.2)]',
+  hot: 'bg-[rgba(239,68,68,0.10)] text-[#dc2626] border border-[rgba(239,68,68,0.2)]',
+  new: 'bg-[rgba(113,64,255,0.09)] text-[#7140FF] border border-[rgba(113,64,255,0.2)]',
+  end: 'bg-black/5 text-[#707070]',
+}
 
 const BADGE_LABEL: Record<BadgeVariant, string> = {
-  live: "LIVE",
-  hot: "HOT",
-  new: "NEW",
-  end: "END",
-};
+  live: 'LIVE',
+  hot: 'HOT',
+  new: 'NEW',
+  end: 'END',
+}
 
 interface VoteHeroProps {
-  vote: VoteDetailData;
+  vote: VoteDetailData
 }
 
 export function VoteHero({ vote }: VoteHeroProps) {
-  const { t } = useLanguage();
+  const { t } = useLanguage()
 
   return (
     <div className="relative min-h-[360px] overflow-hidden bg-[#1C1D22] px-5 pb-7 pt-[calc(var(--header-h)+24px)] [margin-top:calc(var(--header-h)*-1)]">
@@ -44,11 +44,11 @@ export function VoteHero({ vote }: VoteHeroProps) {
           <span
             className={`text-[10px] font-bold font-mono px-2 py-[3px] rounded-[10px] tracking-[0.4px] uppercase ${BADGE_STYLES[vote.badge]}`}
           >
-            {vote.badge === "end" ? t("badge_end") : BADGE_LABEL[vote.badge]}
+            {vote.badge === 'end' ? t('badge_end') : BADGE_LABEL[vote.badge]}
           </span>
           {vote.deadlineLabel ? (
             <span
-              className={`text-[12px] font-mono ${vote.urgent ? "text-[#FCA5A5]" : "text-white/74"}`}
+              className={`text-[12px] font-mono ${vote.urgent ? 'text-[#FCA5A5]' : 'text-white/74'}`}
             >
               {vote.deadlineLabel}
             </span>
@@ -56,25 +56,17 @@ export function VoteHero({ vote }: VoteHeroProps) {
         </div>
 
         <div className="mb-2 flex items-center gap-1">
-          <span className="text-[11px] text-white/76 font-mono">
-            {vote.org}
-          </span>
+          <span className="text-[11px] text-white/76 font-mono">{vote.org}</span>
           {vote.verified ? (
-            <img
-              src={verifiedIcon}
-              alt="verified"
-              className="h-3 w-3 opacity-75 invert"
-            />
+            <img src={verifiedIcon} alt="verified" className="h-3 w-3 opacity-75 invert" />
           ) : null}
         </div>
 
-        <h1 className="mb-4 text-[22px] font-bold leading-tight text-white">
-          {vote.title}
-        </h1>
+        <h1 className="mb-4 text-[22px] font-bold leading-tight text-white">{vote.title}</h1>
 
         <div className="mb-3 flex flex-wrap items-center gap-0 text-[12px] text-white/74">
           <span className="font-mono font-semibold text-white">
-            {vote.participantCount.toLocaleString()} {t("vh_participants")}
+            {vote.participantCount.toLocaleString()} {t('vh_participants')}
           </span>
           <span className="mx-2">·</span>
           <span>{vote.voteFrequency}</span>
@@ -83,5 +75,5 @@ export function VoteHero({ vote }: VoteHeroProps) {
         </div>
       </div>
     </div>
-  );
+  )
 }

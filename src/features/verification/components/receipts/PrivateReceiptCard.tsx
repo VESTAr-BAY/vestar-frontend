@@ -41,7 +41,9 @@ export function PrivateReceiptCard({ order, receipt, canDecrypt }: PrivateReceip
               {receipt.walletLabel}
             </span>
           </div>
-          <div className="mt-2 text-[12px] leading-[1.5] text-[#707070]">{receipt.submittedAtLabel}</div>
+          <div className="mt-2 text-[12px] leading-[1.5] text-[#707070]">
+            {receipt.submittedAtLabel}
+          </div>
         </div>
         <PortalPill tone="success" size="sm">
           {lang === 'ko' ? '제출 완료' : 'Submitted'}

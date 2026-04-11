@@ -76,7 +76,9 @@ describe('useMyKarma', () => {
     mockGetKarmaBalance.mockImplementation(
       () => new Promise((resolve) => setTimeout(() => resolve(100n), 100)),
     )
-    mockGetKarmaTier.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(3), 100)))
+    mockGetKarmaTier.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve(3), 100)),
+    )
 
     const { result } = renderHook(() => useMyKarma())
 

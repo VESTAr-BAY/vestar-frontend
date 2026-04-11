@@ -17,7 +17,9 @@ export function ProofItem({ title, description, tone, children }: ProofItemProps
   return (
     <PortalPanel tone="muted" className="rounded-[20px] p-4">
       <div className="flex items-start gap-3">
-        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[14px] font-semibold ${iconTone}`}>
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[14px] font-semibold ${iconTone}`}
+        >
           {tone === 'success' ? '✓' : '!'}
         </div>
         <div>

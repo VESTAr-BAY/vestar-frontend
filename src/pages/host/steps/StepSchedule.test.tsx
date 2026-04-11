@@ -14,7 +14,10 @@ const BASE_DRAFT: VoteCreateDraft = {
   bannerImage: '',
   electionCoverImage: '',
   category: 'fan',
-  candidates: [{ id: 'c1', name: 'A', image: '' }, { id: 'c2', name: 'B', image: '' }],
+  candidates: [
+    { id: 'c1', name: 'A', image: '' },
+    { id: 'c2', name: 'B', image: '' },
+  ],
   sections: [],
   startDate: '2026-05-01T10:00',
   endDate: '2026-05-07T10:00',
@@ -28,6 +31,7 @@ const BASE_DRAFT: VoteCreateDraft = {
   resetIntervalValue: '1',
   resetIntervalUnit: 'DAY',
   resultReveal: 'immediate',
+  sectionPolicyUnified: true,
 }
 
 const noop = vi.fn()
@@ -44,9 +48,7 @@ describe('공개 방식 layout', () => {
   })
 
   it('renders both 공개 투표 and 비공개 투표 cards stacked (each as a full-width button)', () => {
-    render(
-      <StepSchedule draft={BASE_DRAFT} onUpdate={noop} onUpdateSectionField={noop} />,
-    )
+    render(<StepSchedule draft={BASE_DRAFT} onUpdate={noop} onUpdateSectionField={noop} />)
     expect(screen.getByText('공개 투표')).toBeInTheDocument()
     expect(screen.getByText('비공개 투표')).toBeInTheDocument()
   })
@@ -55,9 +57,7 @@ describe('공개 방식 layout', () => {
 // ── 2. 유료 투표 cost description ─────────────────────────────────────────────
 describe('유료 투표 description', () => {
   it('includes cost information in the 유료 투표 card', () => {
-    render(
-      <StepSchedule draft={BASE_DRAFT} onUpdate={noop} onUpdateSectionField={noop} />,
-    )
+    render(<StepSchedule draft={BASE_DRAFT} onUpdate={noop} onUpdateSectionField={noop} />)
     // The paid vote card description must mention the cost
     expect(screen.getByText(/100원/)).toBeInTheDocument()
   })
@@ -83,9 +83,7 @@ describe('date inputs mobile UX', () => {
 // ── 4. karma tier: uses karmaTier utility, no hardcoded duplicates ────────────
 describe('karma tier options', () => {
   it('renders tier options derived from the shared karmaTier utility', () => {
-    render(
-      <StepSchedule draft={BASE_DRAFT} onUpdate={noop} onUpdateSectionField={noop} />,
-    )
+    render(<StepSchedule draft={BASE_DRAFT} onUpdate={noop} onUpdateSectionField={noop} />)
     // The utility defines "Entry" for tier 1 — it must appear in the select
     const select = screen.getByRole('combobox')
     expect(select).toBeInTheDocument()
@@ -103,9 +101,7 @@ describe('UNLIMITED_PAID payment section', () => {
       ballotPolicy: 'UNLIMITED_PAID',
       paymentMode: 'PAID',
     }
-    render(
-      <StepSchedule draft={draft} onUpdate={noop} onUpdateSectionField={noop} />,
-    )
+    render(<StepSchedule draft={draft} onUpdate={noop} onUpdateSectionField={noop} />)
     // Should NOT show the choice cards for FREE and PAID independently
     expect(screen.queryByText('무료 투표')).toBeNull()
     expect(screen.queryByText('유료 투표')).toBeNull()

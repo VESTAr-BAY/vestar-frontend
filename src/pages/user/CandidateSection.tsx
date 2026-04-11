@@ -197,7 +197,14 @@ export function GroupedCandidateSection({
                 </span>
               </div>
               <span className="text-[11px] bg-[#F0EDFF] text-[#7140FF] px-2.5 py-1 rounded-full font-medium">
-                {feeLabel ?? (resultPublic ? (lang === 'ko' ? '공개' : 'Public') : lang === 'ko' ? '비공개' : 'Private')}
+                {feeLabel ??
+                  (resultPublic
+                    ? lang === 'ko'
+                      ? '공개'
+                      : 'Public'
+                    : lang === 'ko'
+                      ? '비공개'
+                      : 'Private')}
               </span>
             </div>
 

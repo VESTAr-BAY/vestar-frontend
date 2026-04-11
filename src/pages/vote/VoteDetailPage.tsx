@@ -179,7 +179,9 @@ export function VoteDetailPage() {
 
   const isEnded = vote?.badge === 'end'
   const isWrongNetwork = !!vote?.electionAddress && chainId !== vestarStatusTestnetChain.id
-  const historySelectionCandidateKeys = Array.isArray(voteHistoryState?.historySelectionCandidateKeys)
+  const historySelectionCandidateKeys = Array.isArray(
+    voteHistoryState?.historySelectionCandidateKeys,
+  )
     ? voteHistoryState.historySelectionCandidateKeys.filter(
         (candidateKey: string): candidateKey is string =>
           typeof candidateKey === 'string' && candidateKey.length > 0,
@@ -190,7 +192,8 @@ export function VoteDetailPage() {
       ? voteHistoryState.historySelectionLabel
       : null
   // sungje : 마이페이지에서 들어온 경우엔 현재 재투표 가능 여부와 무관하게 그 시점의 제출 내역을 우선 보여준다.
-  const isHistorySelectionView = historySelectionCandidateKeys.length > 0 || Boolean(historySelectionLabel)
+  const isHistorySelectionView =
+    historySelectionCandidateKeys.length > 0 || Boolean(historySelectionLabel)
   const voteFeeLabel =
     vote?.paymentMode === 'PAID' && vote.costPerBallot && vote.costPerBallot !== '0'
       ? formatBallotCostLabel(vote.costPerBallot, lang)
@@ -207,11 +210,15 @@ export function VoteDetailPage() {
   const votedCandidateIds = useMemo<Set<string> | undefined>(
     () =>
       resolvedHasVoted
-        ? new Set(
-            isHistorySelectionView ? historySelectionCandidateKeys : getVotedCandidates(id),
-          )
+        ? new Set(isHistorySelectionView ? historySelectionCandidateKeys : getVotedCandidates(id))
         : undefined,
-    [resolvedHasVoted, isHistorySelectionView, historySelectionCandidateKeys, id, getVotedCandidates],
+    [
+      resolvedHasVoted,
+      isHistorySelectionView,
+      historySelectionCandidateKeys,
+      id,
+      getVotedCandidates,
+    ],
   )
 
   // ── Override isSelected to show voted candidates highlighted after voting ──
@@ -371,10 +378,12 @@ export function VoteDetailPage() {
         ? `내 투표: ${historySelectionLabel ?? '선택 정보 없음'}`
         : `Your vote: ${historySelectionLabel ?? 'No selection info'}`
       : isGrouped
-      ? `${votedSectionCount} ${lang === 'ko' ? '섹션 투표 완료!' : 'sections voted!'}`
-      : `${lang === 'ko'
-          ? `${withKoreanParticle(selectedCandidate?.name ?? '후보', '을/를')} 선택했어요`
-          : `Voted for "${selectedCandidate?.name ?? ''}"`}`
+        ? `${votedSectionCount} ${lang === 'ko' ? '섹션 투표 완료!' : 'sections voted!'}`
+        : `${
+            lang === 'ko'
+              ? `${withKoreanParticle(selectedCandidate?.name ?? '후보', '을/를')} 선택했어요`
+              : `Voted for "${selectedCandidate?.name ?? ''}"`
+          }`
     : isGrouped
       ? activeCanSubmit
         ? groupedSelectionLabel
@@ -384,9 +393,11 @@ export function VoteDetailPage() {
             ? '현재 제출 가능한 투표권이 없습니다.'
             : 'No ballot available right now.'
       : activeCanSubmit
-        ? `${lang === 'ko'
-            ? `${withKoreanParticle(selectedCandidate?.name ?? '후보', '을/를')} 선택하기`
-            : `Vote for "${selectedCandidate?.name}"`}`
+        ? `${
+            lang === 'ko'
+              ? `${withKoreanParticle(selectedCandidate?.name ?? '후보', '을/를')} 선택하기`
+              : `Vote for "${selectedCandidate?.name}"`
+          }`
         : canSubmitByEligibility
           ? t('vd_select_candidate')
           : lang === 'ko'
@@ -415,11 +426,11 @@ export function VoteDetailPage() {
               type="button"
               onClick={() => navigate(`/vote/${id}/live`)}
               className="w-full rounded-2xl border border-[#E7E9ED] bg-white px-4 py-4 text-[14px] font-semibold text-[#7140FF] hover:border-[rgba(113,64,255,0.25)] hover:bg-[#F7F4FF] transition-colors active:scale-[0.99]"
-          >
-            {lang === 'ko' ? '실시간 집계 보기' : 'View live tally'}
-          </button>
-        </div>
-      ) : null}
+            >
+              {lang === 'ko' ? '실시간 집계 보기' : 'View live tally'}
+            </button>
+          </div>
+        ) : null}
 
         <div className="h-2 bg-[#F7F8FA] my-3" />
 

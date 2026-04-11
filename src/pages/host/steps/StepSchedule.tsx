@@ -249,7 +249,8 @@ function SettingsEditor({
           onePerIntervalTitle: 'One per Interval',
           onePerIntervalDescription: 'Voting rights reset on the interval you set below.',
           unlimitedPaidTitle: 'Unlimited Paid Voting',
-          unlimitedPaidDescription: 'Repeat voting is allowed as long as the fee is paid each time.',
+          unlimitedPaidDescription:
+            'Repeat voting is allowed as long as the fee is paid each time.',
           intervalValueLabel: 'Interval Value',
           intervalUnitLabel: 'Unit',
           minuteOption: 'Minute',
@@ -329,10 +330,7 @@ function SettingsEditor({
 
       {/* 시작/종료 일시 — split date + time inputs for mobile */}
       <Field label={copy.startLabel}>
-        <DateTimePicker
-          value={settings.startDate}
-          onChange={(v) => onUpdate('startDate', v)}
-        />
+        <DateTimePicker value={settings.startDate} onChange={(v) => onUpdate('startDate', v)} />
       </Field>
 
       <Field label={copy.endLabel}>

@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react'
 import { fetchCandidateManifest } from '../../api/candidateManifest'
 import { fetchElectionDetail, fetchFinalizedTally, fetchResultSummaries } from '../../api/elections'
 import type { ApiElection, ApiFinalizedTallyRow } from '../../api/types'
-import { applyManifestToElection, formatVoteDate, resolveElectionCandidates } from '../../utils/electionMapper'
+import {
+  applyManifestToElection,
+  formatVoteDate,
+  resolveElectionCandidates,
+} from '../../utils/electionMapper'
 import type { CandidateManifest } from '../../utils/candidateManifest'
 import type { RankedCandidate, VoteResultData } from '../../types/vote'
 import { useLanguage } from '../../providers/LanguageProvider'

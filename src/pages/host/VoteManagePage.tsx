@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { type Address } from 'viem'
+import type { Address } from 'viem'
 import { VoteDetailHeaderContext } from '../../components/layout/VoteDetailLayout'
 import { getElectionSnapshot } from '../../contracts/vestar/actions'
 import { useVoteManage } from '../../hooks/host/useVoteManage'
@@ -111,17 +111,26 @@ export function VoteManagePage() {
   }
 
   const primaryLabel = isSettlementSettled
-    ? lang === 'ko' ? '정산 결과' : 'Settlement Result'
+    ? lang === 'ko'
+      ? '정산 결과'
+      : 'Settlement Result'
     : isFinalized
-      ? lang === 'ko' ? '정산 실행' : 'Run Settlement'
-      : lang === 'ko' ? '최종 집계 보기' : 'View Final Tally'
+      ? lang === 'ko'
+        ? '정산 실행'
+        : 'Run Settlement'
+      : lang === 'ko'
+        ? '최종 집계 보기'
+        : 'View Final Tally'
 
   const onchainStateBadge = vote.onchainState
     ? {
         ACTIVE: { label: lang === 'ko' ? '진행 중' : 'Active', cls: 'bg-green-100 text-green-700' },
         ENDED: { label: lang === 'ko' ? '종료' : 'Ended', cls: 'bg-[#F7F8FA] text-[#707070]' },
         KEY_REVEAL_PENDING: { label: 'Key Reveal Pending', cls: 'bg-amber-100 text-amber-700' },
-        FINALIZED: { label: lang === 'ko' ? '정산 완료' : 'Finalized', cls: 'bg-[#F0EDFF] text-[#7140FF]' },
+        FINALIZED: {
+          label: lang === 'ko' ? '정산 완료' : 'Finalized',
+          cls: 'bg-[#F0EDFF] text-[#7140FF]',
+        },
       }[vote.onchainState as string]
     : null
 
@@ -152,7 +161,9 @@ export function VoteManagePage() {
               </div>
             </div>
             {onchainStateBadge ? (
-              <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${onchainStateBadge.cls}`}>
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${onchainStateBadge.cls}`}
+              >
                 {onchainStateBadge.label}
               </span>
             ) : null}
@@ -185,7 +196,9 @@ export function VoteManagePage() {
           </button>
           <button
             type="button"
-            disabled={isSettlementSettled ? false : isFinalized ? false : Boolean(finalizeBlockingMessage)}
+            disabled={
+              isSettlementSettled ? false : isFinalized ? false : Boolean(finalizeBlockingMessage)
+            }
             onClick={() => {
               if (isSettlementSettled || isFinalized) {
                 navigate(`/host/${id}/settlement`)

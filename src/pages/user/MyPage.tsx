@@ -199,15 +199,36 @@ export function MyPage() {
         </button>
 
         {/* Decorative: large circle ring — top-right */}
-        <svg aria-hidden="true" className="pointer-events-none absolute -right-12 -top-12 opacity-[0.08]" width="200" height="200" viewBox="0 0 200 200" fill="none">
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-12 -top-12 opacity-[0.08]"
+          width="200"
+          height="200"
+          viewBox="0 0 200 200"
+          fill="none"
+        >
           <circle cx="100" cy="100" r="92" stroke="#7140FF" strokeWidth="10" />
         </svg>
         {/* Decorative: dotted arc — bottom-left */}
-        <svg aria-hidden="true" className="pointer-events-none absolute -bottom-6 -left-6 opacity-[0.06]" width="120" height="120" viewBox="0 0 120 120" fill="none">
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-6 -left-6 opacity-[0.06]"
+          width="120"
+          height="120"
+          viewBox="0 0 120 120"
+          fill="none"
+        >
           <circle cx="60" cy="60" r="52" stroke="#7140FF" strokeWidth="5" strokeDasharray="4 8" />
         </svg>
         {/* Decorative: sparkle star */}
-        <svg aria-hidden="true" className="pointer-events-none absolute right-8 top-[calc(var(--header-h)+30px)] opacity-[0.18] animate-pulse" width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute right-8 top-[calc(var(--header-h)+30px)] opacity-[0.18] animate-pulse"
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="none"
+        >
           <path d="M7 0L8.3 5.7L14 7L8.3 8.3L7 14L5.7 8.3L0 7L5.7 5.7Z" fill="#7140FF" />
         </svg>
         {/* Bottom separator */}
@@ -216,14 +237,14 @@ export function MyPage() {
         <div className="relative mt-10">
           <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-[#7140FF]/20 bg-[rgba(113,64,255,0.07)] px-3 py-[5px]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#7140FF]" />
-            <span className="font-mono text-[10px] font-bold uppercase tracking-[1.2px] text-[#7140FF]">My Page</span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[1.2px] text-[#7140FF]">
+              My Page
+            </span>
           </span>
           <h1 className="mb-2 bg-gradient-to-r from-[#7140FF] to-[#22d3ee] bg-clip-text text-[26px] font-bold tracking-tight leading-tight text-transparent">
             {isConnected && address ? truncateAddress(address) : t('pp_not_connected')}
           </h1>
-          <p className="text-[13px] leading-relaxed text-violet-600/60">
-            {tier.label}
-          </p>
+          <p className="text-[13px] leading-relaxed text-violet-600/60">{tier.label}</p>
         </div>
       </div>
 

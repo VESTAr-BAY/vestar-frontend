@@ -30,7 +30,10 @@ type SelectedStats = {
   validVotes: number
   totalSubmissions: number
   invalidVotes: number
-  winner: VerificationElectionDetail['candidates'][0] | VerificationElectionSummary['topCandidate'] | null
+  winner:
+    | VerificationElectionDetail['candidates'][0]
+    | VerificationElectionSummary['topCandidate']
+    | null
   receiptMatch: boolean
   completionRate: number
 }
@@ -125,10 +128,10 @@ function buildSeriesGroups(
       ...group,
       title:
         group.items.find((item) => item.seriesTitle?.trim())?.seriesTitle?.trim() ||
-        (group.items.length === 1
-          ? group.items[0]?.title
-          : group.title),
-      items: [...group.items].sort((left, right) => compareBigIntString(left.createdBlock, right.createdBlock)),
+        (group.items.length === 1 ? group.items[0]?.title : group.title),
+      items: [...group.items].sort((left, right) =>
+        compareBigIntString(left.createdBlock, right.createdBlock),
+      ),
     }))
     .sort((left, right) => {
       if (left.latestCreatedBlock === right.latestCreatedBlock) {
@@ -150,7 +153,8 @@ function App() {
     initialCache.elections[0]?.id ?? null,
   )
   const [tab, setTab] = useState<PortalTab>('receipts')
-  const [selectedElectionDetail, setSelectedElectionDetail] = useState<VerificationElectionDetail | null>(null)
+  const [selectedElectionDetail, setSelectedElectionDetail] =
+    useState<VerificationElectionDetail | null>(null)
   const [isLoading, setIsLoading] = useState(initialCache.elections.length === 0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isDetailLoading, setIsDetailLoading] = useState(false)
@@ -180,7 +184,8 @@ function App() {
         }
         setError(null)
 
-        const { elections: next, lastSyncedAt: syncedAt } = await syncVerificationElectionSummaries()
+        const { elections: next, lastSyncedAt: syncedAt } =
+          await syncVerificationElectionSummaries()
         if (ignore) return
 
         setElections(next)
@@ -217,7 +222,10 @@ function App() {
     [elections, viewTab],
   )
 
-  const visibleSeries = useMemo(() => buildSeriesGroups(visibleElections, lang), [lang, visibleElections])
+  const visibleSeries = useMemo(
+    () => buildSeriesGroups(visibleElections, lang),
+    [lang, visibleElections],
+  )
 
   useEffect(() => {
     if (visibleSeries.length === 0) {
@@ -228,7 +236,7 @@ function App() {
     setSelectedSeriesKey((current) =>
       current && visibleSeries.some((series) => series.key === current)
         ? current
-        : visibleSeries[0]?.key ?? null,
+        : (visibleSeries[0]?.key ?? null),
     )
   }, [visibleSeries])
 
@@ -244,7 +252,7 @@ function App() {
     setSelectedElectionId((current) =>
       current && selectedSeries.items.some((election) => election.id === current)
         ? current
-        : selectedSeries.items[0]?.id ?? null,
+        : (selectedSeries.items[0]?.id ?? null),
     )
   }, [selectedSeries])
 
@@ -424,7 +432,10 @@ function App() {
             : 'Verify that the vote result has not been tampered with'}
         </div>
 
-        <PortalPanel tone="dark" className="mt-5 rounded-[28px] bg-white/[0.06] p-4 backdrop-blur-sm">
+        <PortalPanel
+          tone="dark"
+          className="mt-5 rounded-[28px] bg-white/[0.06] p-4 backdrop-blur-sm"
+        >
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-[11px] font-mono uppercase tracking-[1px] text-[#A996FF]">
@@ -441,9 +452,7 @@ function App() {
               </div>
             </div>
             <PortalPill tone="dark" size="md">
-              {lang === 'ko'
-                ? `${totalSeries}개 시리즈`
-                : `${totalSeries} series`}
+              {lang === 'ko' ? `${totalSeries}개 시리즈` : `${totalSeries} series`}
             </PortalPill>
           </div>
 
@@ -470,11 +479,17 @@ function App() {
                     ? '현재 제출된 표'
                     : 'Submitted votes'
               }
-              value={lang === 'ko' ? `${totalVotes.toLocaleString()}표` : totalVotes.toLocaleString()}
+              value={
+                lang === 'ko' ? `${totalVotes.toLocaleString()}표` : totalVotes.toLocaleString()
+              }
             />
             <HeroMetric
               label={lang === 'ko' ? '투표 기록' : 'Receipts'}
-              value={lang === 'ko' ? `${totalReceipts.toLocaleString()}건` : totalReceipts.toLocaleString()}
+              value={
+                lang === 'ko'
+                  ? `${totalReceipts.toLocaleString()}건`
+                  : totalReceipts.toLocaleString()
+              }
             />
           </div>
 
@@ -515,9 +530,7 @@ function App() {
                   }}
                   className={cn(
                     'rounded-[18px] px-3 py-3 text-[14px] font-semibold transition-colors',
-                    isSelected
-                      ? 'bg-[#13141A] text-white'
-                      : 'bg-[#F7F8FA] text-[#707070]',
+                    isSelected ? 'bg-[#13141A] text-white' : 'bg-[#F7F8FA] text-[#707070]',
                   )}
                 >
                   {item.label}
@@ -623,9 +636,7 @@ function App() {
                         <span className={isSelected ? 'text-white/55' : 'text-[#707070]'}>
                           {latestElection.hostName}
                         </span>
-                        <span className="shrink-0 font-mono">
-                          {latestElection.endedAtLabel}
-                        </span>
+                        <span className="shrink-0 font-mono">{latestElection.endedAtLabel}</span>
                       </div>
                     </button>
                   )
@@ -818,7 +829,8 @@ function App() {
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="text-[18px] font-semibold leading-[1.3]">
-                        {selectedStats.winner?.name ?? (lang === 'ko' ? '집계 정보 없음' : 'No tally info')}
+                        {selectedStats.winner?.name ??
+                          (lang === 'ko' ? '집계 정보 없음' : 'No tally info')}
                       </div>
                       <div className="mt-1 text-[13px] text-white/60">
                         {selectedStats.winner
@@ -859,9 +871,30 @@ function App() {
               )}
 
               <div className="mt-4 grid grid-cols-3 gap-3">
-                <StatCard label={lang === 'ko' ? '유효 표' : 'Valid votes'} value={lang === 'ko' ? `${selectedStats.validVotes.toLocaleString()}표` : selectedStats.validVotes.toLocaleString()} />
-                <StatCard label={lang === 'ko' ? '투표 기록' : 'Receipts'} value={lang === 'ko' ? `${selectedElection.receiptCount}건` : selectedElection.receiptCount.toLocaleString()} />
-                <StatCard label={lang === 'ko' ? '무효 처리' : 'Invalid'} value={lang === 'ko' ? `${selectedStats.invalidVotes}건` : selectedStats.invalidVotes.toLocaleString()} />
+                <StatCard
+                  label={lang === 'ko' ? '유효 표' : 'Valid votes'}
+                  value={
+                    lang === 'ko'
+                      ? `${selectedStats.validVotes.toLocaleString()}표`
+                      : selectedStats.validVotes.toLocaleString()
+                  }
+                />
+                <StatCard
+                  label={lang === 'ko' ? '투표 기록' : 'Receipts'}
+                  value={
+                    lang === 'ko'
+                      ? `${selectedElection.receiptCount}건`
+                      : selectedElection.receiptCount.toLocaleString()
+                  }
+                />
+                <StatCard
+                  label={lang === 'ko' ? '무효 처리' : 'Invalid'}
+                  value={
+                    lang === 'ko'
+                      ? `${selectedStats.invalidVotes}건`
+                      : selectedStats.invalidVotes.toLocaleString()
+                  }
+                />
               </div>
 
               <PortalPanel tone="muted" className="mt-4 rounded-[22px] px-4 py-4">
@@ -896,7 +929,9 @@ function App() {
               {selectedElection.mode === 'PRIVATE' ? (
                 <div className="mt-3">
                   <PortalPill size="sm">
-                    {lang === 'ko' ? '비공개 투표는 복호화 해보세요!' : 'Try decrypting private vote receipts'}
+                    {lang === 'ko'
+                      ? '비공개 투표는 복호화 해보세요!'
+                      : 'Try decrypting private vote receipts'}
                   </PortalPill>
                 </div>
               ) : null}
@@ -984,23 +1019,23 @@ function ResultsTab({
     return (
       <div className="flex flex-col gap-4 [animation:softRise_0.35s_ease-out]">
         <PortalPanel>
-        <div className="text-[11px] font-mono uppercase tracking-[1px] text-[#7140FF]">
-          {lang === 'ko' ? '결과 한눈에 보기' : 'Result overview'}
-        </div>
-        <div className="mt-2 text-[18px] font-semibold leading-[1.35] text-[#090A0B]">
-          {lang === 'ko'
-            ? `${withKoreanParticle(stats.winner?.name ?? '집계 결과 없음', '이/가')} 가장 많은 표를 받고 있어요`
-            : `${stats.winner?.name ?? 'No tally result'} currently has the most votes`}
-        </div>
-        <div className="mt-2 text-[13px] leading-[1.65] text-[#707070]">
-          {election.isFinalized
-            ? lang === 'ko'
-              ? '투표 기록에서 본 표들이 마지막에 어떻게 합쳐졌는지 이 탭에서 이어서 볼 수 있어요.'
-              : 'This tab shows how the ballots from the receipt trail were combined into the final result.'
-            : lang === 'ko'
-              ? '공개 투표는 진행 중에도 현재까지 제출된 표 흐름을 그대로 볼 수 있어요.'
-              : 'For public votes, you can review the current ballot flow even before the vote ends.'}
-        </div>
+          <div className="text-[11px] font-mono uppercase tracking-[1px] text-[#7140FF]">
+            {lang === 'ko' ? '결과 한눈에 보기' : 'Result overview'}
+          </div>
+          <div className="mt-2 text-[18px] font-semibold leading-[1.35] text-[#090A0B]">
+            {lang === 'ko'
+              ? `${withKoreanParticle(stats.winner?.name ?? '집계 결과 없음', '이/가')} 가장 많은 표를 받고 있어요`
+              : `${stats.winner?.name ?? 'No tally result'} currently has the most votes`}
+          </div>
+          <div className="mt-2 text-[13px] leading-[1.65] text-[#707070]">
+            {election.isFinalized
+              ? lang === 'ko'
+                ? '투표 기록에서 본 표들이 마지막에 어떻게 합쳐졌는지 이 탭에서 이어서 볼 수 있어요.'
+                : 'This tab shows how the ballots from the receipt trail were combined into the final result.'
+              : lang === 'ko'
+                ? '공개 투표는 진행 중에도 현재까지 제출된 표 흐름을 그대로 볼 수 있어요.'
+                : 'For public votes, you can review the current ballot flow even before the vote ends.'}
+          </div>
         </PortalPanel>
 
         <div className="flex flex-col gap-3">
@@ -1145,7 +1180,9 @@ function ResultsTab({
 
       {showPrivateKey && election.revealedPrivateKey ? (
         <ValueCard
-          label={lang === 'ko' ? '검증을 위해 공개된 개인키' : 'Private key revealed for verification'}
+          label={
+            lang === 'ko' ? '검증을 위해 공개된 개인키' : 'Private key revealed for verification'
+          }
           value={election.revealedPrivateKey}
         />
       ) : null}
@@ -1169,7 +1206,9 @@ function ResultsTab({
         ) : (
           <PortalPanel>
             <div className="text-[15px] font-semibold text-[#090A0B]">
-              {lang === 'ko' ? '복호화 결과를 아직 만들 수 없어요' : 'Decrypted results are not available yet'}
+              {lang === 'ko'
+                ? '복호화 결과를 아직 만들 수 없어요'
+                : 'Decrypted results are not available yet'}
             </div>
             <div className="mt-2 text-[13px] leading-[1.65] text-[#707070]">
               {lang === 'ko'
@@ -1181,7 +1220,9 @@ function ResultsTab({
       ) : (
         <PortalPanel>
           <div className="text-[15px] font-semibold text-[#090A0B]">
-            {lang === 'ko' ? '복호화 결과는 아직 접어뒀어요' : 'Decrypted results are still collapsed'}
+            {lang === 'ko'
+              ? '복호화 결과는 아직 접어뒀어요'
+              : 'Decrypted results are still collapsed'}
           </div>
           <div className="mt-2 text-[13px] leading-[1.65] text-[#707070]">
             {canDecryptResults
@@ -1261,20 +1302,20 @@ function ReceiptsTab({
                 : 'What is a transaction?'}
           </button>
 
-              {showTransactionAnalogy ? (
-                <PortalPanel tone="muted" className="mt-2 rounded-[18px] px-3 py-3">
-                  <div className="text-[12px] leading-[1.7] text-[#707070]">
-                    {lang === 'ko'
-                      ? '트랜잭션은 블록체인에 기록이 제출됐다는 뜻의 제출증 같은 거예요. 누가 언제 어떤 요청을 올렸는지 한 건씩 남기기 때문에, 나중에 같은 기록을 다시 찾아보거나 진짜 체인에 올라갔는지 확인할 수 있어요.'
-                      : 'A transaction is like a receipt showing that a record was submitted to the blockchain. It logs who sent which request and when, so the same record can be checked again later.'}
-                    <br />
-                    <br />
-                    {lang === 'ko'
-                      ? '비유하면 투표가 들어올 때마다 모두가 같이 보는 조작 불가능한 메모장에 한 줄씩 적어 두는 느낌이에요. 한 번 적히면 지우거나 바꿀 수 없어서, 나중에 다시 봐도 같은 내용이 그대로 남아 있어요.'
-                      : 'Think of it as writing each vote onto a shared tamper-proof notepad. Once written, it cannot be erased or rewritten, so the same line remains there when you check it again later.'}
-                  </div>
-                </PortalPanel>
-              ) : null}
+          {showTransactionAnalogy ? (
+            <PortalPanel tone="muted" className="mt-2 rounded-[18px] px-3 py-3">
+              <div className="text-[12px] leading-[1.7] text-[#707070]">
+                {lang === 'ko'
+                  ? '트랜잭션은 블록체인에 기록이 제출됐다는 뜻의 제출증 같은 거예요. 누가 언제 어떤 요청을 올렸는지 한 건씩 남기기 때문에, 나중에 같은 기록을 다시 찾아보거나 진짜 체인에 올라갔는지 확인할 수 있어요.'
+                  : 'A transaction is like a receipt showing that a record was submitted to the blockchain. It logs who sent which request and when, so the same record can be checked again later.'}
+                <br />
+                <br />
+                {lang === 'ko'
+                  ? '비유하면 투표가 들어올 때마다 모두가 같이 보는 조작 불가능한 메모장에 한 줄씩 적어 두는 느낌이에요. 한 번 적히면 지우거나 바꿀 수 없어서, 나중에 다시 봐도 같은 내용이 그대로 남아 있어요.'
+                  : 'Think of it as writing each vote onto a shared tamper-proof notepad. Once written, it cannot be erased or rewritten, so the same line remains there when you check it again later.'}
+              </div>
+            </PortalPanel>
+          ) : null}
         </div>
       </PortalPanel>
 
@@ -1489,7 +1530,10 @@ function ProofTab({
                   ? '공개 전부터 약속된 개인키 해시'
                   : 'Private key hash committed before reveal'
               }
-              value={election.privateKeyCommitmentHash ?? (lang === 'ko' ? '아직 없음' : 'Not available yet')}
+              value={
+                election.privateKeyCommitmentHash ??
+                (lang === 'ko' ? '아직 없음' : 'Not available yet')
+              }
             />
             <div>
               <button
@@ -1578,9 +1622,7 @@ function DetailLoadingView() {
               ? '선택한 투표의 상세 기록을 불러오고 있어요'
               : 'Loading the detailed records for the selected vote'}
           </div>
-          <div className="mt-1 text-[13px] leading-[1.6] text-[#707070]">
-            
-          </div>
+          <div className="mt-1 text-[13px] leading-[1.6] text-[#707070]"></div>
         </div>
       </div>
     </PortalPanel>
@@ -1592,7 +1634,9 @@ function DetailErrorView({ message }: { message: string }) {
   return (
     <PortalPanel className="rounded-[24px] p-5">
       <div className="text-[16px] font-semibold text-[#090A0B]">
-        {lang === 'ko' ? '상세 기록을 아직 열지 못했어요' : 'Could not open the detailed records yet'}
+        {lang === 'ko'
+          ? '상세 기록을 아직 열지 못했어요'
+          : 'Could not open the detailed records yet'}
       </div>
       <p className="mt-2 text-[13px] leading-[1.65] text-[#707070]">{message}</p>
     </PortalPanel>

@@ -234,12 +234,7 @@ async function decryptEcdhP256Aes256GcmEnvelopeWebCrypto(
     )
     const aesKey = new Uint8Array(await cryptoApi.subtle.digest('SHA-256', sharedSecret))
 
-    return await decryptAes256GcmPayload(
-      aesKey,
-      envelope.iv,
-      envelope.authTag,
-      envelope.ciphertext,
-    )
+    return await decryptAes256GcmPayload(aesKey, envelope.iv, envelope.authTag, envelope.ciphertext)
   } catch {
     return null
   }

@@ -58,7 +58,12 @@ function buildVoteSubmitPreparationKey(
   candidateKeys: string[],
   voterAddress?: Address,
 ) {
-  if (!vote?.electionAddress || !vote.onchainElectionId || !voterAddress || candidateKeys.length === 0) {
+  if (
+    !vote?.electionAddress ||
+    !vote.onchainElectionId ||
+    !voterAddress ||
+    candidateKeys.length === 0
+  ) {
     return null
   }
 
@@ -274,7 +279,11 @@ export function useVoteSubmit(
           )
         }
 
-        const prepared = await ensurePreparedSubmission(vote, candidateKeys, walletClient.account.address)
+        const prepared = await ensurePreparedSubmission(
+          vote,
+          candidateKeys,
+          walletClient.account.address,
+        )
 
         console.info('[useVoteSubmit] canSubmitBallot', {
           electionAddress: vote.electionAddress,
