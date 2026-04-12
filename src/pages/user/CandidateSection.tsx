@@ -114,7 +114,7 @@ export function CandidateSection({
       <div className="flex items-center justify-between mb-3">
         <span className="text-[15px] font-semibold text-[#090A0B]">{t('cs_candidates')}</span>
         <span className="text-[11px] bg-[#F0EDFF] text-[#7140FF] px-2.5 py-1 rounded-full font-medium">
-          {lang === 'ko' ? `${maxChoices}명 선택` : `Pick ${maxChoices}`}
+          {lang === 'ko' ? `최대 ${maxChoices}명 선택 가능` : `Pick ${maxChoices}`}
         </span>
       </div>
 
