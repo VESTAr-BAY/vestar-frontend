@@ -17,6 +17,7 @@ export interface HostVoteCardData {
   participantCount: number
   endDate: string
   emoji: string
+  imageUrl?: string
 }
 
 export interface UseHostVotesResult {
@@ -55,6 +56,7 @@ export function useHostVotes(): UseHostVotesResult {
           participantCount: election.resultSummary?.totalSubmissions ?? 0,
           endDate: formatVoteDate(election.endAt),
           emoji: '',
+          imageUrl: election.coverImageUrl ?? undefined,
         }) satisfies HostVoteCardData,
     )
 
@@ -94,6 +96,7 @@ export function useHostVotes(): UseHostVotesResult {
               participantCount: election.resultSummary?.totalSubmissions ?? 0,
               endDate: formatVoteDate(election.endAt),
               emoji: '',
+              imageUrl: election.coverImageUrl ?? undefined,
             }) satisfies HostVoteCardData,
         )
 

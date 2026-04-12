@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import completeVoteIcon from '../../assets/complete_vote.svg'
 import { useHostVotes } from '../../hooks/host/useHostVotes'
 import { useLanguage } from '../../providers/LanguageProvider'
+import { resolveIpfsUrl } from '../../utils/ipfs'
 
 type BadgeVariant = 'live' | 'hot' | 'new' | 'end'
 type HostVoteFilter = 'all' | 'active' | 'scheduled' | 'completed'
@@ -14,6 +15,7 @@ interface HostVoteCard {
   participantCount: number
   endDate: string
   emoji: string
+  imageUrl?: string
 }
 
 const BADGE_STYLES: Record<BadgeVariant, string> = {
@@ -46,8 +48,12 @@ function VoteCard({ vote, onNavigate }: { vote: HostVoteCard; onNavigate: (id: s
       }}
       className="w-full bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-4 text-left transition-colors hover:border-[#d9ddf3]"
     >
-      <div className="w-12 h-12 rounded-xl bg-[#F0EDFF] flex items-center justify-center text-2xl flex-shrink-0">
-        <img src={completeVoteIcon} alt="" className="w-6 h-6" />
+      <div className="w-12 h-12 rounded-xl bg-[#F0EDFF] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
+        {vote.imageUrl ? (
+          <img src={resolveIpfsUrl(vote.imageUrl)} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <img src={completeVoteIcon} alt="" className="w-6 h-6" />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-[15px] font-semibold text-[#090A0B] truncate mb-1">{vote.title}</div>
