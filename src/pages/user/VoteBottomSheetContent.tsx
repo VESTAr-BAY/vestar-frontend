@@ -8,6 +8,8 @@ interface VoteBottomSheetContentProps {
   karmaEarned: number
   selectedCandidateLabels: string[]
   isPrivateVote: boolean
+  showManualWalletOpen?: boolean
+  onOpenWallet?: () => void
   onClose: () => void
 }
 
@@ -16,12 +18,16 @@ function LoadingPhase({
   label,
   selectedCandidateLabels,
   isPrivateVote,
+  showManualWalletOpen,
+  onOpenWallet,
   t,
 }: {
   title: string
   label: string
   selectedCandidateLabels: string[]
   isPrivateVote: boolean
+  showManualWalletOpen?: boolean
+  onOpenWallet?: () => void
   t: (key: Parameters<ReturnType<typeof useLanguage>['t']>[0]) => string
 }) {
   return (
@@ -48,6 +54,22 @@ function LoadingPhase({
           {t('bs_private_vote_note')}
         </div>
       )}
+
+      {showManualWalletOpen && onOpenWallet ? (
+        <div className="w-full rounded-2xl border border-[rgba(113,64,255,0.16)] bg-[#F7F4FF] px-4 py-3">
+          <div className="text-[13px] font-semibold text-[#5B21B6]">{t('bs_open_wallet_hint')}</div>
+          <div className="mt-1 text-[12px] leading-relaxed text-[#7140FF]">
+            {t('bs_open_wallet_sub')}
+          </div>
+          <button
+            type="button"
+            onClick={onOpenWallet}
+            className="mt-3 w-full rounded-2xl border border-[rgba(113,64,255,0.18)] bg-white px-4 py-3 text-[14px] font-semibold text-[#7140FF] transition-colors hover:bg-[#F7F4FF]"
+          >
+            {t('bs_open_wallet')}
+          </button>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -146,6 +168,8 @@ export function VoteBottomSheetContent({
   karmaEarned,
   selectedCandidateLabels,
   isPrivateVote,
+  showManualWalletOpen,
+  onOpenWallet,
   onClose,
 }: VoteBottomSheetContentProps) {
   const { t } = useLanguage()
@@ -159,6 +183,8 @@ export function VoteBottomSheetContent({
       label={state === 'awaiting_signature' ? t('bs_confirm_wallet_sub') : t('bs_processing_sub')}
       selectedCandidateLabels={selectedCandidateLabels}
       isPrivateVote={isPrivateVote}
+      showManualWalletOpen={state === 'awaiting_signature' ? showManualWalletOpen : false}
+      onOpenWallet={onOpenWallet}
       t={t}
     />
   )

@@ -30,6 +30,8 @@ import { useMyVotes } from '../../hooks/user/useMyVotes'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
+import { isMobileExternalBrowser } from '../../utils/mobileWallet'
+import { requestWalletConnection } from '../../utils/walletConnection'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
 interface ProfilePanelProps {
@@ -111,6 +113,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   const { disconnect } = useDisconnect()
   const navigate = useNavigate()
   const { t, lang, toggleLang } = useLanguage()
+  const isExternalMobileWalletFlow = isMobileExternalBrowser()
   const { addToast } = useToast()
   const { tier } = useMyKarma()
   const { votes } = useMyVotes()
@@ -147,13 +150,7 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   }
 
   const handleConnect = () => {
-    // sungje : 프로필 패널 하단 버튼은 연결 상태에 따라 connect / disconnect 동작을 같은 자리에서 바꿔준다.
-    const injectedConnector = connectors.find((connector) => connector.id === 'injected')
-    const connector = injectedConnector ?? connectors[0]
-
-    if (connector) {
-      connect({ connector })
-    }
+    requestWalletConnection({ connect, connectors })
   }
 
   const isDisconnectAction = isConnected
@@ -535,8 +532,12 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
                 {isDisconnectAction
                   ? t('pp_disconnect')
                   : isConnectPending
-                    ? t('pp_connect_wallet_loading')
-                    : t('pp_connect_wallet')}
+                    ? isExternalMobileWalletFlow
+                      ? lang === 'ko'
+                        ? 'MetaMask 여는 중…'
+                        : 'Opening MetaMask…'
+                      : t('pp_connect_wallet_loading')
+                    : t(isExternalMobileWalletFlow ? 'btn_open_wallet' : 'pp_connect_wallet')}
               </span>
             </button>
           </div>

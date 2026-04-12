@@ -9,6 +9,7 @@ import { BottomSheet } from '../../components/shared/BottomSheet'
 import { getElectionVoterSnapshot } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useCandidateSelection } from '../../hooks/user/useCandidateSelection'
+import { useMetaMaskDisplayUri } from '../../hooks/useMetaMaskDisplayUri'
 import { useSectionVoteSelection } from '../../hooks/user/useSectionVoteSelection'
 import { useVoteDetail } from '../../hooks/user/useVoteDetail'
 import { useVoteSubmit } from '../../hooks/user/useVoteSubmit'
@@ -18,6 +19,7 @@ import { useToast } from '../../providers/ToastProvider'
 import { withKoreanParticle } from '../../utils/korean'
 import { formatBallotCostLabel } from '../../utils/paymentDisplay'
 import { saveOptimisticVoteHistoryEntry } from '../../utils/optimisticVotes'
+import { isMobileExternalBrowser, openMetaMaskLink } from '../../utils/mobileWallet'
 import { invalidateViewCache } from '../../utils/viewCache'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 import { CandidateSection, GroupedCandidateSection } from '../user/CandidateSection'
@@ -168,6 +170,7 @@ export function VoteDetailPage() {
     vote,
     pendingCandidateKeys,
   )
+  const { displayUri, resetDisplayUri } = useMetaMaskDisplayUri()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [dangerModalOpen, setDangerModalOpen] = useState(false)
   const [hasVoted, setHasVoted] = useState(() => isVoted(id))
@@ -213,6 +216,8 @@ export function VoteDetailPage() {
       ? `${sectionSelection.selectedCount} ${lang === 'ko' ? `섹션 선택됨 · ${formatBallotCostLabel(vote.costPerBallot, lang)}` : `sections selected · ${formatBallotCostLabel(vote.costPerBallot, lang)}`}`
       : `${sectionSelection.selectedCount} ${lang === 'ko' ? '섹션 선택됨 · 무료' : 'sections selected · free'}`
   const resolvedHasVoted = isHistorySelectionView || (hasVoted && !canSubmitByEligibility)
+  const showManualWalletOpen = state === 'awaiting_signature' && sheetOpen && isMobileExternalBrowser()
+  const shouldHideActionBar = sheetOpen && !resolvedHasVoted && !isEnded
 
   // ── Voted candidate IDs (from localStorage, stable after voting or on reload) ──
   const votedCandidateIds = useMemo<Set<string> | undefined>(
@@ -371,16 +376,22 @@ export function VoteDetailPage() {
   // Called when user confirms in the danger modal
   const handleDangerConfirm = useCallback(() => {
     if (!vote) return
+    resetDisplayUri()
     setDangerModalOpen(false)
     setSheetOpen(true)
     submit(vote, pendingCandidateKeys)
-  }, [pendingCandidateKeys, submit, vote])
+  }, [pendingCandidateKeys, resetDisplayUri, submit, vote])
 
   const handleClose = useCallback(() => {
     if (state === 'awaiting_signature' || state === 'confirming') return
+    resetDisplayUri()
     setSheetOpen(false)
     if (state === 'success') reset()
-  }, [state, reset])
+  }, [reset, resetDisplayUri, state])
+
+  const handleOpenWallet = useCallback(() => {
+    openMetaMaskLink(displayUri)
+  }, [displayUri])
 
   const handleSwitchNetwork = useCallback(async () => {
     try {
@@ -509,7 +520,9 @@ export function VoteDetailPage() {
       {/* Vote action bar */}
       <div
         className={`fixed left-1/2 -translate-x-1/2 w-full max-w-[430px] z-[90] px-5 pt-4 pb-[calc(1.5rem+var(--safe-bottom))] bg-[#F7F8FA] border-t border-[#E7E9ED] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-          scrollState === 'hidden' ? 'translate-y-full bottom-0' : 'translate-y-0 bottom-0'
+          scrollState === 'hidden' || shouldHideActionBar
+            ? 'translate-y-full bottom-0'
+            : 'translate-y-0 bottom-0'
         }`}
       >
         {isWrongNetwork ? (
@@ -583,6 +596,8 @@ export function VoteDetailPage() {
             karmaEarned={karmaEarned}
             selectedCandidateLabels={selectedCandidateLabels}
             isPrivateVote={vote.visibilityMode === 'PRIVATE'}
+            showManualWalletOpen={showManualWalletOpen}
+            onOpenWallet={showManualWalletOpen ? handleOpenWallet : undefined}
             onClose={handleClose}
           />
         </BottomSheet>

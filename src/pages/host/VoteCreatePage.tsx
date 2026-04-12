@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router'
+import { useMetaMaskDisplayUri } from '../../hooks/useMetaMaskDisplayUri'
 import { useCreateVoteDraft } from '../../hooks/host/useCreateVoteDraft'
 import { useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
+import { isMobileExternalBrowser, openMetaMaskLink } from '../../utils/mobileWallet'
 import { StepBasicInfo } from './steps/StepBasicInfo'
 import { StepCandidates } from './steps/StepCandidates'
 import { StepSchedule } from './steps/StepSchedule'
@@ -60,6 +62,7 @@ export function VoteCreatePage() {
   const { addToast } = useToast()
   const { lang } = useLanguage()
   const navigateBack = useSmartBackNavigation('/host')
+  const { displayUri, resetDisplayUri } = useMetaMaskDisplayUri()
   const {
     draft,
     step,
@@ -84,11 +87,14 @@ export function VoteCreatePage() {
     submit,
     isSubmitting,
   } = useCreateVoteDraft()
+  const showManualWalletOpen =
+    isSubmitting && submissionProgress.stage === 'awaiting_signature' && isMobileExternalBrowser()
 
   const handleSubmit = async () => {
     if (!isCurrentStepValid) return
 
     try {
+      resetDisplayUri()
       const result = await submit()
       const successMessage =
         result.elections.length > 1
@@ -266,6 +272,22 @@ export function VoteCreatePage() {
             </>
           )}
         </button>
+        {showManualWalletOpen ? (
+          <>
+            <button
+              type="button"
+              onClick={() => openMetaMaskLink(displayUri)}
+              className="mt-3 w-full rounded-2xl border border-[rgba(113,64,255,0.16)] bg-[#F7F4FF] py-3 text-[14px] font-semibold text-[#7140FF] transition-colors hover:bg-[#F1EBFF]"
+            >
+              {lang === 'ko' ? 'MetaMask 앱 열기' : 'Open MetaMask'}
+            </button>
+            <p className="mt-2 text-center text-[12px] leading-relaxed text-[#707070]">
+              {lang === 'ko'
+                ? '앱이 바로 안 열리면 이 버튼으로 다시 열고 지갑에서 요청을 확인해주세요.'
+                : 'If the app did not come forward, reopen it here and confirm the request in MetaMask.'}
+            </p>
+          </>
+        ) : null}
       </div>
     </div>
   )

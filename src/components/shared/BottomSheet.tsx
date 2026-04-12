@@ -13,7 +13,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
       <button
         type="button"
         aria-label="Close"
-        className={`absolute inset-0 z-[200] transition-[background] duration-[280ms] ${
+        className={`fixed inset-0 z-[200] transition-[background] duration-[280ms] ${
           open
             ? 'bg-[rgba(9,10,11,0.65)] pointer-events-auto'
             : 'bg-transparent pointer-events-none'
@@ -21,7 +21,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         onClick={onClose}
       />
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[201] transition-transform duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`fixed bottom-0 left-1/2 z-[201] w-full max-w-[430px] -translate-x-1/2 rounded-t-3xl bg-white transition-transform duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
           open ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none'
         }`}
       >
@@ -55,7 +55,9 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         </div>
 
         {/* Body */}
-        <div className="px-5 pb-8 overflow-y-auto max-h-[80vh]">{children}</div>
+        <div className="max-h-[calc(100dvh-7rem-var(--safe-top))] overflow-y-auto px-5 pb-[calc(2rem+var(--safe-bottom))]">
+          {children}
+        </div>
       </div>
     </>
   )

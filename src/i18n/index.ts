@@ -7,6 +7,7 @@ const STRINGS = {
 
   // ── Global buttons / aria-labels ───────────────────────────────────────────
   btn_connect: { en: 'Connect', ko: '연결' },
+  btn_open_wallet: { en: 'Open Wallet', ko: '지갑 열기' },
   btn_close: { en: 'Close', ko: '닫기' },
   btn_cancel: { en: 'Cancel', ko: '취소' },
   btn_vote_now: { en: 'Vote Now', ko: '투표하기' },
@@ -124,6 +125,15 @@ const STRINGS = {
   bs_confirm_wallet_sub: {
     en: 'Review the transaction in your wallet and approve it.',
     ko: '지갑에서 트랜잭션 내용을 확인하고 승인해주세요.',
+  },
+  bs_open_wallet: { en: 'Open MetaMask', ko: 'MetaMask 앱 열기' },
+  bs_open_wallet_hint: {
+    en: 'If MetaMask did not come forward, reopen it below.',
+    ko: 'MetaMask가 바로 열리지 않으면 아래 버튼으로 다시 열 수 있어요.',
+  },
+  bs_open_wallet_sub: {
+    en: 'The pending request stays in your wallet until you approve or reject it.',
+    ko: '지갑에 보낸 요청은 승인하거나 거절할 때까지 그대로 대기합니다.',
   },
   bs_processing: { en: 'Processing your vote…', ko: '투표를 처리하는 중…' },
   bs_processing_sub: {

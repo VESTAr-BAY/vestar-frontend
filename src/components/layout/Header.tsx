@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { useAccount, useConnect } from 'wagmi'
 import keyboardArrowLeft from '../../assets/keyboard_arrow_left.svg'
 import { requestWalletConnection } from '../../utils/walletConnection'
+import { isMobileExternalBrowser } from '../../utils/mobileWallet'
 import accountCircleIcon from '../../assets/account_circle.svg'
 import connectWalletIcon from '../../assets/account_connect_wallet.svg'
 import complete_vote from '../../assets/complete_vote.svg'
@@ -32,8 +33,9 @@ export function Header({ scrollState, onOpenPanel }: HeaderProps) {
   const { connect, connectors, isPending } = useConnect()
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
   const handleBack = useSmartBackNavigation(resolveSmartBackFallbackPath(pathname))
+  const isExternalMobileWalletFlow = isMobileExternalBrowser()
 
   const isHomeLike = pathname === '/vote' || pathname === '/mypage'
   const showBack = !isHomeLike
@@ -94,7 +96,13 @@ export function Header({ scrollState, onOpenPanel }: HeaderProps) {
             className="bg-[#7140FF] text-white rounded-2xl px-[13px] py-[6px] text-[12px] font-semibold hover:opacity-85 transition-opacity disabled:opacity-50 flex-shrink-0 flex items-center gap-1"
           >
             <img src={connectWalletIcon} alt="" className="w-4 h-4" />
-            {t('btn_connect')}
+            {isPending
+              ? isExternalMobileWalletFlow
+                ? lang === 'ko'
+                  ? 'MetaMask 여는 중…'
+                  : 'Opening MetaMask…'
+                : 'Connecting…'
+              : t(isExternalMobileWalletFlow ? 'btn_open_wallet' : 'btn_connect')}
           </button>
         )}
 
