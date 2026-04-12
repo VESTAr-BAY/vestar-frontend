@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchLiveTally, fetchResultSummaries } from '../../api/elections'
 import type { RankedCandidate, VoteResultData } from '../../types/vote'
+import { assignCompetitionRanks } from '../../utils/ranking'
 import { useVoteDetail } from './useVoteDetail'
 
 export interface UseVoteLiveTallyResult {
@@ -57,12 +58,12 @@ export function useVoteLiveTally(id: string): UseVoteLiveTallyResult {
             : (summary?.totalValidVotes ??
               nextRankedCandidates.reduce((sum, candidate) => sum + candidate.votes, 0))
 
-        const rankedCandidates: RankedCandidate[] = nextRankedCandidates.map(
-          (candidate, index) => ({
+        const rankedCandidates: RankedCandidate[] = assignCompetitionRanks(
+          nextRankedCandidates.map((candidate) => ({
             ...candidate,
             percentage: nextTotalVotes > 0 ? (candidate.votes / nextTotalVotes) * 100 : 0,
-            rank: index + 1,
-          }),
+            rank: 0,
+          })),
         )
 
         setResult({

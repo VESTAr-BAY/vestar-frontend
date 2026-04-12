@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchLiveTally, fetchResultSummaries } from '../../api/elections'
 import type { RankedCandidate, VoteDetailData } from '../../types/vote'
+import { assignCompetitionRanks } from '../../utils/ranking'
 import { useVoteDetail } from '../user/useVoteDetail'
 
 export interface HostLiveTallyData {
@@ -47,12 +48,8 @@ export function useHostLiveTally(id: string): HostLiveTallyData {
             }
           })
           .sort((left, right) => right.votes - left.votes || left.name.localeCompare(right.name))
-          .map((candidate, index) => ({
-            ...candidate,
-            rank: index + 1,
-          }))
 
-        setRankedCandidates(nextRankedCandidates)
+        setRankedCandidates(assignCompetitionRanks(nextRankedCandidates))
         setTotalVotes(nextTotalVotes)
         setTotalSubmissions(nextTotalSubmissions)
         setTotalInvalidVotes(nextTotalInvalidVotes)

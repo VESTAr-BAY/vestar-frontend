@@ -10,6 +10,7 @@ import {
 import type { CandidateManifest } from '../../utils/candidateManifest'
 import type { RankedCandidate, VoteResultData } from '../../types/vote'
 import { useLanguage } from '../../providers/LanguageProvider'
+import { assignCompetitionRanks } from '../../utils/ranking'
 
 function toVoteResultData(
   election: ApiElection,
@@ -45,10 +46,8 @@ function toVoteResultData(
       }
     })
     .sort((left, right) => right.votes - left.votes || left.name.localeCompare(right.name))
-    .map((candidate, index) => ({
-      ...candidate,
-      rank: index + 1,
-    }))
+
+  const candidatesWithRanks = assignCompetitionRanks(rankedCandidates)
 
   return {
     id: election.id,
@@ -58,7 +57,7 @@ function toVoteResultData(
     emoji: '',
     endDate: formatVoteDate(election.endAt),
     totalVotes,
-    rankedCandidates,
+    rankedCandidates: candidatesWithRanks,
     mode: 'finalized',
   }
 }
