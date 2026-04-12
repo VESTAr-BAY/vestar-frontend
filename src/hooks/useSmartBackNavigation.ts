@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useNavigate } from 'react-router'
+import { resolveSmartBackFallbackPath } from '../utils/navigation'
 
 function canUseHistoryBack() {
   if (typeof window === 'undefined') return false
@@ -20,3 +21,5 @@ export function useSmartBackNavigation(fallbackPath: string) {
     navigate(fallbackPath, { replace: true })
   }, [fallbackPath, navigate])
 }
+
+export { resolveSmartBackFallbackPath }

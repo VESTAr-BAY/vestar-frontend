@@ -5,12 +5,9 @@ import App from './App.tsx'
 import { LanguageProvider } from './providers/LanguageProvider'
 import { ToastProvider } from './providers/ToastProvider'
 import { WalletProvider } from './providers/WalletProvider'
+import { resolveInitialEntryRedirectPath } from './utils/navigation'
 
 const INITIAL_ROUTE_SESSION_KEY = 'vestar:initial-route-redirected:v1'
-
-function normalizeAppPath(path: string) {
-  return path.replace(/\/{2,}/g, '/')
-}
 
 function redirectInitialEntryToVote() {
   if (typeof window === 'undefined') return
@@ -22,11 +19,11 @@ function redirectInitialEntryToVote() {
     window.sessionStorage.setItem(INITIAL_ROUTE_SESSION_KEY, '1')
 
     const basePath = import.meta.env.BASE_URL ?? '/'
-    const votePath = normalizeAppPath(`${basePath}/vote`)
     const currentPath = window.location.pathname
+    const redirectPath = resolveInitialEntryRedirectPath(basePath, currentPath)
 
-    if (currentPath !== votePath) {
-      window.history.replaceState(null, '', votePath)
+    if (redirectPath && currentPath !== redirectPath) {
+      window.history.replaceState(null, '', redirectPath)
     }
   } catch {
     // If sessionStorage is unavailable, fall back to the current route without interrupting boot.

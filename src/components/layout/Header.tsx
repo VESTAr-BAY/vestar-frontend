@@ -5,7 +5,7 @@ import { requestWalletConnection } from '../../utils/walletConnection'
 import accountCircleIcon from '../../assets/account_circle.svg'
 import connectWalletIcon from '../../assets/account_connect_wallet.svg'
 import complete_vote from '../../assets/complete_vote.svg'
-import { useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
+import { resolveSmartBackFallbackPath, useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { ScrollState } from '../../hooks/useScrollDirection'
 
@@ -33,7 +33,7 @@ export function Header({ scrollState, onOpenPanel }: HeaderProps) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { t } = useLanguage()
-  const handleBack = useSmartBackNavigation(pathname.startsWith('/host') ? '/host' : '/vote')
+  const handleBack = useSmartBackNavigation(resolveSmartBackFallbackPath(pathname))
 
   const isHomeLike = pathname === '/vote' || pathname === '/mypage'
   const showBack = !isHomeLike
