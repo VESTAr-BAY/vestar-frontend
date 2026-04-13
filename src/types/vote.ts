@@ -86,6 +86,7 @@ export interface VoteDetailData {
   endDate: string
   endDateISO: string
   resultReveal: string
+  minKarmaTier: number
   maxChoices: number
   participantCount: number
   goalVotes: number

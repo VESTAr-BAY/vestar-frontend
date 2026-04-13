@@ -290,6 +290,7 @@ export function mapToVoteDetail(
     endDate: formatVoteDate(election.endAt),
     endDateISO: election.endAt,
     resultReveal: formatVoteDate(election.resultRevealAt),
+    minKarmaTier: election.minKarmaTier,
     maxChoices: election.maxSelectionsPerSubmission,
     participantCount,
     goalVotes: 0,

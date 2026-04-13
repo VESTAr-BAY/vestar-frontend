@@ -28,6 +28,7 @@ const baseVote: VoteDetailData = {
   endDate: '2026-04-10',
   endDateISO: '2026-04-10T00:00:00.000Z',
   resultReveal: '2026-04-11',
+  minKarmaTier: 0,
   maxChoices: 1,
   participantCount: 1000,
   goalVotes: 5000,

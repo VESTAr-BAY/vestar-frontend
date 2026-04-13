@@ -70,6 +70,8 @@ const STRINGS = {
   vi_start: { en: 'Start', ko: '시작' },
   vi_end: { en: 'End', ko: '종료' },
   vi_results: { en: 'Results', ko: '결과 공개' },
+  vi_eligibility: { en: 'Eligibility', ko: '참여 조건' },
+  vi_eligibility_open: { en: 'Anyone can join', ko: '누구나 참여 가능' },
 
   // ── Candidate Section ───────────────────────────────────────────────────────
   cs_candidates: { en: 'Candidates', ko: '후보 선택' },
