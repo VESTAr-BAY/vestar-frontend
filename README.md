@@ -1,313 +1,433 @@
-# VESTAr
+# VESTAr Frontend
 
-**On-chain K-pop Fan Voting Platform**
-Built on Status Network · BUIDL Hackathon 2025
+Frontend for VESTAr election creation, vote submission, and indexed read composition.
 
----
+## English
 
-## Overview
+### Overview
 
-VESTAr는 기존 문자투표 시스템을 Web3로 계승한 **K-pop 팬 투표 인프라**다.
+This app owns the browser-side write path and the presentation-side read path.
 
-조작 의혹, 해외 팬 배제, 불투명한 집계 — 기존 문자투표의 고질적 문제를 Status Network의 온체인 기록으로 해결한다.
+- Organizers upload candidate manifests and images to IPFS/Pinata.
+- Organizers and voters sign write transactions from their own wallets.
+- The backend is used for `PRIVATE` election preparation and indexed read APIs.
+- The UI renders final screens by combining backend locator/projection data with IPFS manifest data.
+- A sibling verification portal can be embedded into the production build under `/vote/verification`.
 
-```
-기존 문자투표              VESTAr
-──────────────────────────────────────────────
-조작 가능 (블랙박스)   →   온체인 기록 = 누구나 검증
-한국 번호만 가능       →   지갑만 있으면 글로벌 참여
-통신사 수익 독점       →   주최자에게 ₩50 환원
-결과 신뢰 불가         →   스마트컨트랙트 자동 집계
-```
+### Current Stack
 
----
+| Layer | Current choice |
+| --- | --- |
+| App | React 19 + TypeScript |
+| Build | Vite 8 |
+| Styling | Tailwind CSS 4 |
+| Routing | React Router 7 |
+| Data | TanStack Query + custom fetch helpers |
+| Web3 | wagmi + viem |
+| Tests | Vitest + Testing Library |
+| Lint / format | Biome 2 |
 
-## Tech Stack
+### Read/Write Split
 
-### Frontend
+| Concern | Primary source | Frontend role |
+| --- | --- | --- |
+| Election creation tx | `VESTArElectionFactory` | Build config and ask wallet to sign |
+| Ballot submission tx | `VESTArElection` | Build plaintext or encrypted payload and ask wallet to sign |
+| Private election key material | `POST /private-elections/prepare` | Receive public key and commitment for `PRIVATE` elections |
+| Election list / detail / tally / history | Backend indexer DB | Consume `/elections`, `/live-tally`, `/finalized-tally`, `/result-summaries`, `/vote-submissions/history` |
+| Render metadata | IPFS manifest | Render titles, series names, cover images, candidate images |
+| Final authority | On-chain contracts | Override or confirm selected state and counters when needed |
 
-| Layer                | Library / Tool                         |
-| -------------------- | -------------------------------------- |
-| Framework            | React 19 + TypeScript + React Compiler |
-| Bundler              | Vite 8                                 |
-| Styling              | Tailwind CSS                           |
-| Routing              | react-router-dom v6                    |
-| State                | Zustand                                |
-| Web3                 | wagmi + viem                           |
-| Wallet UI            | RainbowKit                             |
-| Data fetching        | @tanstack/react-query                  |
-| Linting / Formatting | Biome 2 (replaces ESLint + Prettier)   |
-| Testing              | Vitest 4 + @testing-library/react      |
-| Package manager      | pnpm                                   |
+### Architecture
 
-### Blockchain
+```mermaid
+flowchart LR
+  subgraph Browser[vestar-frontend]
+    Host[Host flows]
+    Voter[Voter flows]
+    Wallet[wagmi + viem wallet writes]
+    Compose[Manifest + projection composer]
+  end
 
-| Property | Value                                  |
-| -------- | -------------------------------------- |
-| Network  | Status Network (Linea zkEVM)           |
-| Chain ID | 1918222555 (testnet)                   |
-| RPC      | `https://testnet.rpc.status.network`   |
-| Explorer | `https://testnet.status.network`       |
-| Gas      | Zero — bridged stETH yield covers fees |
+  subgraph Backend[vestar-backend]
+    Prepare[Private prepare API]
+    ReadApi[Read APIs]
+    Indexer[Indexer]
+    DB[(PostgreSQL projections)]
+    Sync[state-sync-worker]
+    Reveal[key-reveal-worker]
+  end
 
-### Smart Contracts (Solidity)
+  subgraph Chain[Status Network]
+    Factory[VESTArElectionFactory]
+    Election[VESTArElection instances]
+  end
 
-```
-VoteXyz.sol          투표 생성 / 참여 / 집계
-KarmaTracker.sol     KP 발행 / 조회 (non-transferable)
-VRFOracle.sol        랜덤 당첨자 선정 (V2)
-YieldVault.sol       bridge yield → 가스비 충당 (V2)
-```
+  IPFS[(IPFS / Pinata Gateway)]
 
----
+  Host --> Prepare
+  Host --> ReadApi
+  Voter --> ReadApi
+  Host --> IPFS
+  Voter --> IPFS
+  Compose --> ReadApi
+  Compose --> IPFS
 
-## Getting Started
+  Wallet --> Factory
+  Wallet --> Election
 
-**Prerequisites:** Node.js ≥ 22, pnpm ≥ 10
-
-```bash
-# 1. Clone
-git clone <repo-url>
-cd VESTAr
-
-# 2. Install
-pnpm install
-
-# 3. Dev server
-pnpm dev        # → http://localhost:5173
-```
-
-### Available Scripts
-
-| Command              | Description                         |
-| -------------------- | ----------------------------------- |
-| `pnpm dev`           | Start local dev server with HMR     |
-| `pnpm build`         | Type-check + production build       |
-| `pnpm preview`       | Preview production build            |
-| `pnpm check`         | Biome: lint + format + import check |
-| `pnpm check:fix`     | Biome: auto-fix all issues          |
-| `pnpm lint`          | Lint only                           |
-| `pnpm lint:fix`      | Auto-fix lint issues                |
-| `pnpm format`        | Auto-format all files               |
-| `pnpm test`          | Run all tests once                  |
-| `pnpm test:watch`    | Watch mode                          |
-| `pnpm test:coverage` | Coverage report (80% threshold)     |
-
----
-
-## Project Structure
-
-#### TBA specification
-
-```
-src/
-├── layouts/
-│   └── BaseLayout.tsx       # Header + BottomNav 공통 레이아웃
-├── components/
-│   ├── Header/
-│   ├── Footer/
-│   ├── VoteCard/
-│   ├── Modal/
-│   └── common/
-├── pages/
-│   ├── Home.tsx
-│   ├── VoteDetail.tsx
-│   ├── Community.tsx
-│   ├── FanPot.tsx
-│   ├── MyPage.tsx
-│   └── host/
-│       ├── Dashboard.tsx
-│       └── CreateVote.tsx
-├── hooks/
-│   ├── useVotes.ts
-│   ├── useVote.ts
-│   ├── useSubmitVote.ts
-│   └── useKarma.ts
-├── contracts/
-│   ├── abi/VoteXyz.json
-│   └── addresses.ts
-├── store/
-│   └── useAppStore.ts       # Zustand global state
-├── constants/
-│   └── chains.ts            # Status Network chain config
-└── test/
-    └── setup.ts             # Vitest global setup
+  Prepare --> DB
+  ReadApi --> DB
+  Indexer --> Factory
+  Indexer --> Election
+  Indexer --> DB
+  Sync --> Election
+  Reveal --> Election
 ```
 
-### Page Routes
+### Sequence: Election Creation
 
-| Route          | Description                    |
-| -------------- | ------------------------------ |
-| `/`            | 랜딩 페이지                    |
-| `/home`        | 전체 투표 목록 + 필터          |
-| `/votes/:id`   | 투표 상세 — 참여 + 결과        |
-| `/fanpot`      | 팬 저금통 — 팬덤 화력 랭킹     |
-| `/community`   | 커뮤니티 — 투표별 댓글/응원    |
-| `/mypage`      | 마이페이지 — 내 투표 + KP 현황 |
-| `/host`        | Hoster 대시보드                |
-| `/host/create` | 투표 생성                      |
+```mermaid
+sequenceDiagram
+  actor Organizer
+  participant FE as vestar-frontend
+  participant IPFS as IPFS / Pinata
+  participant BE as backend prepare API
+  participant DB as backend DB
+  participant Factory as ElectionFactory
+  participant Election as VESTArElection clone
+  participant IDX as backend indexer
 
-> Role separation is on-chain: a wallet that has called `createPoll()` sees the Hoster UI. No separate account types needed.
+  Organizer->>FE: Fill series, election, candidates, schedule
+  FE->>IPFS: Upload banner / candidate images
+  IPFS-->>FE: image URIs
+  FE->>FE: Build candidate manifest JSON<br/>compute candidateManifestHash
+  FE->>IPFS: Upload candidate manifest
+  IPFS-->>FE: candidateManifestURI
 
----
+  alt PRIVATE election
+    FE->>BE: POST /private-elections/prepare
+    BE->>DB: create election_series + election_drafts + election_keys
+    BE-->>FE: publicKey + privateKeyCommitmentHash
+  else OPEN election
+    FE->>FE: Skip private prepare
+  end
 
-## Core Features
-
-### Hoster (투표 주최자)
-
-- [ ] 투표 생성 — 제목 / 후보 / 기간 / 카테고리
-- [ ] 투표권 갱신 방식 — 전체 1회 / 매일 갱신
-- [ ] 선택 방식 — 단수 / 복수 선택
-- [ ] 결과 공개 방식 — 실시간 / 종료 후
-- [ ] 실시간 대시보드 — 참여자 수 / 시간대별 그래프
-- [ ] 정산 수령 — 투표 종료 후 주최자 환원금
-
-### User (투표 참여자)
-
-- [ ] 투표 목록 탐색 — 진행 중 / 예정 / 종료 / 카테고리
-- [ ] 지갑 연결 → 투표권 구매 → 투표
-- [ ] TX hash로 온체인 기록 직접 검증
-- [ ] KP 자동 적립 — 투표 참여 시 +20 KP
-- [ ] 투표별 댓글 / 응원 메시지
-
----
-
-## Anti-Manipulation
-
-```
-지갑 1개 = 1계정
-→ 다중 계정 구조적 불가 (DB 없이 온체인으로 보장)
-
-신규 지갑 제한
-→ 지갑 나이 조건으로 봇 차단
-
-모든 투표 기록 온체인 영구 보존
-→ 누구나 TX hash로 검증 가능
-
-결과 지연 공개 (V2)
-→ RANDAO 기반 Timelock
-→ 종료 시각 전까지 플랫폼도 결과 열람 불가
-→ 미래 블록 난수값 사용 — 키가 아직 존재하지 않음
+  FE->>FE: Compute seriesId + titleHash locally
+  FE->>Factory: createElection(config, initialCandidateHashes)
+  Factory->>Election: clone + initialize(...)
+  Factory-->>IDX: ElectionCreated event
+  IDX->>Election: read config + state
+  IDX->>DB: upsert onchain_elections<br/>link draft by commitment hash when matched
+  FE->>BE: GET /elections or /elections/:id
+  BE-->>FE: indexed locator + projection data
 ```
 
----
+Implementation notes:
 
-## Business Model
+- `candidateManifestHash` comes from the frontend-generated JSON bytes, not from the backend.
+- `/private-elections/prepare` is only used for `PRIVATE` elections.
+- The current create flow computes `seriesId` and `titleHash` in the frontend before calling `createElection`.
+- Manifest upload falls back to a `data:` URI when IPFS upload fails. Image upload failure degrades to image-less metadata instead of blocking creation.
 
-```
-투표권 1장 = mockUSDT 약 0.066 (문서 기준 고정 가격)
-├── 플랫폼    mockUSDT 약 0.033
-└── 주최자    mockUSDT 약 0.033
-```
+### Sequence: Vote Detail Load And Ballot Submission
 
-| Phase | 수익원            | 비고                               |
-| ----- | ----------------- | ---------------------------------- |
-| MVP   | 투표권 과금       | 1장 mockUSDT 약 0.066             |
-| MVP   | 투표 완료 후 광고 | 감정 고조 시점 노출, CPM 3~5×      |
-| V2    | 팬덤 데이터 B2B   | 익명화 온체인 집계, GDPR 이슈 없음 |
-| V2    | 프리미엄 대시보드 | 주최자 고급 기능                   |
-| V2    | 화이트라벨        | 방송사·기획사용                    |
+```mermaid
+sequenceDiagram
+  actor Voter
+  participant FE as vestar-frontend
+  participant API as backend read API
+  participant DB as indexed DB
+  participant IPFS as IPFS / Pinata
+  participant Election as VESTArElection
+  participant IDX as backend indexer
 
----
+  Voter->>FE: Open vote detail
+  FE->>API: GET /elections/:id
+  API->>DB: read indexed election row + key/tally summary
+  DB-->>API: candidateManifestUri/hash, state, payment, visibility, publicKey
+  API-->>FE: indexed response
+  FE->>IPFS: fetch manifest by URI
+  IPFS-->>FE: candidate manifest JSON
+  FE->>FE: combine backend projection + manifest<br/>optionally read on-chain state/result summary
 
-## Why Status Network
+  Voter->>FE: Select candidate keys
 
-| Feature     | Benefit                                                                |
-| ----------- | ---------------------------------------------------------------------- |
-| Zero Gas    | bridged stETH yield가 가스비 대납. 팬은 ballot당 mockUSDT 100원만 부담 |
-| RLN Privacy | Rate Limiting Nullifier로 봇·다중계정 구조적 차단                      |
-| Linea zkEVM | Ethereum L1 보안 + L2 속도. 투표 TX 즉시 확정                          |
-| SNT Karma   | SNT 스테이킹 → Karma 획득 → 투표 가중치. 진성 팬일수록 더 큰 목소리    |
+  alt OPEN election
+    FE->>Election: submitOpenVote(candidateKeys)
+    Election-->>IDX: OpenVoteSubmitted event
+    IDX->>Election: decode tx input + verify candidateBatchHash
+    IDX->>DB: upsert open_vote_submissions<br/>recompute live_tally + result_summaries
+  else PRIVATE election
+    FE->>FE: encrypt payload with publicKeyPem
+    FE->>Election: submitEncryptedVote(encryptedBallot)
+    Election-->>IDX: EncryptedVoteSubmitted event
+    IDX->>Election: decode tx input + verify encryptedBallotHash
+    IDX->>DB: upsert private_vote_submissions<br/>process decrypted_ballots + live_tally + result_summaries
+  end
 
----
-
-## Status Network Chain Config
-
-```typescript
-export const statusNetwork = {
-  id: 1918222555,
-  name: "Status Network",
-  nativeCurrency: { name: "Ethereum", symbol: "ETH", decimals: 18 },
-  rpcUrls: {
-    default: { http: ["https://testnet.rpc.status.network"] },
-  },
-  blockExplorers: {
-    default: {
-      name: "Status Explorer",
-      url: "https://testnet.status.network",
-    },
-  },
-  testnet: true,
-};
+  FE->>API: refresh detail / tally / history
+  API-->>FE: updated indexed projection
 ```
 
----
+Implementation notes:
 
-## Design System
+- The backend does not relay ballot transactions. Wallet writes go straight from browser to contract.
+- `PRIVATE` ballots are encrypted in the browser with the public key returned by the backend prepare flow.
+- After confirmation, the backend indexer becomes the main read source again by projecting the new submission into API-friendly tables.
 
-### Color Tokens
+### Repository Map
 
-```css
---color-bg: #ffffff; /* Main Background */
---color-banner: #09101c; /* Banner / Strong Section BG */
---color-primary: #7140fd; /* Main Button */
---color-primary-fg: #ffffff; /* Main Button Text */
---color-lavender: #f8f5ff; /* Light Purple Background */
---color-lavender-text: #7140fd; /* Text on Light Purple BG */
---color-point-1: #fcc3ab; /* Point Color 1 */
---color-point-2: #fbe1d7; /* Point Color 2 */
---color-border: #e7e9ed; /* Card / Input Border */
---color-text: #090a0b; /* Primary Text */
---color-muted: #707070; /* Secondary Text */
---color-green: #22c55e; /* Success / Gasless badge */
+```text
+vestar-frontend/
+├─ src/
+│  ├─ api/                         # backend read / prepare clients
+│  ├─ contracts/vestar/            # viem actions, chain config, generated ABIs
+│  ├─ hooks/host/                  # election creation / host dashboards
+│  ├─ hooks/user/                  # vote detail / submit / result hooks
+│  ├─ pages/host/                  # multi-step create and host pages
+│  ├─ pages/vote/                  # list / detail / live tally / result pages
+│  ├─ features/verification/       # verification portal UI helpers
+│  └─ utils/                       # IPFS, manifest, optimistic cache, crypto helpers
+├─ scripts/
+│  ├─ build-with-verification-portal.mjs
+│  └─ sync-vestar-contracts.mjs
+└─ README.md
 ```
 
-### Typography
+### Environment
 
-| Role    | Font             | Usage                 |
-| ------- | ---------------- | --------------------- |
-| Display | Instrument Serif | 히어로 타이틀         |
-| Body    | DM Sans          | 일반 텍스트           |
-| Mono    | DM Mono          | 주소 / TX hash / 수치 |
+| Variable | Purpose |
+| --- | --- |
+| `VITE_API_BASE_URL` | Backend base URL for `/elections`, `/private-elections/prepare`, tally, and history APIs |
+| `VITE_PINATA_JWT` or `PINATA_JWT` | Pinata upload token used by browser-side IPFS uploads |
+| `VITE_PINATA_GATEWAY_URL` or `PINATA_GATEWAYS` | Gateway base URL list used to resolve `ipfs://` assets |
 
----
+### Scripts
 
-## Roadmap
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Run the Vite dev server |
+| `pnpm build` | Build the app and embed the verification portal when the sibling repo exists |
+| `pnpm build:app` | Build only the frontend app |
+| `pnpm preview` | Preview the production build |
+| `pnpm sync:vestar-contracts` | Sync ABI and address artifacts from `../contracts/abi` |
+| `pnpm check` | Run Biome checks |
+| `pnpm check:fix` | Apply Biome fixes |
+| `pnpm test` | Run unit tests |
+| `pnpm test:coverage` | Run tests with coverage |
 
-### Phase 1 — Hackathon MVP
+## 한국어
 
-- [x] 랜딩 페이지
-- [ ] 투표 생성 (기간 / 후보 / 갱신 방식)
-- [ ] 지갑 연결 + 투표권 구매
-- [ ] 온체인 투표 TX 기록
-- [ ] 실시간 결과 조회
-- [ ] 투표 완료 후 광고 노출
-- [ ] KP 자동 적립
+### 개요
 
-### Phase 2 — 신뢰 레이어 (3개월)
+이 앱은 브라우저 기준 쓰기 경로와 화면 렌더링용 읽기 경로를 담당한다.
 
-- [ ] RANDAO 기반 결과 지연 공개
-- [ ] 이상 투표 감지 알림
-- [ ] 온체인 공증 결과 증명서
-- [ ] 댓글 / 커뮤니티 기능
-- [ ] XMTP 기반 지갑 알림
+- 주최자는 후보 manifest와 이미지를 IPFS/Pinata에 업로드한다.
+- 주최자와 유권자는 각자 지갑으로 write 트랜잭션을 서명한다.
+- 백엔드는 `PRIVATE` election 준비와 indexed read API를 담당한다.
+- UI는 백엔드 locator/projection 데이터와 IPFS manifest 데이터를 합성해 최종 화면을 만든다.
+- 형제 저장소가 존재하면 verification portal을 `/vote/verification` 경로로 함께 빌드한다.
 
-### Phase 3 — 수익화 (6개월)
+### 현재 스택
 
-- [ ] 방송사 · 기획사 파트너십
-- [ ] 팬덤 데이터 B2B
-- [ ] 화이트라벨 솔루션
-- [ ] Chainlink VRF 연동
-- [ ] 다국어 지원 (한 / 영 / 일 / 태)
+| 계층 | 현재 선택 |
+| --- | --- |
+| 앱 | React 19 + TypeScript |
+| 빌드 | Vite 8 |
+| 스타일 | Tailwind CSS 4 |
+| 라우팅 | React Router 7 |
+| 데이터 | TanStack Query + 커스텀 fetch helper |
+| Web3 | wagmi + viem |
+| 테스트 | Vitest + Testing Library |
+| 린트 / 포맷 | Biome 2 |
 
----
+### 읽기/쓰기 분리
 
-## Contributing
+| 관심사 | 1차 소스 | 프론트 역할 |
+| --- | --- | --- |
+| election 생성 tx | `VESTArElectionFactory` | config 구성 후 지갑 서명 요청 |
+| ballot 제출 tx | `VESTArElection` | 평문 또는 암호문 payload 구성 후 지갑 서명 요청 |
+| private election 키 재료 | `POST /private-elections/prepare` | `PRIVATE` election용 공개키와 commitment 수신 |
+| election 목록 / 상세 / tally / 히스토리 | 백엔드 indexer DB | `/elections`, `/live-tally`, `/finalized-tally`, `/result-summaries`, `/vote-submissions/history` 사용 |
+| 렌더링 메타데이터 | IPFS manifest | 제목, 시리즈명, 커버 이미지, 후보 이미지 렌더링 |
+| 최종 권위 | 온체인 컨트랙트 | 필요 시 상태와 카운터를 직접 확인 또는 보정 |
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup instructions, code standards, testing requirements, and the PR process.
+### 아키텍처
 
----
+```mermaid
+flowchart LR
+  subgraph Browser[vestar-frontend]
+    Host[호스트 플로우]
+    Voter[유저 플로우]
+    Wallet[wagmi + viem 지갑 쓰기]
+    Compose[manifest + projection 합성]
+  end
 
-## License
+  subgraph Backend[vestar-backend]
+    Prepare[private prepare API]
+    ReadApi[read API]
+    Indexer[indexer]
+    DB[(PostgreSQL projection)]
+    Sync[state-sync-worker]
+    Reveal[key-reveal-worker]
+  end
 
-MIT
+  subgraph Chain[Status Network]
+    Factory[VESTArElectionFactory]
+    Election[VESTArElection 인스턴스]
+  end
+
+  IPFS[(IPFS / Pinata Gateway)]
+
+  Host --> Prepare
+  Host --> ReadApi
+  Voter --> ReadApi
+  Host --> IPFS
+  Voter --> IPFS
+  Compose --> ReadApi
+  Compose --> IPFS
+
+  Wallet --> Factory
+  Wallet --> Election
+
+  Prepare --> DB
+  ReadApi --> DB
+  Indexer --> Factory
+  Indexer --> Election
+  Indexer --> DB
+  Sync --> Election
+  Reveal --> Election
+```
+
+### 시퀀스: 투표 생성
+
+```mermaid
+sequenceDiagram
+  actor Organizer as 주최자
+  participant FE as vestar-frontend
+  participant IPFS as IPFS / Pinata
+  participant BE as backend prepare API
+  participant DB as backend DB
+  participant Factory as ElectionFactory
+  participant Election as VESTArElection clone
+  participant IDX as backend indexer
+
+  Organizer->>FE: 시리즈, election, 후보, 일정 입력
+  FE->>IPFS: 배너 / 후보 이미지 업로드
+  IPFS-->>FE: image URI 반환
+  FE->>FE: candidate manifest JSON 생성<br/>candidateManifestHash 계산
+  FE->>IPFS: candidate manifest 업로드
+  IPFS-->>FE: candidateManifestURI 반환
+
+  alt PRIVATE election
+    FE->>BE: POST /private-elections/prepare
+    BE->>DB: election_series + election_drafts + election_keys 생성
+    BE-->>FE: publicKey + privateKeyCommitmentHash 반환
+  else OPEN election
+    FE->>FE: private prepare 생략
+  end
+
+  FE->>FE: seriesId + titleHash 로컬 계산
+  FE->>Factory: createElection(config, initialCandidateHashes)
+  Factory->>Election: clone + initialize(...)
+  Factory-->>IDX: ElectionCreated 이벤트
+  IDX->>Election: config + state 조회
+  IDX->>DB: onchain_elections upsert<br/>commitment hash 기준 draft 매핑
+  FE->>BE: GET /elections 또는 /elections/:id
+  BE-->>FE: indexed locator + projection 데이터 반환
+```
+
+구현 메모:
+
+- `candidateManifestHash`는 백엔드가 아니라 프론트가 만든 JSON bytes 기준으로 계산한다.
+- `/private-elections/prepare`는 `PRIVATE` election에서만 사용한다.
+- 현재 생성 플로우는 `seriesId`와 `titleHash`를 프론트에서 계산한 뒤 `createElection`에 넣는다.
+- manifest 업로드가 실패하면 `data:` URI로 폴백한다. 이미지 업로드가 실패하면 생성 자체를 막지 않고 이미지 없는 메타데이터로 진행한다.
+
+### 시퀀스: 상세 조회와 투표 제출
+
+```mermaid
+sequenceDiagram
+  actor Voter as 유권자
+  participant FE as vestar-frontend
+  participant API as backend read API
+  participant DB as indexed DB
+  participant IPFS as IPFS / Pinata
+  participant Election as VESTArElection
+  participant IDX as backend indexer
+
+  Voter->>FE: 투표 상세 진입
+  FE->>API: GET /elections/:id
+  API->>DB: indexed election row + key/tally summary 조회
+  DB-->>API: candidateManifestUri/hash, state, payment, visibility, publicKey 반환
+  API-->>FE: indexed 응답 반환
+  FE->>IPFS: URI 기준 manifest 조회
+  IPFS-->>FE: candidate manifest JSON 반환
+  FE->>FE: backend projection + manifest 합성<br/>필요 시 on-chain state/result summary 추가 조회
+
+  Voter->>FE: candidateKey 선택
+
+  alt OPEN election
+    FE->>Election: submitOpenVote(candidateKeys)
+    Election-->>IDX: OpenVoteSubmitted 이벤트
+    IDX->>Election: tx input decode + candidateBatchHash 검증
+    IDX->>DB: open_vote_submissions upsert<br/>live_tally + result_summaries 재계산
+  else PRIVATE election
+    FE->>FE: publicKeyPem으로 payload 암호화
+    FE->>Election: submitEncryptedVote(encryptedBallot)
+    Election-->>IDX: EncryptedVoteSubmitted 이벤트
+    IDX->>Election: tx input decode + encryptedBallotHash 검증
+    IDX->>DB: private_vote_submissions upsert<br/>process decrypted_ballots + live_tally + result_summaries 처리
+  end
+
+  FE->>API: detail / tally / history 새로고침
+  API-->>FE: 갱신된 indexed projection 반환
+```
+
+구현 메모:
+
+- 백엔드는 ballot 트랜잭션을 중계하지 않는다. write 경로는 브라우저에서 컨트랙트로 직접 간다.
+- `PRIVATE` ballot은 백엔드 prepare 응답의 공개키로 브라우저에서 암호화한다.
+- 트랜잭션 확정 뒤에는 백엔드 indexer가 다시 주 읽기 소스가 되어 새 submission을 API 친화적 projection으로 반영한다.
+
+### 저장소 맵
+
+```text
+vestar-frontend/
+├─ src/
+│  ├─ api/                         # backend read / prepare client
+│  ├─ contracts/vestar/            # viem action, chain config, generated ABI
+│  ├─ hooks/host/                  # election 생성 / host dashboard
+│  ├─ hooks/user/                  # vote detail / submit / result hook
+│  ├─ pages/host/                  # multi-step 생성 화면과 host 페이지
+│  ├─ pages/vote/                  # list / detail / live tally / result 페이지
+│  ├─ features/verification/       # verification portal UI helper
+│  └─ utils/                       # IPFS, manifest, optimistic cache, crypto helper
+├─ scripts/
+│  ├─ build-with-verification-portal.mjs
+│  └─ sync-vestar-contracts.mjs
+└─ README.md
+```
+
+### 환경 변수
+
+| 변수 | 용도 |
+| --- | --- |
+| `VITE_API_BASE_URL` | `/elections`, `/private-elections/prepare`, tally, history API용 백엔드 base URL |
+| `VITE_PINATA_JWT` 또는 `PINATA_JWT` | 브라우저 IPFS 업로드에 쓰는 Pinata 업로드 토큰 |
+| `VITE_PINATA_GATEWAY_URL` 또는 `PINATA_GATEWAYS` | `ipfs://` asset 조회에 쓰는 gateway base URL 목록 |
+
+### 스크립트
+
+| 명령 | 용도 |
+| --- | --- |
+| `pnpm dev` | Vite dev server 실행 |
+| `pnpm build` | 앱 빌드 후 형제 portal 저장소가 있으면 함께 임베드 |
+| `pnpm build:app` | 프론트 앱만 빌드 |
+| `pnpm preview` | 프로덕션 빌드 미리보기 |
+| `pnpm sync:vestar-contracts` | `../contracts/abi`에서 ABI와 주소 아티팩트 동기화 |
+| `pnpm check` | Biome 검사 |
+| `pnpm check:fix` | Biome 자동 수정 |
+| `pnpm test` | 단위 테스트 실행 |
+| `pnpm test:coverage` | 커버리지 포함 테스트 실행 |
