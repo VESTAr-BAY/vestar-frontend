@@ -3,11 +3,12 @@ import type { Lang } from '../i18n'
 
 const UNLIMITED_PAID_DECIMAL_COST = '0.066'
 const UNLIMITED_PAID_RAW_COST = '66000'
-const FIXED_PAID_DISPLAY_COST = '100'
-const FIXED_PAID_RAW_COST = '100000000'
+const LEGACY_FIXED_PAID_DISPLAY_COST = '100'
+const LEGACY_FIXED_PAID_RAW_COST = '100000000'
 const RAW_UNITS_PER_DISPLAYED_100_KRW = 66_000n
 
 // sungje : on-chain 저장값(0.066 / 66000)과 화면 표시값(100원)을 분리해서, 컨트랙트 검증 조건을 유지하면서 locale별 문구만 바꿔 보여준다.
+// legacy로 100 / 100000000 이 저장된 데이터도 화면에선 같은 가격으로 읽는다.
 export function formatBallotCostLabel(
   rawCost: string | number | bigint | null | undefined,
   lang: Lang,
@@ -22,7 +23,7 @@ export function formatBallotCostLabel(
     return lang === 'ko' ? '100원' : '0.066 usdt'
   }
 
-  if (normalized === FIXED_PAID_DISPLAY_COST || normalized === FIXED_PAID_RAW_COST) {
+  if (normalized === LEGACY_FIXED_PAID_DISPLAY_COST || normalized === LEGACY_FIXED_PAID_RAW_COST) {
     // prettier-ignore
     return lang === 'ko' ? '100원' : '0.066 usdt'
   }

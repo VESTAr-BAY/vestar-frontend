@@ -16,6 +16,11 @@ describe('formatBallotCostLabel', () => {
     expect(formatBallotCostLabel('100', 'ko')).toBe('100원')
     expect(formatBallotCostLabel('100', 'en')).toBe('0.066 usdt')
   })
+
+  it('keeps legacy raw paid cost readable per locale', () => {
+    expect(formatBallotCostLabel('100000000', 'ko')).toBe('100원')
+    expect(formatBallotCostLabel('100000000', 'en')).toBe('0.066 usdt')
+  })
 })
 
 describe('formatSettlementAmount', () => {
