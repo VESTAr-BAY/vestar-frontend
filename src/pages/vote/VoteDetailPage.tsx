@@ -9,6 +9,7 @@ import { BottomSheet } from '../../components/shared/BottomSheet'
 import { getElectionVoterSnapshot } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useCandidateSelection } from '../../hooks/user/useCandidateSelection'
+import { useMyKarma } from '../../hooks/user/useMyKarma'
 import { useMetaMaskDisplayUri } from '../../hooks/useMetaMaskDisplayUri'
 import { useSectionVoteSelection } from '../../hooks/user/useSectionVoteSelection'
 import { useVoteDetail } from '../../hooks/user/useVoteDetail'
@@ -20,6 +21,10 @@ import { withKoreanParticle } from '../../utils/korean'
 import { formatBallotCostLabel } from '../../utils/paymentDisplay'
 import { saveOptimisticVoteHistoryEntry } from '../../utils/optimisticVotes'
 import { isMobileExternalBrowser, openMetaMaskLink } from '../../utils/mobileWallet'
+import {
+  getVoteSubmissionBlockButtonLabel,
+  resolveVoteSubmissionBlockReason,
+} from '../../utils/voteEligibility'
 import { invalidateViewCache } from '../../utils/viewCache'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 import { CandidateSection, GroupedCandidateSection } from '../user/CandidateSection'
@@ -175,12 +180,14 @@ export function VoteDetailPage() {
   const [dangerModalOpen, setDangerModalOpen] = useState(false)
   const [hasVoted, setHasVoted] = useState(() => isVoted(id))
   const [canSubmitByEligibility, setCanSubmitByEligibility] = useState(true)
+  const [remainingBallots, setRemainingBallots] = useState<number | undefined>(undefined)
 
   const { scrollState } = useContext(VoteDetailHeaderContext)
   const chainId = useChainId()
   const { switchChainAsync } = useSwitchChain()
   const { addToast } = useToast()
   const { t, lang } = useLanguage()
+  const { tierId, isLoading: isKarmaLoading } = useMyKarma()
   const voteHistoryState = (location.state ?? null) as VoteHistoryLocationState | null
 
   const isEnded = vote?.badge === 'end'
@@ -215,6 +222,16 @@ export function VoteDetailPage() {
     vote?.paymentMode === 'PAID' && vote.costPerBallot && vote.costPerBallot !== '0'
       ? `${sectionSelection.selectedCount} ${lang === 'ko' ? `섹션 선택됨 · ${formatBallotCostLabel(vote.costPerBallot, lang)}` : `sections selected · ${formatBallotCostLabel(vote.costPerBallot, lang)}`}`
       : `${sectionSelection.selectedCount} ${lang === 'ko' ? '섹션 선택됨 · 무료' : 'sections selected · free'}`
+  const eligibilityBlockReason = useMemo(
+    () =>
+      resolveVoteSubmissionBlockReason({
+        vote,
+        canSubmitBallot: canSubmitByEligibility,
+        remainingBallots,
+        currentTierId: address && !isKarmaLoading ? tierId : undefined,
+      }),
+    [address, canSubmitByEligibility, isKarmaLoading, remainingBallots, tierId, vote],
+  )
   const resolvedHasVoted = isHistorySelectionView || (hasVoted && !canSubmitByEligibility)
   const showManualWalletOpen = state === 'awaiting_signature' && sheetOpen && isMobileExternalBrowser()
   const shouldHideActionBar = sheetOpen && !resolvedHasVoted && !isEnded
@@ -288,6 +305,7 @@ export function VoteDetailPage() {
 
     if (!vote?.electionAddress || !address) {
       setCanSubmitByEligibility(true)
+      setRemainingBallots(undefined)
       return
     }
 
@@ -295,10 +313,12 @@ export function VoteDetailPage() {
       .then((snapshot) => {
         if (cancelled) return
         setCanSubmitByEligibility(snapshot.canSubmitBallot)
+        setRemainingBallots(snapshot.remainingBallots)
       })
       .catch(() => {
         if (cancelled) return
         setCanSubmitByEligibility(true)
+        setRemainingBallots(undefined)
       })
 
     return () => {
@@ -428,9 +448,10 @@ export function VoteDetailPage() {
         ? groupedSelectionLabel
         : canSubmitByEligibility
           ? t('vd_select_section')
-          : lang === 'ko'
-            ? '현재 제출 가능한 투표권이 없습니다.'
-            : 'No ballot available right now.'
+          : getVoteSubmissionBlockButtonLabel(eligibilityBlockReason, lang) ??
+            (lang === 'ko'
+              ? '현재 제출 가능한 투표권이 없습니다.'
+              : 'No ballot available right now.')
       : activeCanSubmit
         ? `${
             lang === 'ko'
@@ -439,9 +460,10 @@ export function VoteDetailPage() {
           }`
         : canSubmitByEligibility
           ? t('vd_select_candidate')
-          : lang === 'ko'
-            ? '현재 제출 가능한 투표권이 없습니다.'
-            : 'No ballot available right now.'
+          : getVoteSubmissionBlockButtonLabel(eligibilityBlockReason, lang) ??
+            (lang === 'ko'
+              ? '현재 제출 가능한 투표권이 없습니다.'
+              : 'No ballot available right now.')
 
   // Danger modal target label
   const dangerTarget = isGrouped

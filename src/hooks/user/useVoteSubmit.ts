@@ -4,6 +4,7 @@ import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import {
   approveErc20Spender,
   canAccountSubmitBallot,
+  getKarmaTier,
   getErc20Allowance,
   getErc20Balance,
   getElectionRemainingBallots,
@@ -18,6 +19,10 @@ import { VESTAR_ELECTION_STATE } from '../../contracts/vestar/types'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { VoteDetailData } from '../../types/vote'
 import { encryptBallotWithPublicKey, randomNonceHex } from '../../utils/privateBallot'
+import {
+  getVoteSubmissionBlockErrorMessage,
+  resolveVoteSubmissionBlockReason,
+} from '../../utils/voteEligibility'
 import { formatBallotCostLabel } from '../../utils/paymentDisplay'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
@@ -322,18 +327,19 @@ export function useVoteSubmit(
             )
           }
 
-          if (prepared.remainingBallots !== undefined && prepared.remainingBallots <= 0) {
-            throw new Error(
-              lang === 'ko'
-                ? '이 주소로 사용할 수 있는 투표권을 모두 사용했습니다.'
-                : 'This address has already used all available ballots.',
-            )
-          }
+          const currentTierId =
+            vote.minKarmaTier > 0
+              ? await getKarmaTier(walletClient.account.address).catch(() => undefined)
+              : undefined
+          const blockedReason = resolveVoteSubmissionBlockReason({
+            vote,
+            canSubmitBallot: prepared.canSubmit,
+            remainingBallots: prepared.remainingBallots,
+            currentTierId,
+          })
 
           throw new Error(
-            lang === 'ko'
-              ? '현재 제출 가능한 투표권이 없습니다.'
-              : 'There is no ballot available to submit right now.',
+            getVoteSubmissionBlockErrorMessage(blockedReason, lang, vote),
           )
         }
 
