@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchCandidateManifest } from '../../api/candidateManifest'
 import { fetchElections } from '../../api/elections'
+<<<<<<< HEAD
 import { VOTE_ITEMS } from '../../data/mockVotes'
 import { applyManifestToElection, mapToVoteListItem } from '../../utils/electionMapper'
 import { mergeOptimisticElections } from '../../utils/optimisticVotes'
 import { primeVoteDetailCacheFromElection } from '../../utils/voteDetailCache'
 import { getViewCache, setViewCache } from '../../utils/viewCache'
+=======
+>>>>>>> 22b9d7e (chore : fix redirect route)
 import type { ApiElection } from '../../api/types'
+import { VOTE_ITEMS } from '../../data/mockVotes'
 import type { VoteListItem } from '../../types/vote'
+import { applyManifestToElection, mapToVoteListItem } from '../../utils/electionMapper'
 
 const PAGE_SIZE = 6
 const VOTE_LIST_CACHE_TTL_MS = 15_000

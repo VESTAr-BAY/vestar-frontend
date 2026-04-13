@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { ElectionSettingsDraft, SectionDraft, VoteCreateDraft } from '../../../types/host'
 import { useLanguage } from '../../../providers/LanguageProvider'
+import type { ElectionSettingsDraft, SectionDraft, VoteCreateDraft } from '../../../types/host'
 import {
   FIXED_PAID_COST_PER_BALLOT,
   UNLIMITED_PAID_COST_PER_BALLOT,
 } from '../../../utils/hostElectionSettings'
-import { formatBallotCostLabel } from '../../../utils/paymentDisplay'
 import { getKarmaTierDisplay } from '../../../utils/karmaTier'
+import { formatBallotCostLabel } from '../../../utils/paymentDisplay'
 
 const INPUT_CLASS =
   'block min-w-0 w-full max-w-full appearance-none bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all'

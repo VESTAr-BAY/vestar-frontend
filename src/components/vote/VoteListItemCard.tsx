@@ -1,5 +1,5 @@
-import completeVoteIcon from '../../assets/complete_vote.svg'
 import checkboxBlank from '../../assets/check_box_outline_blank.svg'
+import completeVoteIcon from '../../assets/complete_vote.svg'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { BadgeVariant, VoteListItem } from '../../types/vote'
 import { resolveIpfsUrl } from '../../utils/ipfs'

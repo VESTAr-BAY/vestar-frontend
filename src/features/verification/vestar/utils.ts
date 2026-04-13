@@ -1,4 +1,4 @@
-import { getAddress, keccak256, hexToBytes, type Address, type Hex } from 'viem'
+import { type Address, getAddress, type Hex, hexToBytes, keccak256 } from 'viem'
 import { OPEN_EMOJIS, STATUS_CHAIN_ID, STATUS_EXPLORER_URL } from './constants'
 import { resolveVerificationLanguage, type VerificationLang } from './language'
 import type { VerificationElectionSummary, VisibilityMode } from './types'

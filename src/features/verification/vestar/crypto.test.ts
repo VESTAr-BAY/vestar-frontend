@@ -1,6 +1,6 @@
 import { generateKeyPairSync } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
 import { getAddress, toHex } from 'viem'
+import { describe, expect, it } from 'vitest'
 import { vestarStatusTestnetChain } from '../../../contracts/vestar/chain'
 import { encryptBallotWithPublicKey, randomNonceHex } from '../../../utils/privateBallot'
 import { decryptCanonicalBallotPayload } from './crypto'

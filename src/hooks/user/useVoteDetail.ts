@@ -7,6 +7,7 @@ import {
   getElectionState,
   getTotalVotesForCandidate,
 } from '../../contracts/vestar/actions'
+<<<<<<< HEAD
 import { mapToVoteDetail, resolveElectionCandidates } from '../../utils/electionMapper'
 import { findOptimisticElection } from '../../utils/optimisticVotes'
 import type { VoteDetailData } from '../../types/vote'
@@ -14,6 +15,10 @@ import {
   getCachedVoteDetail,
   setCachedVoteDetail,
 } from '../../utils/voteDetailCache'
+=======
+import type { VoteDetailData } from '../../types/vote'
+import { mapToVoteDetail, resolveElectionCandidates } from '../../utils/electionMapper'
+>>>>>>> 22b9d7e (chore : fix redirect route)
 
 async function fetchContractState(electionAddress: Address) {
   try {

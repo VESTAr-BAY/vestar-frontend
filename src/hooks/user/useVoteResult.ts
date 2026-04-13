@@ -2,15 +2,21 @@ import { useEffect, useState } from 'react'
 import { fetchCandidateManifest } from '../../api/candidateManifest'
 import { fetchElectionDetail, fetchFinalizedTally, fetchResultSummaries } from '../../api/elections'
 import type { ApiElection, ApiFinalizedTallyRow } from '../../api/types'
+import { useLanguage } from '../../providers/LanguageProvider'
+import type { RankedCandidate, VoteResultData } from '../../types/vote'
+import type { CandidateManifest } from '../../utils/candidateManifest'
 import {
   applyManifestToElection,
   formatVoteDate,
   resolveElectionCandidates,
 } from '../../utils/electionMapper'
+<<<<<<< HEAD
 import type { CandidateManifest } from '../../utils/candidateManifest'
 import type { RankedCandidate, VoteResultData } from '../../types/vote'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { assignCompetitionRanks } from '../../utils/ranking'
+=======
+>>>>>>> 22b9d7e (chore : fix redirect route)
 
 function toVoteResultData(
   election: ApiElection,

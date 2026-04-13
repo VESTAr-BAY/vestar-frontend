@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import {
+  type ApiVerifiedOrganizer,
   fetchVerifiedOrganizerRequestStatus,
   requestVerifiedOrganizer,
-  type ApiVerifiedOrganizer,
 } from '../../api/verifiedOrganizers'
 
 function StatusBadge({ status }: { status: ApiVerifiedOrganizer['status'] }) {

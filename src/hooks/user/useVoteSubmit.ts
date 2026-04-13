@@ -4,11 +4,16 @@ import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import {
   approveErc20Spender,
   canAccountSubmitBallot,
+<<<<<<< HEAD
   getKarmaTier,
   getErc20Allowance,
   getErc20Balance,
+=======
+>>>>>>> 22b9d7e (chore : fix redirect route)
   getElectionRemainingBallots,
   getElectionState,
+  getErc20Allowance,
+  getErc20Balance,
   quoteElectionPayment,
   submitEncryptedVote,
   submitOpenVote,
@@ -18,12 +23,16 @@ import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { VESTAR_ELECTION_STATE } from '../../contracts/vestar/types'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { VoteDetailData } from '../../types/vote'
+<<<<<<< HEAD
 import { encryptBallotWithPublicKey, randomNonceHex } from '../../utils/privateBallot'
 import {
   getVoteSubmissionBlockErrorMessage,
   resolveVoteSubmissionBlockReason,
 } from '../../utils/voteEligibility'
+=======
+>>>>>>> 22b9d7e (chore : fix redirect route)
 import { formatBallotCostLabel } from '../../utils/paymentDisplay'
+import { encryptBallotWithPublicKey, randomNonceHex } from '../../utils/privateBallot'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
 const VOTE_SUBMIT_PREFLIGHT_DEBOUNCE_MS = 350

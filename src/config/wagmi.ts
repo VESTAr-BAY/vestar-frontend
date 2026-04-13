@@ -1,4 +1,4 @@
-import { http, createConfig } from 'wagmi'
+import { createConfig, http } from 'wagmi'
 import { mainnet, sepolia } from 'wagmi/chains'
 import { injected, metaMask } from 'wagmi/connectors'
 import { vestarStatusTestnetChain } from '../contracts/vestar/chain'

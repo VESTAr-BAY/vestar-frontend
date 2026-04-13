@@ -1,7 +1,7 @@
 import accountCircleIcon from '../../assets/account_circle.svg'
 import keyboardArrowLeft from '../../assets/keyboard_arrow_left.svg'
-import { useLanguage } from '../../providers/LanguageProvider'
 import type { ScrollState } from '../../hooks/useScrollDirection'
+import { useLanguage } from '../../providers/LanguageProvider'
 
 interface DetailHeaderProps {
   scrollState: ScrollState

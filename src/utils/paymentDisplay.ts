@@ -22,7 +22,7 @@ export function formatBallotCostLabel(
 
   if (normalized === FIXED_PAID_DISPLAY_COST || normalized === FIXED_PAID_RAW_COST) {
     // prettier-ignore
-    return lang === 'ko' ? '100원' : '100 usdt'
+    return lang === 'ko' ? '100원' : '0.066 usdt'
   }
 
   return lang === 'ko' ? normalized : `${normalized} usdt`

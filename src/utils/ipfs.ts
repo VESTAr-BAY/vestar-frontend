@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { keccak256, stringToHex, type Hex } from 'viem'
+import { type Hex, keccak256, stringToHex } from 'viem'
 
 type PinataFileUploadResponse =
   | {

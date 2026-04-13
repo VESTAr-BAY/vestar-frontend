@@ -1,4 +1,4 @@
-import { getAddress, toHex, type Address, type Hex } from 'viem'
+import { type Address, getAddress, type Hex, toHex } from 'viem'
 import { vestarStatusTestnetChain } from './chain'
 
 interface CanonicalBallotPayloadV1 {

@@ -87,7 +87,11 @@ function VoteHistoryList({
         >
           <div className="w-[48px] h-[48px] rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-[#F0EDFF]">
             {item.imageUrl ? (
-              <img src={resolveIpfsUrl(item.imageUrl)} alt="" className="h-full w-full object-cover" />
+              <img
+                src={resolveIpfsUrl(item.imageUrl)}
+                alt=""
+                className="h-full w-full object-cover"
+              />
             ) : (
               <img src={completeVoteIcon} alt="" className="w-6 h-6" />
             )}
@@ -119,11 +123,7 @@ function VoteHistoryList({
           </div>
         </button>
       ))}
-      <InfiniteScrollSentinel
-        onVisible={onLoadMore}
-        isLoading={isLoadingMore}
-        hasMore={hasMore}
-      />
+      <InfiniteScrollSentinel onVisible={onLoadMore} isLoading={isLoadingMore} hasMore={hasMore} />
     </div>
   )
 }
@@ -347,7 +347,9 @@ export function MyPage() {
                     }`}
                   >
                     <span>{option.label}</span>
-                    <span className={`font-mono text-[11px] ${isActive ? 'text-white/80' : 'text-[#8B93A7]'}`}>
+                    <span
+                      className={`font-mono text-[11px] ${isActive ? 'text-white/80' : 'text-[#8B93A7]'}`}
+                    >
                       {option.count}
                     </span>
                   </button>

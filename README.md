@@ -195,14 +195,14 @@ src/
 ## Business Model
 
 ```
-투표권 1장 = mockUSDT 100  (문서 기준 고정 가격)
-├── 플랫폼    mockUSDT 50
-└── 주최자    mockUSDT 50
+투표권 1장 = mockUSDT 약 0.006 (문서 기준 고정 가격)
+├── 플랫폼    mockUSDT 약 0.003
+└── 주최자    mockUSDT 약 0.003
 ```
 
 | Phase | 수익원            | 비고                               |
 | ----- | ----------------- | ---------------------------------- |
-| MVP   | 투표권 과금       | 1장 mockUSDT 100 고정             |
+| MVP   | 투표권 과금       | 1장 mockUSDT 약 0.006              |
 | MVP   | 투표 완료 후 광고 | 감정 고조 시점 노출, CPM 3~5×      |
 | V2    | 팬덤 데이터 B2B   | 익명화 온체인 집계, GDPR 이슈 없음 |
 | V2    | 프리미엄 대시보드 | 주최자 고급 기능                   |
@@ -212,12 +212,12 @@ src/
 
 ## Why Status Network
 
-| Feature     | Benefit                                                             |
-| ----------- | ------------------------------------------------------------------- |
-| Zero Gas    | bridged stETH yield가 가스비 대납. 팬은 ballot당 mockUSDT 100만 부담 |
-| RLN Privacy | Rate Limiting Nullifier로 봇·다중계정 구조적 차단                   |
-| Linea zkEVM | Ethereum L1 보안 + L2 속도. 투표 TX 즉시 확정                       |
-| SNT Karma   | SNT 스테이킹 → Karma 획득 → 투표 가중치. 진성 팬일수록 더 큰 목소리 |
+| Feature     | Benefit                                                                |
+| ----------- | ---------------------------------------------------------------------- |
+| Zero Gas    | bridged stETH yield가 가스비 대납. 팬은 ballot당 mockUSDT 100원만 부담 |
+| RLN Privacy | Rate Limiting Nullifier로 봇·다중계정 구조적 차단                      |
+| Linea zkEVM | Ethereum L1 보안 + L2 속도. 투표 TX 즉시 확정                          |
+| SNT Karma   | SNT 스테이킹 → Karma 획득 → 투표 가중치. 진성 팬일수록 더 큰 목소리    |
 
 ---
 
@@ -248,18 +248,18 @@ export const statusNetwork = {
 ### Color Tokens
 
 ```css
---color-bg: #FFFFFF;        /* Main Background */
---color-banner: #09101C;    /* Banner / Strong Section BG */
---color-primary: #7140FD;   /* Main Button */
---color-primary-fg: #FFFFFF; /* Main Button Text */
---color-lavender: #F8F5FF;  /* Light Purple Background */
---color-lavender-text: #7140FD; /* Text on Light Purple BG */
---color-point-1: #FCC3AB;   /* Point Color 1 */
---color-point-2: #FBE1D7;   /* Point Color 2 */
---color-border: #e7e9ed;    /* Card / Input Border */
---color-text: #090a0b;      /* Primary Text */
---color-muted: #707070;     /* Secondary Text */
---color-green: #22c55e;     /* Success / Gasless badge */
+--color-bg: #ffffff; /* Main Background */
+--color-banner: #09101c; /* Banner / Strong Section BG */
+--color-primary: #7140fd; /* Main Button */
+--color-primary-fg: #ffffff; /* Main Button Text */
+--color-lavender: #f8f5ff; /* Light Purple Background */
+--color-lavender-text: #7140fd; /* Text on Light Purple BG */
+--color-point-1: #fcc3ab; /* Point Color 1 */
+--color-point-2: #fbe1d7; /* Point Color 2 */
+--color-border: #e7e9ed; /* Card / Input Border */
+--color-text: #090a0b; /* Primary Text */
+--color-muted: #707070; /* Secondary Text */
+--color-green: #22c55e; /* Success / Gasless badge */
 ```
 
 ### Typography

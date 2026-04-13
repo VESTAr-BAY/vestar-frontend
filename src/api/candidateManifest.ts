@@ -1,5 +1,5 @@
-import { keccak256, stringToHex, type Hex } from 'viem'
-import { parseCandidateManifest, type CandidateManifest } from '../utils/candidateManifest'
+import { type Hex, keccak256, stringToHex } from 'viem'
+import { type CandidateManifest, parseCandidateManifest } from '../utils/candidateManifest'
 import { resolveReadableIpfsUrls } from '../utils/ipfs'
 
 const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000' as const

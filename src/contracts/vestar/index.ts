@@ -1,3 +1,5 @@
+export * from './actions'
+export * from './chain'
 export {
   vestar,
   vestarContracts,
@@ -8,7 +10,5 @@ export {
   vestarUtils,
   vestarVoting,
 } from './client'
-export * from './types'
-export * from './actions'
-export * from './chain'
 export * from './generated'
+export * from './types'

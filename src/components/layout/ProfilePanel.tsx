@@ -10,10 +10,10 @@ import {
   useWalletClient,
 } from 'wagmi'
 import accountCircleIcon from '../../assets/account_circle.svg'
-import file_download from '../../assets/file_download_done.svg'
 import connectWalletIcon from '../../assets/account_connect_wallet.svg'
 import disconnectWalletIcon from '../../assets/account_disconnect_wallet.svg'
 import completeVoteIcon from '../../assets/complete_vote.svg'
+import file_download from '../../assets/file_download_done.svg'
 import karmaIcon from '../../assets/karma.svg'
 import languageIcon from '../../assets/language.svg'
 import libraryAddIcon from '../../assets/library_add.svg'
@@ -25,9 +25,9 @@ import {
   mintMockUsdt,
   waitForVestarTransactionReceipt,
 } from '../../contracts/vestar/actions'
+import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useMyKarma } from '../../hooks/user/useMyKarma'
 import { useMyVotes } from '../../hooks/user/useMyVotes'
-import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
 import { isMobileExternalBrowser } from '../../utils/mobileWallet'

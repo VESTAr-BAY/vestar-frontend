@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
-import verifiedIcon from '../../assets/verified.svg'
 import { fetchCandidateManifest } from '../../api/candidateManifest'
+<<<<<<< HEAD
 import { fetchElections, prefetchElectionDetail } from '../../api/elections'
 import { VoteListItemCard } from '../../components/vote/VoteListItemCard'
+=======
+import { fetchElections } from '../../api/elections'
+import verifiedIcon from '../../assets/verified.svg'
+>>>>>>> 22b9d7e (chore : fix redirect route)
 import { VoteCardSkeleton } from '../../components/shared/VoteCardSkeleton'
-import { useVotedVotes } from '../../hooks/useVotedVotes'
+import { VoteListItemCard } from '../../components/vote/VoteListItemCard'
 import { VOTE_ITEMS } from '../../data/mockVotes'
+import { useVotedVotes } from '../../hooks/useVotedVotes'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { VoteListItem } from '../../types/vote'
 import { applyManifestToElection, mapToVoteListItem } from '../../utils/electionMapper'

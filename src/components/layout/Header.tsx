@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router'
 import { useAccount, useConnect } from 'wagmi'
+<<<<<<< HEAD
 import keyboardArrowLeft from '../../assets/keyboard_arrow_left.svg'
 import { requestWalletConnection } from '../../utils/walletConnection'
 import { isMobileExternalBrowser } from '../../utils/mobileWallet'
@@ -7,8 +8,16 @@ import accountCircleIcon from '../../assets/account_circle.svg'
 import connectWalletIcon from '../../assets/account_connect_wallet.svg'
 import complete_vote from '../../assets/complete_vote.svg'
 import { resolveSmartBackFallbackPath, useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
-import { useLanguage } from '../../providers/LanguageProvider'
+=======
+import accountCircleIcon from '../../assets/account_circle.svg'
+import connectWalletIcon from '../../assets/account_connect_wallet.svg'
+import complete_vote from '../../assets/complete_vote.svg'
+import keyboardArrowLeft from '../../assets/keyboard_arrow_left.svg'
 import type { ScrollState } from '../../hooks/useScrollDirection'
+import { useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
+>>>>>>> 22b9d7e (chore : fix redirect route)
+import { useLanguage } from '../../providers/LanguageProvider'
+import { requestWalletConnection } from '../../utils/walletConnection'
 
 interface HeaderProps {
   scrollState: ScrollState

@@ -1,6 +1,6 @@
 import babel from '@rolldown/plugin-babel'
-import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'

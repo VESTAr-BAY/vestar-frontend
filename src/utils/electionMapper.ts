@@ -1,12 +1,12 @@
-import { VESTAR_ELECTION_STATE } from '../contracts/vestar/types'
 import type { ApiElection, ApiElectionState } from '../api/types'
+import { VESTAR_ELECTION_STATE } from '../contracts/vestar/types'
 import type { BadgeVariant, Candidate, HotVote, VoteDetailData, VoteListItem } from '../types/vote'
 import type { CandidateManifest } from './candidateManifest'
+import { getCandidateManifestSeriesPreimage, getCandidateManifestTitle } from './candidateManifest'
 import {
   findLocalOpenElectionMetadata,
   type LocalOpenElectionMetadata,
 } from './localOpenElectionMetadata'
-import { getCandidateManifestSeriesPreimage, getCandidateManifestTitle } from './candidateManifest'
 
 export function mapApiStateToBadge(state: ApiElectionState): BadgeVariant {
   switch (state) {

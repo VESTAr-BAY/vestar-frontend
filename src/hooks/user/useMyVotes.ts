@@ -2,11 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { fetchCandidateManifest } from '../../api/candidateManifest'
 import { fetchElectionDetail, fetchMoreVoteHistory, fetchVoteHistory } from '../../api/elections'
-import type {
-  ApiElectionState,
-  ApiVoteHistoryCursor,
-  ApiVoteHistoryItem,
-} from '../../api/types'
+import type { ApiElectionState, ApiVoteHistoryCursor, ApiVoteHistoryItem } from '../../api/types'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { MyVoteItem } from '../../types/user'
 import {
@@ -40,7 +36,7 @@ const MY_VOTES_CACHE_TTL_MS = 15_000
 const electionDetailRequestCache = new Map<
   string,
   Promise<Awaited<ReturnType<typeof fetchElectionDetail>> | null>
->();
+>()
 
 function resolveVoteBadge(params: {
   status: MyVoteItem['status']
@@ -138,15 +134,12 @@ function resolveSpentLabel(
   return label === '무료' || label === 'Free' ? null : `-${label}`
 }
 
-async function mapToMyVoteItem(
-  item: ApiVoteHistoryItem,
-  lang: 'en' | 'ko',
-): Promise<MyVoteItem> {
-  const latestElection =
-    item.onchainElection?.id
-      ? await getLatestElectionDetail(item.onchainElection.id)
-      : null
-  const latestState = latestElection?.onchainState ?? item.onchainElection?.onchainState ?? 'FINALIZED'
+async function mapToMyVoteItem(item: ApiVoteHistoryItem, lang: 'en' | 'ko'): Promise<MyVoteItem> {
+  const latestElection = item.onchainElection?.id
+    ? await getLatestElectionDetail(item.onchainElection.id)
+    : null
+  const latestState =
+    latestElection?.onchainState ?? item.onchainElection?.onchainState ?? 'FINALIZED'
   const status = resolveVoteStatus({
     latestEndAt: latestElection?.endAt ?? null,
     fallbackState: latestState,

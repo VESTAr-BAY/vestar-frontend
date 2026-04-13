@@ -4,22 +4,6 @@ import {
   getCandidateManifestSeriesPreimage,
   getCandidateManifestTitle,
 } from '../../../utils/candidateManifest'
-import { getLogsChunked } from './chain'
-import {
-  DETAIL_CACHE_PREFIX,
-  FINALIZED_STATE,
-  INDEX_CACHE_KEY,
-  KEY_REVEALED_STATE,
-  STATUS_EXPLORER_URL,
-  VERIFICATION_FACTORY,
-  ZERO_HASH,
-  electionCreatedEvent,
-  electionReadAbi,
-  encryptedVoteEvent,
-  openVoteEvent,
-  publicClient,
-  resultFinalizedEvent,
-} from './constants'
 import {
   isDetailFresh,
   normalizeElectionSummary,
@@ -30,6 +14,23 @@ import {
   sortElectionSummaries,
   writeStoredItem,
 } from './cache'
+import { getLogsChunked } from './chain'
+import {
+  DETAIL_CACHE_PREFIX,
+  electionCreatedEvent,
+  electionReadAbi,
+  encryptedVoteEvent,
+  FINALIZED_STATE,
+  INDEX_CACHE_KEY,
+  KEY_REVEALED_STATE,
+  openVoteEvent,
+  publicClient,
+  resultFinalizedEvent,
+  STATUS_EXPLORER_URL,
+  VERIFICATION_FACTORY,
+  ZERO_HASH,
+} from './constants'
+import { resolveVerificationLanguage } from './language'
 import { readCandidateManifest, readResultManifest } from './manifests'
 import {
   buildOpenCandidates,
@@ -64,7 +65,6 @@ import {
   toVisibilityMode,
   truncateAddress,
 } from './utils'
-import { resolveVerificationLanguage } from './language'
 
 export { readCachedVerificationElectionDetail, readCachedVerificationElectionSummaries }
 

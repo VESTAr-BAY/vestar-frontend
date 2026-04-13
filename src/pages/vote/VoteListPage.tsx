@@ -94,60 +94,60 @@ function getHeroCopy(filter: HomeCategoryFilter, lang: string) {
       return lang === 'ko'
         ? {
             eyebrow: '음악방송',
-            title: '음악방송 투표를 한눈에 볼 수 있어요',
+            title: '음악방송 투표를\n한눈에 볼 수 있어요',
             sub: '음악방송 카테고리의 진행 중이거나 마감된 투표를 빠르게 둘러보세요.',
           }
         : {
             eyebrow: 'Music Shows',
-            title: 'See music show votes at a glance',
+            title: 'See music show votes\nat a glance',
             sub: 'Browse active and ended votes from the music show category.',
           }
     case 'awards':
       return lang === 'ko'
         ? {
             eyebrow: '시상식',
-            title: '시상식 투표를 한눈에 볼 수 있어요',
+            title: '시상식 투표를\n한눈에 볼 수 있어요',
             sub: '시상식 카테고리의 진행 중이거나 마감된 투표를 빠르게 둘러보세요.',
           }
         : {
             eyebrow: 'Awards',
-            title: 'See awards votes at a glance',
+            title: 'See awards votes\nat a glance',
             sub: 'Browse active and ended votes from the awards category.',
           }
     case 'fan':
       return lang === 'ko'
         ? {
             eyebrow: '팬투표',
-            title: '팬투표를 한눈에 볼 수 있어요',
+            title: '팬투표를\n한눈에 볼 수 있어요',
             sub: '팬투표 카테고리의 진행 중이거나 마감된 투표를 빠르게 둘러보세요.',
           }
         : {
             eyebrow: 'Fan Votes',
-            title: 'See fan votes at a glance',
+            title: 'See fan votes\nat a glance',
             sub: 'Browse active and ended votes from the fan vote category.',
           }
     case 'other':
       return lang === 'ko'
         ? {
             eyebrow: '기타',
-            title: '기타 카테고리 투표를 한눈에 볼 수 있어요',
+            title: '기타 카테고리 투표를\n한눈에 볼 수 있어요',
             sub: '기타 카테고리의 진행 중이거나 마감된 투표를 빠르게 둘러보세요.',
           }
         : {
             eyebrow: 'Other',
-            title: 'See other category votes at a glance',
+            title: 'See other category votes\nat a glance',
             sub: 'Browse active and ended votes from other categories.',
           }
     default:
       return lang === 'ko'
         ? {
             eyebrow: '전체 보기',
-            title: '지금 열려 있는 투표를 한눈에 볼 수 있어요',
+            title: '지금 열려있는 투표를\n한눈에 볼 수 있어요',
             sub: '진행 중이거나 마감된 투표를 모아서 빠르게 둘러보세요.',
           }
         : {
             eyebrow: 'All Votes',
-            title: 'See currently open votes at a glance',
+            title: 'See currently open votes\nat a glance',
             sub: 'Browse active and ended votes in one place.',
           }
   }
@@ -574,7 +574,7 @@ export function VoteListPage() {
           </span>
 
           {/* Title — gradient text */}
-          <h1 className="mb-2 bg-gradient-to-r from-[#7140FF] to-[#22d3ee] bg-clip-text text-[26px] font-bold tracking-tight leading-tight text-transparent">
+          <h1 className="mb-2 bg-gradient-to-r from-[#7140FF] to-[#22d3ee] bg-clip-text text-[26px] font-bold tracking-tight leading-tight text-transparent whitespace-pre-line">
             {heroCopy.title}
           </h1>
 

@@ -1,7 +1,8 @@
-import { decodeFunctionData, type Address, type Hex } from 'viem'
+import { type Address, decodeFunctionData, type Hex } from 'viem'
 import { getLogsChunked } from './chain'
 import { electionWriteAbi, encryptedVoteEvent, openVoteEvent, publicClient } from './constants'
 import { decryptCanonicalBallotPayload, decryptDemoPrivateSelectionIndex } from './crypto'
+import { resolveVerificationLanguage } from './language'
 import type {
   CandidateManifest,
   OpenReceiptLog,
@@ -16,7 +17,6 @@ import {
   pickEmoji,
   truncateAddress,
 } from './utils'
-import { resolveVerificationLanguage } from './language'
 
 export async function loadOpenReceipts(
   electionAddress: Address,

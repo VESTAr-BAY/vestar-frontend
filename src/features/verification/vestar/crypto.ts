@@ -1,7 +1,7 @@
 import { gcm } from '@noble/ciphers/aes'
 import { p256 } from '@noble/curves/p256'
 import { sha256 } from '@noble/hashes/sha2'
-import { hexToBytes, type Address, type Hex } from 'viem'
+import { type Address, type Hex, hexToBytes } from 'viem'
 import type {
   CanonicalBallotPayloadV1,
   EcdhP256Aes256GcmEnvelope,

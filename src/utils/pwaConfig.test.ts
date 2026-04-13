@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  NETLIFY_REDIRECT_RULES,
-  PWA_MANIFEST,
   getPwaBaseUrl,
   isNavigateFallbackInScope,
+  NETLIFY_REDIRECT_RULES,
+  PWA_MANIFEST,
 } from './pwaConfig'
 
 // ── Manifest constants ────────────────────────────────────────────────────────

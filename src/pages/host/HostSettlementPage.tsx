@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { formatUnits, type Address } from 'viem'
+import { type Address, formatUnits } from 'viem'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import {
   getElectionSnapshot,

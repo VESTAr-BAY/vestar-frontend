@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
-import { VoteHero } from './VoteHero'
+import { LanguageProvider } from '../../providers/LanguageProvider'
 import type { VoteDetailData } from '../../types/vote'
+<<<<<<< HEAD
 
 vi.mock('../../providers/LanguageProvider', () => ({
   useLanguage: () => ({
@@ -13,17 +13,25 @@ vi.mock('../../providers/LanguageProvider', () => ({
 vi.mock('../../utils/ipfs', () => ({
   resolveIpfsUrl: (url: string) => url,
 }))
+=======
+import { VoteHero } from './VoteHero'
+>>>>>>> 22b9d7e (chore : fix redirect route)
 
 const baseVote: VoteDetailData = {
-  id: 'vote-1',
+  id: 'test-1',
   title: 'Test Vote',
   org: 'Test Org',
   host: 'Test Host',
-  emoji: '🗳️',
   verified: false,
+  emoji: '🎵',
   badge: 'live',
-  deadlineLabel: '3 days left',
+  imageUrl: 'ipfs://QmTestHash',
+  participantCount: 100,
+  voteFrequency: 'once',
+  voteLimit: '1 vote per person',
+  deadlineLabel: '2d left',
   urgent: false,
+<<<<<<< HEAD
   startDate: '2026-04-01',
   endDate: '2026-04-10',
   endDateISO: '2026-04-10T00:00:00.000Z',
@@ -38,23 +46,62 @@ const baseVote: VoteDetailData = {
   voteFrequency: 'Daily',
   voteLimit: '1 per day',
   resultPublic: true,
+=======
+  startDate: '2026-01-01',
+  endDate: '2026-12-31',
+  endDateISO: '2026-12-31T00:00:00Z',
+  resultReveal: '2026-12-31',
+  goalVotes: 1000,
+>>>>>>> 22b9d7e (chore : fix redirect route)
   candidates: [],
+  maxChoices: 1,
+  sections: [],
+  paymentMode: 'FREE',
+  visibilityMode: 'OPEN',
+  resultPublic: true,
 }
 
-describe('VoteHero – notch-aware offsets', () => {
-  it('pulls hero up by var(--header-h), not a hardcoded 56 px', () => {
-    const { container } = render(<VoteHero vote={baseVote} />)
-    const root = container.firstElementChild as HTMLElement
-    // Must use the CSS variable, not the fixed -mt-14 class
-    expect(root.className).not.toContain('-mt-14')
-    expect(root.className).toMatch(/var\(--header-h\)/)
+function renderHero(vote: VoteDetailData = baseVote) {
+  const { container } = render(
+    <LanguageProvider>
+      <VoteHero vote={vote} />
+    </LanguageProvider>,
+  )
+  return container.firstElementChild as HTMLElement
+}
+
+describe('VoteHero — layout', () => {
+  /**
+   * Regression: the hero image was hidden under the header because a negative
+   * margin-top pulled the entire component up into the header area.
+   * After the fix the component should sit naturally below the header.
+   */
+  it('does NOT slide under the header via negative margin-top', () => {
+    const hero = renderHero()
+    expect(hero.className).not.toContain('margin-top:calc(var(--header-h)*-1)')
   })
 
-  it('top padding inside the hero references var(--header-h)', () => {
-    const { container } = render(<VoteHero vote={baseVote} />)
-    const root = container.firstElementChild as HTMLElement
-    expect(root.className).not.toContain('pt-[calc(56px')
-    expect(root.className).toMatch(/var\(--header-h\)/)
+  it('does NOT add header-height to its top padding (parent layout already offsets)', () => {
+    const hero = renderHero()
+    // Before fix: pt-[calc(var(--header-h)+24px)] double-counts the header offset.
+    // After fix: simple pt-6 (24 px) is enough because <main> already has pt-[var(--header-h)].
+    expect(hero.className).not.toContain('var(--header-h)+24px')
+  })
+
+  it('renders the cover image when imageUrl is provided', () => {
+    const hero = renderHero()
+    const img = hero.querySelector('img')
+    expect(img).toBeInTheDocument()
+    expect(img?.getAttribute('class')).toContain('object-cover')
+  })
+
+  it('renders a gradient fallback when imageUrl is absent', () => {
+    const hero = renderHero({ ...baseVote, imageUrl: undefined })
+    const img = hero.querySelector('img')
+    expect(img).not.toBeInTheDocument()
+    // fallback gradient div should be present
+    const fallback = hero.querySelector('[class*="linear-gradient"]')
+    expect(fallback).toBeInTheDocument()
   })
 
   it('uses the active participation copy for live votes', () => {

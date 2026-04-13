@@ -213,9 +213,7 @@ function isStep1Valid(draft: VoteCreateDraft): boolean {
 
 function getStep1ValidationMessage(draft: VoteCreateDraft, lang: 'ko' | 'en'): string | null {
   if (draft.title.trim().length === 0) {
-    return lang === 'ko'
-      ? '시리즈명을 입력해야 합니다.'
-      : 'Enter the series title to continue.'
+    return lang === 'ko' ? '시리즈명을 입력해야 합니다.' : 'Enter the series title to continue.'
   }
 
   return null
@@ -273,15 +271,11 @@ function getStep2ValidationMessage(draft: VoteCreateDraft, lang: 'ko' | 'en'): s
   }
 
   if (draft.electionTitle.trim().length === 0) {
-    return lang === 'ko'
-      ? '투표 제목을 입력해야 합니다.'
-      : 'Enter the vote title to continue.'
+    return lang === 'ko' ? '투표 제목을 입력해야 합니다.' : 'Enter the vote title to continue.'
   }
 
   if (draft.candidates.length < 2) {
-    return lang === 'ko'
-      ? '후보를 최소 2명 이상 등록해야 합니다.'
-      : 'Add at least 2 candidates.'
+    return lang === 'ko' ? '후보를 최소 2명 이상 등록해야 합니다.' : 'Add at least 2 candidates.'
   }
 
   for (const candidate of draft.candidates) {
@@ -381,7 +375,10 @@ function getSettingsValidationMessage(
     }
   }
 
-  if (normalizedSettings.maxChoices < 1 || normalizedSettings.maxChoices > Math.max(candidateCount, 1)) {
+  if (
+    normalizedSettings.maxChoices < 1 ||
+    normalizedSettings.maxChoices > Math.max(candidateCount, 1)
+  ) {
     return lang === 'ko'
       ? `${scopePrefix}최대 선택 수가 후보 수보다 많을 수 없습니다.`
       : `${scopePrefix}Max selections cannot exceed the number of candidates.`
@@ -440,7 +437,10 @@ function isStep3Valid(draft: VoteCreateDraft): boolean {
 function getStep3ValidationMessage(draft: VoteCreateDraft, lang: 'ko' | 'en'): string | null {
   if (draft.sections.length > 0) {
     for (const section of draft.sections) {
-      const scopeLabel = lang === 'ko' ? `${section.name.trim() || '섹션'} 설정` : `${section.name.trim() || 'Section'} settings`
+      const scopeLabel =
+        lang === 'ko'
+          ? `${section.name.trim() || '섹션'} 설정`
+          : `${section.name.trim() || 'Section'} settings`
       const message = getSettingsValidationMessage(
         section,
         section.candidates.length,
@@ -820,10 +820,7 @@ function shouldRefreshPreparedSubmission(prepared: PreparedSubmissionArtifacts) 
   return prepared.elections.some((election) => election.candidateManifestURI.startsWith('data:'))
 }
 
-function getCreateVoteErrorMessage(
-  error: unknown,
-  lang: 'ko' | 'en',
-): string {
+function getCreateVoteErrorMessage(error: unknown, lang: 'ko' | 'en'): string {
   const walletMessage = getWalletActionErrorMessage(error, {
     lang,
     defaultMessage: lang === 'ko' ? '투표 생성에 실패했습니다.' : 'Failed to create the vote.',

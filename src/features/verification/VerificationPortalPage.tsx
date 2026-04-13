@@ -7,21 +7,21 @@ import { ResultCard } from './components/cards/ResultCard'
 import { ValueCard } from './components/cards/ValueCard'
 import { OpenReceiptCard } from './components/receipts/OpenReceiptCard'
 import { PrivateReceiptCard } from './components/receipts/PrivateReceiptCard'
+import { cn } from './components/ui/cn'
 import { IpfsImage } from './components/ui/IpfsImage'
 import { HeroMetric, StatCard } from './components/ui/MetricCard'
 import { PortalButton } from './components/ui/PortalButton'
 import { PortalPanel } from './components/ui/PortalPanel'
 import { PortalPill } from './components/ui/PortalPill'
-import { cn } from './components/ui/cn'
-import { KEY_REVEALED_STATE } from './vestar/constants'
-import { withKoreanParticle } from './vestar/korean'
+import type { VerificationElectionDetail, VerificationElectionSummary } from './vestar'
 import {
   getVerificationElectionDetail,
   readCachedVerificationElectionDetail,
   readCachedVerificationElectionSummaries,
   syncVerificationElectionSummaries,
 } from './vestar'
-import type { VerificationElectionDetail, VerificationElectionSummary } from './vestar'
+import { KEY_REVEALED_STATE } from './vestar/constants'
+import { withKoreanParticle } from './vestar/korean'
 
 type ViewTab = 'finished' | 'current'
 type PortalTab = 'receipts' | 'results' | 'proof'

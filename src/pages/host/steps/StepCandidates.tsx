@@ -1,6 +1,6 @@
 import { useRef } from 'react'
-import type { CandidateDraft, SectionDraft, VoteCreateDraft } from '../../../types/host'
 import { useLanguage } from '../../../providers/LanguageProvider'
+import type { CandidateDraft, SectionDraft, VoteCreateDraft } from '../../../types/host'
 
 const MAX_CANDIDATES = 10
 

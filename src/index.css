@@ -37,7 +37,7 @@
   --safe-right: env(safe-area-inset-right, 0px);
   /* composite layout heights */
   --header-h: calc(3.5rem + var(--safe-top));   /* 56px + notch */
-  --footer-h: calc(4rem + var(--safe-bottom));   /* 64px + home indicator */
+  --footer-h: 4rem;   /* 64px — home indicator floats over footer naturally on iOS */
 }
 
 html,

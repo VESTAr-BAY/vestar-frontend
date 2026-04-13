@@ -5,10 +5,10 @@ import type {
   ApiElectionResultSummary,
   ApiFinalizedTallyRow,
   ApiLiveTallyRow,
+  ApiVisibilityMode,
   ApiVoteHistoryCursor,
   ApiVoteHistoryResponse,
   ApiVoteSubmissionStatus,
-  ApiVisibilityMode,
   PreparePrivateElectionRequest,
   PreparePrivateElectionResponse,
 } from './types'

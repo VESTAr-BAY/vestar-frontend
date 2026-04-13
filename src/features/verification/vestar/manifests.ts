@@ -1,8 +1,8 @@
-import { keccak256, stringToHex, type Hex } from 'viem'
+import { type Hex, keccak256, stringToHex } from 'viem'
 import { parseCandidateManifest } from '../../../utils/candidateManifest'
 import { resolveReadableIpfsUrls } from '../../../utils/ipfs'
-import { MANIFEST_CACHE_PREFIX, ZERO_HASH } from './constants'
 import { readStoredItem, removeStoredItem, writeStoredItem } from './cache'
+import { MANIFEST_CACHE_PREFIX, ZERO_HASH } from './constants'
 import type { CandidateManifest, ResultManifest } from './types'
 import { isLikelyCid } from './utils'
 
@@ -63,8 +63,7 @@ async function readVerifiedManifest<T extends CandidateManifest | ResultManifest
 
         writeStoredItem(manifestCacheKey, body)
         return JSON.parse(body) as T
-      } catch {
-      }
+      } catch {}
     }
 
     return null
@@ -127,8 +126,7 @@ async function readVerifiedCandidateManifest(
 
         writeStoredItem(manifestCacheKey, body)
         return parsed
-      } catch {
-      }
+      } catch {}
     }
 
     return null

@@ -1,7 +1,7 @@
 import { useLanguage } from '../../../../providers/LanguageProvider'
 import type { VerificationReceipt } from '../../vestar'
-import { PortalButton } from '../ui/PortalButton'
 import { IpfsImage } from '../ui/IpfsImage'
+import { PortalButton } from '../ui/PortalButton'
 import { PortalPanel } from '../ui/PortalPanel'
 import { PortalPill } from '../ui/PortalPill'
 

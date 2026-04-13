@@ -1,5 +1,6 @@
 import type { Address, Hex } from 'viem'
 import { DETAIL_CACHE_PREFIX, INDEX_CACHE_KEY } from './constants'
+import { resolveVerificationLanguage } from './language'
 import type {
   StoredIndexCache,
   VerificationElectionDetail,
@@ -13,7 +14,6 @@ import {
   formatStateLabel,
   hasResolvedElectionTitle,
 } from './utils'
-import { resolveVerificationLanguage } from './language'
 
 export function readCachedVerificationElectionSummaries() {
   const cache = readStoredIndexCache()

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
+  type ApiVerifiedOrganizer,
   approveVerifiedOrganizer,
   fetchVerifiedOrganizerRequests,
   rejectVerifiedOrganizer,
-  type ApiVerifiedOrganizer,
 } from '../../api/verifiedOrganizers'
 
 function StatusBadge({ status }: { status: ApiVerifiedOrganizer['status'] }) {

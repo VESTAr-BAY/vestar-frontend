@@ -1,12 +1,38 @@
 import {
+  type Address,
   getAbiItem,
   getAddress,
+  type Hex,
   hexToBytes,
   keccak256,
   stringToHex,
-  type Address,
-  type Hex,
 } from 'viem'
+import {
+  getElectionConfig,
+  getElectionResultSummary,
+  getElectionState,
+  vestarPublicClient,
+} from '../contracts/vestar/actions'
+import {
+  vestarContractAddresses,
+  vestarElectionAbi,
+  vestarElectionFactoryAbi,
+} from '../contracts/vestar/generated'
+import {
+  VESTAR_BALLOT_POLICY,
+  VESTAR_ELECTION_STATE,
+  VESTAR_PAYMENT_MODE,
+  VESTAR_VISIBILITY_MODE,
+} from '../contracts/vestar/types'
+import {
+  type CandidateManifest,
+  getCandidateManifestCoverImageUrl,
+  getCandidateManifestSeriesPreimage,
+  getCandidateManifestTitle,
+  parseCandidateManifest,
+} from '../utils/candidateManifest'
+import { resolveIpfsUrl } from '../utils/ipfs'
+import { resolveStoredLanguage } from '../utils/language'
 import type {
   ApiBallotPolicy,
   ApiCandidate,
@@ -16,32 +42,6 @@ import type {
   ApiPaymentMode,
   ApiVisibilityMode,
 } from './types'
-import { vestarPublicClient } from '../contracts/vestar/actions'
-import {
-  getElectionConfig,
-  getElectionResultSummary,
-  getElectionState,
-} from '../contracts/vestar/actions'
-import {
-  VESTAR_BALLOT_POLICY,
-  VESTAR_ELECTION_STATE,
-  VESTAR_PAYMENT_MODE,
-  VESTAR_VISIBILITY_MODE,
-} from '../contracts/vestar/types'
-import {
-  vestarContractAddresses,
-  vestarElectionAbi,
-  vestarElectionFactoryAbi,
-} from '../contracts/vestar/generated'
-import {
-  getCandidateManifestCoverImageUrl,
-  getCandidateManifestSeriesPreimage,
-  getCandidateManifestTitle,
-  parseCandidateManifest,
-  type CandidateManifest,
-} from '../utils/candidateManifest'
-import { resolveIpfsUrl } from '../utils/ipfs'
-import { resolveStoredLanguage } from '../utils/language'
 
 const FACTORY_ADDRESS = getAddress(vestarContractAddresses.electionFactory)
 const LOG_BLOCK_CHUNK_SIZE = 4_000n

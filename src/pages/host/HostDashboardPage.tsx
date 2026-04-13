@@ -94,8 +94,16 @@ export function HostDashboardPage() {
 
   const filterOptions: Array<{ key: HostVoteFilter; label: string; count: number }> = [
     { key: 'all', label: t('filter_all'), count: votes.length },
-    { key: 'active', label: t('hd_active'), count: votes.filter((vote) => vote.badge === 'live' || vote.badge === 'hot').length },
-    { key: 'scheduled', label: t('hd_scheduled'), count: votes.filter((vote) => vote.badge === 'new').length },
+    {
+      key: 'active',
+      label: t('hd_active'),
+      count: votes.filter((vote) => vote.badge === 'live' || vote.badge === 'hot').length,
+    },
+    {
+      key: 'scheduled',
+      label: t('hd_scheduled'),
+      count: votes.filter((vote) => vote.badge === 'new').length,
+    },
     { key: 'completed', label: t('hd_completed'), count: completedCount },
   ]
 
@@ -213,7 +221,9 @@ export function HostDashboardPage() {
                 }`}
               >
                 <span>{option.label}</span>
-                <span className={`font-mono text-[11px] ${isActive ? 'text-white/80' : 'text-[#8B93A7]'}`}>
+                <span
+                  className={`font-mono text-[11px] ${isActive ? 'text-white/80' : 'text-[#8B93A7]'}`}
+                >
                   {option.count}
                 </span>
               </button>
@@ -226,10 +236,14 @@ export function HostDashboardPage() {
               불러오는 중...
             </div>
           ) : filteredVotes.length > 0 ? (
-            filteredVotes.map((vote) => <VoteCard key={vote.id} vote={vote} onNavigate={navigate} />)
+            filteredVotes.map((vote) => (
+              <VoteCard key={vote.id} vote={vote} onNavigate={navigate} />
+            ))
           ) : (
             <div className="bg-white border border-[#E7E9ED] rounded-2xl p-6 text-center text-[13px] text-[#707070]">
-              {statusFilter === 'all' ? '아직 생성한 투표가 없습니다.' : '선택한 상태의 투표가 없습니다.'}
+              {statusFilter === 'all'
+                ? '아직 생성한 투표가 없습니다.'
+                : '선택한 상태의 투표가 없습니다.'}
             </div>
           )}
         </div>

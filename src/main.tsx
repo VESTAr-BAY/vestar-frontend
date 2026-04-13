@@ -7,6 +7,7 @@ import { ToastProvider } from './providers/ToastProvider'
 import { WalletProvider } from './providers/WalletProvider'
 import { resolveInitialEntryRedirectPath } from './utils/navigation'
 
+<<<<<<< HEAD
 const INITIAL_ROUTE_SESSION_KEY = 'vestar:initial-route-redirected:v1'
 
 function redirectInitialEntryToVote() {
@@ -32,6 +33,8 @@ function redirectInitialEntryToVote() {
 
 redirectInitialEntryToVote()
 
+=======
+>>>>>>> 22b9d7e (chore : fix redirect route)
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LanguageProvider>

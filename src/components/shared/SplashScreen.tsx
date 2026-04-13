@@ -27,22 +27,11 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
         className={`flex flex-col items-center transition-all duration-500 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
         {/* Logo mark */}
-        <div className="w-16 h-16 rounded-2xl bg-[#7140FF] flex items-center justify-center mb-5 shadow-[0_0_40px_rgba(113,64,255,0.4)]">
-          <svg
-            aria-hidden="true"
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="9 11 12 14 22 4" />
-            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-          </svg>
-        </div>
+        <img
+          src={`${import.meta.env.BASE_URL}pwa-icon.svg`}
+          alt="VESTAr"
+          className="w-16 h-16 mb-5 shadow-[0_0_40px_rgba(113,64,255,0.4)] rounded-2xl"
+        />
 
         {/* Brand */}
         <div

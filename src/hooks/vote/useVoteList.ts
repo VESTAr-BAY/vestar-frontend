@@ -3,10 +3,14 @@ import { fetchCandidateManifest } from '../../api/candidateManifest'
 import { fetchElections } from '../../api/elections'
 import type { ApiElection } from '../../api/types'
 import { HOT_VOTES } from '../../data/mockVotes'
+<<<<<<< HEAD
 import { applyManifestToElection, mapToHotVote } from '../../utils/electionMapper'
 import { primeVoteDetailCacheFromElection } from '../../utils/voteDetailCache'
 import { getViewCache, setViewCache } from '../../utils/viewCache'
+=======
+>>>>>>> 22b9d7e (chore : fix redirect route)
 import type { HotVote } from '../../types/vote'
+import { applyManifestToElection, mapToHotVote } from '../../utils/electionMapper'
 
 const HOT_VOTES_CACHE_TTL_MS = 15_000
 

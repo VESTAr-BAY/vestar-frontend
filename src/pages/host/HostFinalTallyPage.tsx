@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import { type Address, keccak256, toHex } from 'viem'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
-import { keccak256, toHex, type Address } from 'viem'
 import {
   finalizeElectionResults,
   getElectionSnapshot,
