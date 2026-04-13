@@ -268,6 +268,11 @@ export function VoteDetailPage() {
     isHistorySelectionView || (hasVoted && shouldApplyEligibilityGate && canSubmitByEligibility === false)
   const showManualWalletOpen = state === 'awaiting_signature' && sheetOpen && isMobileExternalBrowser()
   const shouldHideActionBar = sheetOpen && !resolvedHasVoted && !isEnded
+  const canShowTallyButton =
+    vote?.badge !== 'new' &&
+    (vote?.visibilityMode === 'OPEN' || vote?.onchainState === 'FINALIZED')
+  const shouldNavigateToFinalResult =
+    vote?.badge === 'end' || vote?.onchainState === 'FINALIZED'
 
   // ── Voted candidate IDs (from localStorage, stable after voting or on reload) ──
   const votedCandidateIds = useMemo<Set<string> | undefined>(
@@ -543,16 +548,16 @@ export function VoteDetailPage() {
       <div className="bg-[#FFFFFF]">
         <VoteInfoSection vote={vote} />
 
-        {vote.visibilityMode === 'OPEN' && vote.badge !== 'new' ? (
+        {canShowTallyButton ? (
           <div className="px-5 pt-5">
             <button
               type="button"
               onClick={() =>
-                navigate(vote.badge === 'end' ? `/vote/${id}/result` : `/vote/${id}/live`)
+                navigate(shouldNavigateToFinalResult ? `/vote/${id}/result` : `/vote/${id}/live`)
               }
               className="w-full rounded-2xl border border-[#E7E9ED] bg-white px-4 py-4 text-[14px] font-semibold text-[#7140FF] hover:border-[rgba(113,64,255,0.25)] hover:bg-[#F7F4FF] transition-colors active:scale-[0.99]"
             >
-              {vote.badge === 'end'
+              {shouldNavigateToFinalResult
                 ? lang === 'ko'
                   ? '최종 집계 보기'
                   : 'View final tally'
