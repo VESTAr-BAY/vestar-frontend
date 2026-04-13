@@ -28,9 +28,13 @@ const baseVote: VoteDetailData = {
   endDate: '2026-04-10',
   endDateISO: '2026-04-10T00:00:00.000Z',
   resultReveal: '2026-04-11',
+  minKarmaTier: 0,
   maxChoices: 1,
   participantCount: 1000,
   goalVotes: 5000,
+  ballotPolicy: 'ONE_PER_ELECTION',
+  resetIntervalSeconds: 0,
+  timezoneWindowOffset: 0,
   voteFrequency: 'Daily',
   voteLimit: '1 per day',
   resultPublic: true,
@@ -55,6 +59,8 @@ describe('VoteHero – notch-aware offsets', () => {
 
   it('uses the active participation copy for live votes', () => {
     const { container } = render(<VoteHero vote={baseVote} />)
-    expect(container.textContent).toContain('1,000 명 참여 중')
+    expect(container.textContent).toContain('1,000명 참여 중')
+    expect(container.textContent).toContain('총 1회')
+    expect(container.textContent).toContain('최대 1명 선택 가능')
   })
 })

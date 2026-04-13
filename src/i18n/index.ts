@@ -70,6 +70,8 @@ const STRINGS = {
   vi_start: { en: 'Start', ko: '시작' },
   vi_end: { en: 'End', ko: '종료' },
   vi_results: { en: 'Results', ko: '결과 공개' },
+  vi_eligibility: { en: 'Eligibility', ko: '참여 조건' },
+  vi_eligibility_open: { en: 'Anyone can join', ko: '누구나 참여 가능' },
 
   // ── Candidate Section ───────────────────────────────────────────────────────
   cs_candidates: { en: 'Candidates', ko: '후보 선택' },
@@ -158,11 +160,11 @@ const STRINGS = {
 
   // ── Profile Panel ───────────────────────────────────────────────────────────
   pp_my_votes: { en: 'My Votes', ko: '내 투표 내역' },
-  pp_karma_history: { en: 'Karma History', ko: 'Karma 내역' },
+  pp_karma_history: { en: 'Karma History', ko: '카르마 내역' },
   pp_verified_organizer: { en: 'Verified Organizer', ko: '공식 주최사 인증' },
-  pp_stt_staking: { en: 'STT Staking', ko: 'STT 스테이킹' },
+  pp_earn_karma: { en: 'Earn Karma', ko: '카르마 얻기' },
   pp_votes_stat: { en: 'Votes', ko: '투표 수' },
-  pp_tier_stat: { en: 'Tier', ko: '등급' },
+  pp_tier_stat: { en: 'Tier', ko: '카르마 등급' },
   pp_mock_usdt_stat: { en: 'MockUSDT', ko: 'MockUSDT' },
   pp_not_connected: { en: 'Not Connected', ko: '지갑 미연결' },
   pp_mint_mock_usdt: { en: 'Mint MockUSDT', ko: 'MockUSDT 민트' },
@@ -192,7 +194,7 @@ const STRINGS = {
   mp_karma_tier: { en: 'Karma Tier', ko: 'Karma 등급' },
   mp_total_karma: { en: 'Total Karma', ko: '총 Karma' },
   mp_tab_votes: { en: 'Vote History', ko: '투표 내역' },
-  mp_tab_karma: { en: 'Karma History', ko: 'Karma 내역' },
+  mp_tab_karma: { en: 'Karma History', ko: '카르마 내역' },
   mp_verification_title: { en: 'Open the verification portal', ko: '검증 포탈 열기' },
   mp_verification_sub: {
     en: 'Review vote receipts, results, and proof details in one place.',

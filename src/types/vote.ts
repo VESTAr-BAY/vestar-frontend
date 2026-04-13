@@ -1,3 +1,5 @@
+import type { VoteBallotPolicy } from './host'
+
 export type BadgeVariant = 'live' | 'hot' | 'new' | 'end'
 
 export interface HotVote {
@@ -86,9 +88,13 @@ export interface VoteDetailData {
   endDate: string
   endDateISO: string
   resultReveal: string
+  minKarmaTier: number
   maxChoices: number
   participantCount: number
   goalVotes: number
+  ballotPolicy?: VoteBallotPolicy
+  resetIntervalSeconds?: number
+  timezoneWindowOffset?: number
   voteFrequency: string
   voteLimit: string
   resultPublic: boolean

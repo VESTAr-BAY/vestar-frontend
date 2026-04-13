@@ -39,53 +39,6 @@ interface ProfilePanelProps {
   onClose: () => void
 }
 
-type MenuItem =
-  | {
-      kind: 'internal'
-      labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking' | 'pp_verified_organizer'
-      icon: string
-      bg: string
-      to: string
-    }
-  | {
-      kind: 'external'
-      labelKey: 'pp_my_votes' | 'pp_karma_history' | 'pp_stt_staking' | 'pp_verified_organizer'
-      icon: string
-      bg: string
-      href: string
-    }
-
-const MENU_ITEMS: MenuItem[] = [
-  {
-    kind: 'internal',
-    labelKey: 'pp_my_votes',
-    icon: completeVoteIcon,
-    bg: '#F0EDFF',
-    to: '/mypage?tab=votes',
-  },
-  {
-    kind: 'internal',
-    labelKey: 'pp_karma_history',
-    icon: karmaIcon,
-    bg: '#E8FFF0',
-    to: '/mypage?tab=karma',
-  },
-  {
-    kind: 'internal',
-    labelKey: 'pp_verified_organizer',
-    icon: verifiedIcon,
-    bg: '#EEF2FF',
-    to: '/verified',
-  },
-  {
-    kind: 'external',
-    labelKey: 'pp_stt_staking',
-    icon: sttStakingIcon,
-    bg: '#FFF5E8',
-    href: 'https://hub.status.network/stake',
-  },
-]
-
 const MOCK_USDT_MINT_AMOUNT = 1_000n * 10n ** 6n
 
 function truncateAddress(address: string): string {
@@ -102,6 +55,89 @@ function formatMockUsdtBalance(balance: bigint): string {
 
 function ActionIcon({ src, alt }: { src: string; alt: string }) {
   return <img src={src} alt={alt} className="w-6 h-6" />
+}
+
+type MenuRowProps = {
+  icon: string
+  bg: string
+  label: string
+  onClick?: () => void
+  href?: string
+  disabled?: boolean
+  trailing?: 'chevron' | 'external' | 'spinner'
+}
+
+function MenuRow({ icon, bg, label, onClick, href, disabled, trailing = 'chevron' }: MenuRowProps) {
+  const content = (
+    <>
+      <span
+        className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0"
+        style={{ background: bg }}
+      >
+        <ActionIcon src={icon} alt="" />
+      </span>
+      <span className="text-[14px] font-medium text-[#090A0B]">{label}</span>
+      <span className="ml-auto text-[#707070]">
+        {trailing === 'spinner' ? (
+          <span className="block w-4 h-4 rounded-full border-2 border-[#D1D5DB] border-t-[#7140FF] animate-spin" />
+        ) : trailing === 'external' ? (
+          <svg
+            aria-hidden="true"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <polyline points="15 3 21 3 21 9" />
+            <line x1="10" y1="14" x2="21" y2="3" />
+          </svg>
+        ) : (
+          <svg
+            aria-hidden="true"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        )}
+      </span>
+    </>
+  )
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors text-left"
+      >
+        {content}
+      </a>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-default"
+    >
+      {content}
+    </button>
+  )
 }
 
 export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
@@ -303,174 +339,73 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
         {/* Menu items */}
         <div className="flex-1 overflow-y-auto py-3 px-4">
           <div className="flex flex-col gap-1">
-            {MENU_ITEMS.map((item) => {
-              const content = (
-                <>
-                  <span
-                    className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0"
-                    style={{ background: item.bg }}
-                  >
-                    <ActionIcon src={item.icon} alt="" />
-                  </span>
-                  <span className="text-[14px] font-medium text-[#090A0B]">{t(item.labelKey)}</span>
-                  <span className="ml-auto text-[#707070]">
-                    {item.kind === 'external' ? (
-                      <svg
-                        aria-hidden="true"
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                        <polyline points="15 3 21 3 21 9" />
-                        <line x1="10" y1="14" x2="21" y2="3" />
-                      </svg>
-                    ) : (
-                      <svg
-                        aria-hidden="true"
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
-                    )}
-                  </span>
-                </>
-              )
+            <MenuRow
+              icon={completeVoteIcon}
+              bg="#F0EDFF"
+              label={t('pp_my_votes')}
+              onClick={() => {
+                navigate('/mypage?tab=votes')
+                onClose()
+              }}
+            />
 
-              if (item.kind === 'external') {
-                return (
-                  <a
-                    key={item.labelKey}
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors text-left"
-                  >
-                    {content}
-                  </a>
-                )
-              }
-
-              return (
-                <button
-                  key={item.labelKey}
-                  type="button"
-                  onClick={() => {
-                    navigate(item.to)
-                    onClose()
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors cursor-pointer text-left"
-                >
-                  {content}
-                </button>
-              )
-            })}
-
-            <button
-              type="button"
-              onClick={handleMintMockUsdt}
-              disabled={!isConnected || isMintingMockUsdt}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-default"
-            >
-              <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#FFF5E8]">
-                <ActionIcon src={mockUsdtIcon} alt="" />
-              </span>
-              <span className="text-[14px] font-medium text-[#090A0B]">
-                {isMintingMockUsdt ? t('pp_mint_mock_usdt_loading') : t('pp_mint_mock_usdt')}
-              </span>
-              <span className="ml-auto text-[#707070]">
-                {isMintingMockUsdt ? (
-                  <span className="block w-4 h-4 rounded-full border-2 border-[#D1D5DB] border-t-[#7140FF] animate-spin" />
-                ) : (
-                  <svg
-                    aria-hidden="true"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
-                )}
-              </span>
-            </button>
-
-            <button
-              type="button"
+            <MenuRow
+              icon={libraryAddIcon}
+              bg="#F0EDFF"
+              label={t('pp_host_page')}
               onClick={() => {
                 navigate('/host')
                 onClose()
               }}
               disabled={!isConnected}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors cursor-pointer text-left disabled:opacity-50 disabled:cursor-default"
-            >
-              <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#F0EDFF]">
-                <ActionIcon src={libraryAddIcon} alt="" />
-              </span>
-              <span className="text-[14px] font-medium text-[#090A0B]">{t('pp_host_page')}</span>
-              <span className="ml-auto text-[#707070]">
-                <svg
-                  aria-hidden="true"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
-              </span>
-            </button>
+            />
 
-            <button
-              type="button"
+            <MenuRow
+              icon={verifiedIcon}
+              bg="#EEF2FF"
+              label={t('pp_verified_organizer')}
+              onClick={() => {
+                navigate('/verified')
+                onClose()
+              }}
+            />
+
+            <MenuRow
+              icon={sttStakingIcon}
+              bg="#FFF5E8"
+              label={t('pp_earn_karma')}
+              href="https://hub.status.network/karma"
+              trailing="external"
+            />
+
+            <MenuRow
+              icon={karmaIcon}
+              bg="#E8FFF0"
+              label={t('pp_karma_history')}
+              onClick={() => {
+                navigate('/mypage?tab=karma')
+                onClose()
+              }}
+            />
+
+            <MenuRow
+              icon={mockUsdtIcon}
+              bg="#FFF5E8"
+              label={isMintingMockUsdt ? t('pp_mint_mock_usdt_loading') : t('pp_mint_mock_usdt')}
+              onClick={handleMintMockUsdt}
+              disabled={!isConnected || isMintingMockUsdt}
+              trailing={isMintingMockUsdt ? 'spinner' : 'chevron'}
+            />
+
+            <MenuRow
+              icon={file_download}
+              bg="#E8F0FF"
+              label={t('mp_verification_cta')}
               onClick={() => {
                 onClose()
                 navigate(verificationPortalPath)
               }}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#F7F8FA] transition-colors cursor-pointer text-left"
-            >
-              <span className="w-9 h-9 rounded-lg flex items-center justify-center text-[18px] flex-shrink-0 bg-[#E8F0FF]">
-                <ActionIcon src={file_download} alt="" />
-              </span>
-              <span className="text-[14px] font-medium text-[#090A0B]">
-                {t('mp_verification_cta')}
-              </span>
-              <span className="ml-auto text-[#707070]">
-                <svg
-                  aria-hidden="true"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
-              </span>
-            </button>
+            />
 
             <div className="h-px bg-[#E7E9ED] my-2" />
 

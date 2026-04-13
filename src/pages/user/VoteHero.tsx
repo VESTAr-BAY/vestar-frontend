@@ -1,6 +1,12 @@
+import { useEffect, useMemo, useState } from 'react'
 import verifiedIcon from '../../assets/verified.svg'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { BadgeVariant, VoteDetailData } from '../../types/vote'
+import {
+  getBallotRefreshCountdownLabel,
+  getVoteChoiceSummary,
+  getVoteFrequencySummary,
+} from '../../utils/ballotRefresh'
 import { resolveIpfsUrl } from '../../utils/ipfs'
 
 const BADGE_STYLES: Record<BadgeVariant, string> = {
@@ -23,14 +29,44 @@ interface VoteHeroProps {
 
 export function VoteHero({ vote }: VoteHeroProps) {
   const { t, lang } = useLanguage()
-  const participantLabel =
-    vote.badge === 'end'
-      ? lang === 'ko'
-        ? '명 참여'
-        : 'participants'
-      : lang === 'ko'
-        ? '명 참여 중'
-        : 'participating'
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  const participantLabel = useMemo(() => {
+    if (vote.badge === 'end') {
+      return lang === 'ko'
+        ? `${vote.participantCount.toLocaleString()}명 참여`
+        : `${vote.participantCount.toLocaleString()} participants`
+    }
+
+    return lang === 'ko'
+      ? `${vote.participantCount.toLocaleString()}명 참여 중`
+      : `${vote.participantCount.toLocaleString()} participating`
+  }, [lang, vote.badge, vote.participantCount])
+  const voteFrequencyLabel = useMemo(
+    () => getVoteFrequencySummary(vote.ballotPolicy, vote.resetIntervalSeconds, lang),
+    [lang, vote.ballotPolicy, vote.resetIntervalSeconds],
+  )
+  const voteLimitLabel = useMemo(
+    () => getVoteChoiceSummary(vote.maxChoices, lang),
+    [lang, vote.maxChoices],
+  )
+  const refreshCountdownLabel = useMemo(
+    () => getBallotRefreshCountdownLabel(vote, lang, nowMs),
+    [lang, nowMs, vote],
+  )
+
+  useEffect(() => {
+    if (vote.ballotPolicy !== 'ONE_PER_INTERVAL' || vote.badge !== 'live') {
+      return
+    }
+
+    const intervalId = window.setInterval(() => {
+      setNowMs(Date.now())
+    }, 1_000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [vote.badge, vote.ballotPolicy])
 
   return (
     <div className="relative min-h-[360px] overflow-hidden bg-[#1C1D22] px-5 pb-7 pt-[calc(var(--header-h)+24px)] [margin-top:calc(var(--header-h)*-1)]">
@@ -73,14 +109,16 @@ export function VoteHero({ vote }: VoteHeroProps) {
         <h1 className="mb-4 text-[22px] font-bold leading-tight text-white">{vote.title}</h1>
 
         <div className="mb-3 flex flex-wrap items-center gap-0 text-[12px] text-white/74">
-          <span className="font-mono font-semibold text-white">
-            {vote.participantCount.toLocaleString()} {participantLabel}
-          </span>
+          <span className="font-mono font-semibold text-white">{participantLabel}</span>
           <span className="mx-2">·</span>
-          <span>{vote.voteFrequency}</span>
+          <span>{voteFrequencyLabel}</span>
           <span className="mx-2">·</span>
-          <span>{vote.voteLimit}</span>
+          <span>{voteLimitLabel}</span>
         </div>
+
+        {refreshCountdownLabel ? (
+          <div className="text-[12px] font-medium text-white/82">{refreshCountdownLabel}</div>
+        ) : null}
       </div>
     </div>
   )
