@@ -34,6 +34,9 @@ const BADGE_LABEL: Record<BadgeVariant, string> = {
   end: 'END',
 }
 
+const VERIFIED_GREEN_ICON_FILTER =
+  'brightness(0) saturate(100%) invert(76%) sepia(13%) saturate(2082%) hue-rotate(90deg) brightness(91%) contrast(89%)'
+
 type FilterChip = {
   labelKey: 'filter_all' | 'filter_music' | 'filter_awards' | 'filter_fan' | 'filter_other'
   filter: HomeCategoryFilter
@@ -276,7 +279,7 @@ function SeriesVoteCard({
     : 'absolute inset-0 bg-gradient-to-t from-[#090A0B]/78 via-[#090A0B]/28 to-transparent'
   const titleVerifiedFilter = isEndedSeries
     ? 'grayscale(1) brightness(1.15)'
-    : 'brightness(0) saturate(100%) invert(76%) sepia(13%) saturate(2082%) hue-rotate(90deg) brightness(91%) contrast(89%)'
+    : VERIFIED_GREEN_ICON_FILTER
   const ctaClass = isEndedSeries
     ? 'inline-flex flex-shrink-0 rounded-full bg-[#E1E5EA] px-3 py-1.5 text-[11px] font-semibold text-[#5B6470]'
     : 'inline-flex flex-shrink-0 rounded-full bg-[#F0EDFF] px-3 py-1.5 text-[11px] font-semibold text-[#7140FF]'
@@ -320,7 +323,7 @@ function SeriesVoteCard({
                 style={{
                   filter: isEndedSeries
                     ? 'grayscale(1) brightness(1.2)'
-                    : 'brightness(0) saturate(100%) invert(33%) sepia(98%) saturate(400%) hue-rotate(93deg) brightness(95%) contrast(97%)',
+                    : VERIFIED_GREEN_ICON_FILTER,
                 }}
               />
             </span>

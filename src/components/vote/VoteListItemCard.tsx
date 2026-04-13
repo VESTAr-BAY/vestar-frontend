@@ -18,6 +18,9 @@ const BADGE_LABEL: Record<BadgeVariant, string> = {
   end: 'END',
 }
 
+const VERIFIED_GREEN_ICON_FILTER =
+  'brightness(0) saturate(100%) invert(76%) sepia(13%) saturate(2082%) hue-rotate(90deg) brightness(91%) contrast(89%)'
+
 interface VoteListItemCardProps {
   item: VoteListItem
   onNavigate: (id: string) => void
@@ -76,8 +79,7 @@ export function VoteListItemCard({ item, onNavigate, onPrefetch, isVoted }: Vote
             alt={t('vl_voted_alt')}
             className="w-4 h-4"
             style={{
-              filter:
-                'brightness(0) saturate(100%) invert(33%) sepia(98%) saturate(400%) hue-rotate(93deg) brightness(95%) contrast(97%)',
+              filter: VERIFIED_GREEN_ICON_FILTER,
             }}
           />
         ) : (
