@@ -1,9 +1,11 @@
+import { formatUnits } from 'viem'
 import type { Lang } from '../i18n'
 
 const UNLIMITED_PAID_DECIMAL_COST = '0.066'
 const UNLIMITED_PAID_RAW_COST = '66000'
 const FIXED_PAID_DISPLAY_COST = '100'
 const FIXED_PAID_RAW_COST = '100000000'
+const RAW_UNITS_PER_DISPLAYED_100_KRW = 66_000n
 
 // sungje : on-chain 저장값(0.066 / 66000)과 화면 표시값(100원)을 분리해서, 컨트랙트 검증 조건을 유지하면서 locale별 문구만 바꿔 보여준다.
 export function formatBallotCostLabel(
@@ -26,4 +28,22 @@ export function formatBallotCostLabel(
   }
 
   return lang === 'ko' ? normalized : `${normalized} usdt`
+}
+
+function trimFormattedAmount(value: string) {
+  if (!value.includes('.')) {
+    return value
+  }
+
+  return value.replace(/\.?0+$/, '')
+}
+
+export function formatSettlementAmount(rawAmount: bigint, lang: Lang, decimals = 6) {
+  if (lang === 'ko') {
+    const convertedWon = (rawAmount * 100n) / RAW_UNITS_PER_DISPLAYED_100_KRW
+    return `${convertedWon.toLocaleString('ko-KR')}원`
+  }
+
+  const usdtAmount = trimFormattedAmount(formatUnits(rawAmount, decimals))
+  return `${usdtAmount} USDT`
 }

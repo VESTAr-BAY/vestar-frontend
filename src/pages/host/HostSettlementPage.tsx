@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { type Address, formatUnits } from 'viem'
+import { type Address } from 'viem'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import {
   getElectionSnapshot,
@@ -9,7 +9,9 @@ import {
 } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useVoteDetail } from '../../hooks/user/useVoteDetail'
+import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
+import { formatSettlementAmount } from '../../utils/paymentDisplay'
 import { VoteHero } from '../user/VoteHero'
 import { VoteInfoSection } from '../user/VoteInfoSection'
 
@@ -19,10 +21,6 @@ function LoadingSkeleton() {
       <div className="w-8 h-8 rounded-full border-2 border-[#E7E9ED] border-t-[#7140FF] animate-spin" />
     </div>
   )
-}
-
-function formatTokenAmount(value: bigint, decimals = 6) {
-  return formatUnits(value, decimals)
 }
 
 function formatSettlementError(error: unknown) {
@@ -55,6 +53,7 @@ export function HostSettlementPage() {
   const { id = '1' } = useParams()
   const navigate = useNavigate()
   const { vote, isLoading: isVoteLoading } = useVoteDetail(id)
+  const { lang } = useLanguage()
   const { addToast } = useToast()
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient()
@@ -114,18 +113,18 @@ export function HostSettlementPage() {
     () => [
       {
         label: '총 수익',
-        value: `${formatTokenAmount(totalCollectedAmount)}`,
+        value: formatSettlementAmount(totalCollectedAmount, lang),
       },
       {
         label: '플랫폼 수수료',
-        value: `${formatTokenAmount(platformRevenueAmount)}`,
+        value: formatSettlementAmount(platformRevenueAmount, lang),
       },
       {
         label: '주최자 정산액',
-        value: `${formatTokenAmount(organizerRevenueAmount)}`,
+        value: formatSettlementAmount(organizerRevenueAmount, lang),
       },
     ],
-    [organizerRevenueAmount, platformRevenueAmount, totalCollectedAmount],
+    [lang, organizerRevenueAmount, platformRevenueAmount, totalCollectedAmount],
   )
 
   const handleSettle = async () => {
