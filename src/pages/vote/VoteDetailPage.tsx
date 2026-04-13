@@ -153,7 +153,7 @@ export function VoteDetailPage() {
   const { id = '1' } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const { vote, isLoading } = useVoteDetail(id)
+  const { vote } = useVoteDetail(id)
   const { address } = useAccount()
 
   const isGrouped = (vote?.sections?.length ?? 0) > 0
@@ -428,7 +428,7 @@ export function VoteDetailPage() {
     }
   }, [addToast, lang, switchChainAsync])
 
-  if (isLoading || !vote) return <LoadingSkeleton />
+  if (!vote) return <LoadingSkeleton />
 
   // ── Action bar label ──────────────────────────────────────────────────────
   const submitLabel = resolvedHasVoted

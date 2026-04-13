@@ -21,10 +21,11 @@ const BADGE_LABEL: Record<BadgeVariant, string> = {
 interface VoteListItemCardProps {
   item: VoteListItem
   onNavigate: (id: string) => void
+  onPrefetch?: (id: string) => void
   isVoted: boolean
 }
 
-export function VoteListItemCard({ item, onNavigate, isVoted }: VoteListItemCardProps) {
+export function VoteListItemCard({ item, onNavigate, onPrefetch, isVoted }: VoteListItemCardProps) {
   const { t } = useLanguage()
   const badgeLabel = item.badge === 'end' ? t('badge_end') : BADGE_LABEL[item.badge]
 
@@ -32,6 +33,9 @@ export function VoteListItemCard({ item, onNavigate, isVoted }: VoteListItemCard
     <button
       type="button"
       onClick={() => onNavigate(item.id)}
+      onMouseEnter={() => onPrefetch?.(item.id)}
+      onFocus={() => onPrefetch?.(item.id)}
+      onTouchStart={() => onPrefetch?.(item.id)}
       className="w-full bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px] cursor-pointer transition-[border-color,background] duration-150 hover:border-[rgba(113,64,255,0.25)] hover:bg-[#F0EDFF] active:scale-[0.99] text-left"
     >
       <div

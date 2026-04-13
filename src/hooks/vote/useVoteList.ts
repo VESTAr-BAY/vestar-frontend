@@ -4,6 +4,7 @@ import { fetchElections } from '../../api/elections'
 import type { ApiElection } from '../../api/types'
 import { HOT_VOTES } from '../../data/mockVotes'
 import { applyManifestToElection, mapToHotVote } from '../../utils/electionMapper'
+import { primeVoteDetailCacheFromElection } from '../../utils/voteDetailCache'
 import { getViewCache, setViewCache } from '../../utils/viewCache'
 import type { HotVote } from '../../types/vote'
 
@@ -67,19 +68,22 @@ export function useVoteList(): UseVoteListResult {
       .then((elections) => {
         if (cancelled || !elections) return
         return Promise.all(
-          elections.map(async (election) =>
-            applyManifestToElection(
-              election,
-              await fetchCandidateManifest(
+          elections.map(async (election) => ({
+              manifest: await fetchCandidateManifest(
                 election.candidateManifestUri,
                 election.candidateManifestHash,
               ),
-            ),
-          ),
+              election,
+            })),
         )
       })
-      .then((elections) => {
-        if (cancelled || !elections) return
+      .then((entries) => {
+        if (cancelled || !entries) return
+        const elections = entries.map(({ election, manifest }) => {
+          const hydratedElection = applyManifestToElection(election, manifest)
+          primeVoteDetailCacheFromElection(hydratedElection, manifest)
+          return hydratedElection
+        })
         // sungje : HOT 리스트는 manifest 반영 후 참여자 1명 이상인 투표만 남기고 참여 수 기준으로 정렬한다.
         const hot = [...elections]
           .filter((election) => getSubmissionCount(election) >= 1)

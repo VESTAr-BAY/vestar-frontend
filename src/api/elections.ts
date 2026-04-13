@@ -17,6 +17,8 @@ import {
   mergeOptimisticElections,
 } from '../utils/optimisticVotes'
 
+const electionDetailRequestCache = new Map<string, Promise<ApiElection>>()
+
 export interface FetchElectionsParams {
   seriesId?: string
   onchainElectionId?: string
@@ -86,7 +88,21 @@ export function fetchElectionDetail(id: string): Promise<ApiElection> {
     return Promise.resolve(optimisticElection)
   }
 
-  return apiFetch<ApiElection>(`/elections/${id}`)
+  const cachedRequest = electionDetailRequestCache.get(id)
+  if (cachedRequest) {
+    return cachedRequest
+  }
+
+  const request = apiFetch<ApiElection>(`/elections/${id}`).finally(() => {
+    electionDetailRequestCache.delete(id)
+  })
+
+  electionDetailRequestCache.set(id, request)
+  return request
+}
+
+export function prefetchElectionDetail(id: string) {
+  void fetchElectionDetail(id).catch(() => {})
 }
 
 export function fetchLiveTally(electionId: string): Promise<ApiLiveTallyRow[]> {

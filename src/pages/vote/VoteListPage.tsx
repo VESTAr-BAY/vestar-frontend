@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import completeVoteIcon from '../../assets/complete_vote.svg'
 import verifiedIcon from '../../assets/verified.svg'
+import { prefetchElectionDetail } from '../../api/elections'
 import { HotCardSkeleton } from '../../components/shared/HotCardSkeleton'
 import { InfiniteScrollSentinel } from '../../components/shared/InfiniteScrollSentinel'
 import { VoteCardSkeleton } from '../../components/shared/VoteCardSkeleton'
@@ -152,7 +153,15 @@ function getHeroCopy(filter: HomeCategoryFilter, lang: string) {
   }
 }
 
-function HotVoteCard({ vote, onNavigate }: { vote: HotVote; onNavigate: (vote: HotVote) => void }) {
+function HotVoteCard({
+  vote,
+  onNavigate,
+  onPrefetch,
+}: {
+  vote: HotVote
+  onNavigate: (vote: HotVote) => void
+  onPrefetch?: (vote: HotVote) => void
+}) {
   const { t, lang } = useLanguage()
   const badgeLabel = vote.badge === 'end' ? t('badge_end') : BADGE_LABEL[vote.badge]
 
@@ -160,6 +169,9 @@ function HotVoteCard({ vote, onNavigate }: { vote: HotVote; onNavigate: (vote: H
     <button
       type="button"
       onClick={() => onNavigate(vote)}
+      onMouseEnter={() => onPrefetch?.(vote)}
+      onFocus={() => onPrefetch?.(vote)}
+      onTouchStart={() => onPrefetch?.(vote)}
       className="flex-shrink-0 w-[200px] bg-white border border-[#E7E9ED] rounded-2xl overflow-hidden cursor-pointer transition-[transform,box-shadow,border-color] duration-[180ms] hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(113,64,255,0.10)] hover:border-[rgba(113,64,255,0.25)] active:scale-[0.98] text-left"
     >
       <div
@@ -207,10 +219,12 @@ function HotVoteCard({ vote, onNavigate }: { vote: HotVote; onNavigate: (vote: H
 function SeriesVoteCard({
   group,
   onNavigate,
+  onPrefetch,
   hasVoted,
 }: {
   group: VoteSeriesGroup
   onNavigate: (group: VoteSeriesGroup) => void
+  onPrefetch?: (group: VoteSeriesGroup) => void
   hasVoted: boolean
 }) {
   const { lang } = useLanguage()
@@ -267,7 +281,14 @@ function SeriesVoteCard({
     : 'inline-flex flex-shrink-0 rounded-full bg-[#F0EDFF] px-3 py-1.5 text-[11px] font-semibold text-[#7140FF]'
 
   return (
-    <button type="button" onClick={() => onNavigate(group)} className={cardClass}>
+    <button
+      type="button"
+      onClick={() => onNavigate(group)}
+      onMouseEnter={() => onPrefetch?.(group)}
+      onFocus={() => onPrefetch?.(group)}
+      onTouchStart={() => onPrefetch?.(group)}
+      className={cardClass}
+    >
       <div className={bannerClass}>
         {group.imageUrl ? (
           <img
@@ -361,16 +382,18 @@ function SeriesVoteCard({
 export function VoteListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const seriesTab = searchParams.get('tab') === 'ended' ? 'ended' : 'active'
   const { isVoted } = useVotedVotes()
   const { isLoading: isHotLoading, hotVotes } = useVoteList()
   const {
     allItems,
     items,
     isLoading: isItemsLoading,
+    isLoadingEnded,
     hasMore,
     isLoadingMore,
     loadMore,
-  } = useInfiniteVotes()
+  } = useInfiniteVotes('all', { includeEnded: seriesTab === 'ended' })
   const { t, lang } = useLanguage()
   const activeCategory = useMemo<HomeCategoryFilter>(() => {
     const category = searchParams.get('category')
@@ -378,7 +401,6 @@ export function VoteListPage() {
       ? (category as HomeCategoryFilter)
       : 'all'
   }, [searchParams])
-  const seriesTab = searchParams.get('tab') === 'ended' ? 'ended' : 'active'
   const activeVisibilityFilter =
     searchParams.get('visibility') === 'OPEN' || searchParams.get('visibility') === 'PRIVATE'
       ? (searchParams.get('visibility') as 'OPEN' | 'PRIVATE')
@@ -419,13 +441,27 @@ export function VoteListPage() {
   ]
 
   const handleHotNavigate = (vote: HotVote) => {
+    handleHotPrefetch(vote)
     navigate(`/vote/${vote.id}`)
+  }
+
+  const handleVotePrefetch = (voteId: string) => {
+    prefetchElectionDetail(voteId)
+  }
+
+  const handleHotPrefetch = (vote: HotVote) => {
+    if (vote.badge === 'end') {
+      return
+    }
+
+    handleVotePrefetch(vote.id)
   }
 
   const handleSeriesNavigate = (group: VoteSeriesGroup) => {
     const targetPath = buildVoteSeriesTargetPath(group)
 
     if (group.items.length === 1) {
+      handleSeriesPrefetch(group)
       navigate(targetPath)
       return
     }
@@ -438,6 +474,19 @@ export function VoteListPage() {
         imageUrl: group.imageUrl,
       },
     })
+  }
+
+  const handleSeriesPrefetch = (group: VoteSeriesGroup) => {
+    if (group.items.length !== 1) {
+      return
+    }
+
+    const [target] = group.items
+    if (!target || target.badge === 'end') {
+      return
+    }
+
+    handleVotePrefetch(target.id)
   }
 
   const visibleVoteItems = items.filter((item) => {
@@ -467,7 +516,9 @@ export function VoteListPage() {
   const groupedItems = seriesTab === 'active' ? visibleActiveGroups : visibleEndedGroups
   const hasMoreSeries = groupedItems.length < totalGroups.length
   const shouldShowHotSection = isHotLoading || visibleHotVotes.length > 0
-  const shouldShowEmptyState = !isItemsLoading && groupedItems.length === 0 && !hasMoreSeries
+  const isSeriesListLoading =
+    isItemsLoading || (seriesTab === 'ended' && isLoadingEnded && groupedItems.length === 0)
+  const shouldShowEmptyState = !isSeriesListLoading && groupedItems.length === 0 && !hasMoreSeries
 
   return (
     <>
@@ -565,7 +616,12 @@ export function VoteListPage() {
                     <HotCardSkeleton key={i} />
                   ))
                 : visibleHotVotes.map((vote) => (
-                    <HotVoteCard key={vote.id} vote={vote} onNavigate={handleHotNavigate} />
+                    <HotVoteCard
+                      key={vote.id}
+                      vote={vote}
+                      onNavigate={handleHotNavigate}
+                      onPrefetch={handleHotPrefetch}
+                    />
                   ))}
             </div>
 
@@ -652,7 +708,7 @@ export function VoteListPage() {
           </div>
         </div>
         <div className="px-5 flex flex-col gap-4 pb-2">
-          {isItemsLoading ? (
+          {isSeriesListLoading ? (
             Array.from({ length: 6 }, (_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders have no stable id
               <VoteCardSkeleton key={i} />
@@ -663,6 +719,7 @@ export function VoteListPage() {
                 key={group.key}
                 group={group}
                 onNavigate={handleSeriesNavigate}
+                onPrefetch={handleSeriesPrefetch}
                 hasVoted={group.items.some((item) => isVoted(item.id))}
               />
             ))
@@ -673,7 +730,7 @@ export function VoteListPage() {
           ) : null}
         </div>
 
-        {!isItemsLoading && !shouldShowEmptyState && (
+        {!isSeriesListLoading && !shouldShowEmptyState && (
           <InfiniteScrollSentinel
             onVisible={loadMore}
             isLoading={isLoadingMore}

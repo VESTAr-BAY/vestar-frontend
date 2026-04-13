@@ -4,6 +4,7 @@ import { fetchElections } from '../../api/elections'
 import { VOTE_ITEMS } from '../../data/mockVotes'
 import { applyManifestToElection, mapToVoteListItem } from '../../utils/electionMapper'
 import { mergeOptimisticElections } from '../../utils/optimisticVotes'
+import { primeVoteDetailCacheFromElection } from '../../utils/voteDetailCache'
 import { getViewCache, setViewCache } from '../../utils/viewCache'
 import type { ApiElection } from '../../api/types'
 import type { VoteListItem } from '../../types/vote'
@@ -13,14 +14,28 @@ const VOTE_LIST_CACHE_TTL_MS = 15_000
 
 export type VoteFilter = 'all' | 'live' | 'hot' | 'new' | 'popular'
 
+export interface UseInfiniteVotesOptions {
+  includeEnded?: boolean
+}
+
 export interface UseInfiniteVotesResult {
   allItems: VoteListItem[]
   items: VoteListItem[]
   isLoading: boolean
+  isLoadingEnded: boolean
   hasMore: boolean
   isLoadingMore: boolean
   loadMore: () => void
 }
+
+const ACTIVE_FIRST_ONCHAIN_STATES = ['ACTIVE', 'SCHEDULED'] as const
+const ENDED_ONCHAIN_STATES = [
+  'CLOSED',
+  'KEY_REVEAL_PENDING',
+  'KEY_REVEALED',
+  'FINALIZED',
+  'CANCELLED',
+] as const
 
 /** Maps frontend filter chip to the onchain_state query param */
 function filterToApiState(filter: VoteFilter): string | undefined {
@@ -80,14 +95,41 @@ function sortElections(elections: ApiElection[], filter: VoteFilter): ApiElectio
   return byNewest
 }
 
+function dedupeElectionsById(elections: ApiElection[]) {
+  return Array.from(new Map(elections.map((election) => [election.id, election])).values())
+}
+
+async function hydrateElections(elections: ApiElection[]) {
+  return Promise.all(
+    elections.map(async (election) => {
+      const manifest = await fetchCandidateManifest(
+        election.candidateManifestUri,
+        election.candidateManifestHash,
+      )
+      const hydratedElection = applyManifestToElection(election, manifest)
+      primeVoteDetailCacheFromElection(hydratedElection, manifest)
+      return hydratedElection
+    }),
+  )
+}
+
+function toVoteListItems(elections: ApiElection[]) {
+  return elections.map((election, index) => mapToVoteListItem(election, index))
+}
+
 /**
  * Fetches a paginated + filtered list of elections.
  * Falls back to mock data when the API is unavailable.
  */
-export function useInfiniteVotes(filter: VoteFilter = 'all'): UseInfiniteVotesResult {
+export function useInfiniteVotes(
+  filter: VoteFilter = 'all',
+  options: UseInfiniteVotesOptions = {},
+): UseInfiniteVotesResult {
+  const includeEnded = options.includeEnded ?? true
   const [allItems, setAllItems] = useState<VoteListItem[]>([])
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingEnded, setIsLoadingEnded] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   // Reset to page 1 whenever the filter changes
@@ -114,45 +156,109 @@ export function useInfiniteVotes(filter: VoteFilter = 'all'): UseInfiniteVotesRe
     } else {
       setIsLoading(true)
     }
-    fetchElections({ onchainState })
-      .then((elections) =>
-        Promise.all(
-          elections.map(async (election) =>
-            applyManifestToElection(
-              election,
-              await fetchCandidateManifest(
-                election.candidateManifestUri,
-                election.candidateManifestHash,
-              ),
-            ),
-          ),
-        ),
-      )
-      .then((elections) => {
-        if (cancelled) return
-        const sorted = sortElections(elections, filter)
-        const nextItems = sorted.map((e, i) => mapToVoteListItem(e, i))
-        setAllItems(nextItems)
-        setViewCache(cacheKey, nextItems)
-      })
-      .catch(() => {
-        if (cancelled) return
-        if (cachedItems) {
-          setAllItems(cachedItems)
+
+    if (filter === 'all') {
+      setIsLoadingEnded(includeEnded)
+
+      const loadAllVotes = async () => {
+        let priorityElections: ApiElection[] = []
+
+        try {
+          const priorityRaw = dedupeElectionsById(
+            (
+              await Promise.all(
+                ACTIVE_FIRST_ONCHAIN_STATES.map((state) => fetchElections({ onchainState: state })),
+              )
+            ).flat(),
+          )
+
+          if (cancelled) return
+
+          priorityElections = await hydrateElections(priorityRaw)
+          if (cancelled) return
+
+          const priorityItems = toVoteListItems(sortElections(priorityElections, filter))
+          setAllItems(priorityItems)
+          setViewCache(cacheKey, priorityItems)
+          setIsLoading(false)
+
+          if (!includeEnded) {
+            setIsLoadingEnded(false)
+            return
+          }
+        } catch {
+          if (cancelled) return
+          if (cachedItems) {
+            setAllItems(cachedItems)
+          } else {
+            const mockFiltered =
+              optimisticItems.length > 0 ? optimisticItems : applyMockFilter(VOTE_ITEMS, filter)
+            setAllItems(mockFiltered)
+          }
+          setIsLoading(false)
+          setIsLoadingEnded(false)
           return
         }
-        const mockFiltered =
-          optimisticItems.length > 0 ? optimisticItems : applyMockFilter(VOTE_ITEMS, filter)
-        setAllItems(mockFiltered)
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false)
-      })
+
+        try {
+          const endedRaw = dedupeElectionsById(
+            (
+              await Promise.all(
+                ENDED_ONCHAIN_STATES.map((state) => fetchElections({ onchainState: state })),
+              )
+            ).flat(),
+          )
+
+          if (cancelled) return
+
+          const endedElections = await hydrateElections(endedRaw)
+          if (cancelled) return
+
+          const nextItems = toVoteListItems(
+            sortElections(dedupeElectionsById([...priorityElections, ...endedElections]), filter),
+          )
+          setAllItems(nextItems)
+          setViewCache(cacheKey, nextItems)
+        } catch {
+          if (cancelled) return
+        } finally {
+          if (!cancelled) {
+            setIsLoadingEnded(false)
+          }
+        }
+      }
+
+      void loadAllVotes()
+    } else {
+      setIsLoadingEnded(false)
+      fetchElections({ onchainState })
+        .then((elections) => hydrateElections(elections))
+        .then((elections) => {
+          if (cancelled) return
+          const sorted = sortElections(elections, filter)
+          const nextItems = toVoteListItems(sorted)
+          setAllItems(nextItems)
+          setViewCache(cacheKey, nextItems)
+        })
+        .catch(() => {
+          if (cancelled) return
+          if (cachedItems) {
+            setAllItems(cachedItems)
+            return
+          }
+          const mockFiltered =
+            optimisticItems.length > 0 ? optimisticItems : applyMockFilter(VOTE_ITEMS, filter)
+          setAllItems(mockFiltered)
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoading(false)
+        })
+    }
 
     return () => {
       cancelled = true
     }
-  }, [filter])
+  }, [filter, includeEnded])
 
   const items = useMemo(() => allItems.slice(0, page * PAGE_SIZE), [allItems, page])
   const hasMore = items.length < allItems.length
@@ -166,7 +272,7 @@ export function useInfiniteVotes(filter: VoteFilter = 'all'): UseInfiniteVotesRe
     }, 300)
   }, [hasMore, isLoadingMore])
 
-  return { allItems, items, isLoading, hasMore, isLoadingMore, loadMore }
+  return { allItems, items, isLoading, isLoadingEnded, hasMore, isLoadingMore, loadMore }
 }
 
 // ── Mock fallback filter (mirrors old applyFilter) ────────────────────────────

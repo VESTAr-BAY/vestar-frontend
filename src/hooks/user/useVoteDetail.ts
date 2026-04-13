@@ -9,15 +9,11 @@ import {
 } from '../../contracts/vestar/actions'
 import { mapToVoteDetail, resolveElectionCandidates } from '../../utils/electionMapper'
 import { findOptimisticElection } from '../../utils/optimisticVotes'
-import { getViewCache, setViewCache } from '../../utils/viewCache'
 import type { VoteDetailData } from '../../types/vote'
-
-type VoteDetailCacheValue = {
-  participantCount: number
-  vote: VoteDetailData
-}
-
-const VOTE_DETAIL_CACHE_TTL_MS = 15_000
+import {
+  getCachedVoteDetail,
+  setCachedVoteDetail,
+} from '../../utils/voteDetailCache'
 
 async function fetchContractState(electionAddress: Address) {
   try {
@@ -61,8 +57,7 @@ export function useVoteDetail(id: string): UseVoteDetailResult {
 
   useEffect(() => {
     let cancelled = false
-    const cacheKey = `vote-detail:${id}`
-    const cached = getViewCache<VoteDetailCacheValue>(cacheKey, VOTE_DETAIL_CACHE_TTL_MS)
+    const cached = getCachedVoteDetail(id)
     const optimisticElection = findOptimisticElection(id)
 
     if (cached) {
@@ -82,18 +77,32 @@ export function useVoteDetail(id: string): UseVoteDetailResult {
       .then(async (election) => {
         if (cancelled) return
 
+        if (!cached && !optimisticElection) {
+          const previewVote = mapToVoteDetail(election)
+          setVote(previewVote)
+          setParticipantCount(previewVote.participantCount)
+          setCachedVoteDetail(id, {
+            vote: previewVote,
+            participantCount: previewVote.participantCount,
+          })
+          setIsLoading(false)
+        }
+
         let contractState: number | undefined
         let contractTotalSubmissions: bigint | undefined
         let candidateVotes: Map<string, bigint> | undefined
-        const manifest = await fetchCandidateManifest(
+        const manifestPromise = fetchCandidateManifest(
           election.candidateManifestUri,
           election.candidateManifestHash,
         )
 
         if (election.onchainElectionAddress) {
           const address = election.onchainElectionAddress as Address
-          const resolvedCandidates = resolveElectionCandidates(election, manifest)
           const contractDataPromise = fetchContractState(address)
+          const manifestForCandidates = await manifestPromise
+          if (cancelled) return
+
+          const resolvedCandidates = resolveElectionCandidates(election, manifestForCandidates)
           const candidateVotesPromise =
             election.visibilityMode === 'OPEN'
               ? fetchCandidateVotes(
@@ -116,6 +125,8 @@ export function useVoteDetail(id: string): UseVoteDetailResult {
 
         if (cancelled) return
 
+        const manifest = await manifestPromise
+
         const mapped = mapToVoteDetail(
           election,
           contractState,
@@ -125,7 +136,7 @@ export function useVoteDetail(id: string): UseVoteDetailResult {
         )
         setVote(mapped)
         setParticipantCount(mapped.participantCount)
-        setViewCache(cacheKey, {
+        setCachedVoteDetail(id, {
           vote: mapped,
           participantCount: mapped.participantCount,
         })
@@ -159,7 +170,7 @@ export function useVoteDetail(id: string): UseVoteDetailResult {
         .then((summary) => {
           const nextParticipantCount = Number(summary.totalSubmissions)
           setParticipantCount(nextParticipantCount)
-          setViewCache(`vote-detail:${vote.id}`, {
+          setCachedVoteDetail(vote.id, {
             vote,
             participantCount: nextParticipantCount,
           })

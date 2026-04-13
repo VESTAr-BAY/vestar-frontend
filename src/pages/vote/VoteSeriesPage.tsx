@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 import verifiedIcon from '../../assets/verified.svg'
 import { fetchCandidateManifest } from '../../api/candidateManifest'
-import { fetchElections } from '../../api/elections'
+import { fetchElections, prefetchElectionDetail } from '../../api/elections'
 import { VoteListItemCard } from '../../components/vote/VoteListItemCard'
 import { VoteCardSkeleton } from '../../components/shared/VoteCardSkeleton'
 import { useVotedVotes } from '../../hooks/useVotedVotes'
@@ -10,6 +10,7 @@ import { VOTE_ITEMS } from '../../data/mockVotes'
 import { useLanguage } from '../../providers/LanguageProvider'
 import type { VoteListItem } from '../../types/vote'
 import { applyManifestToElection, mapToVoteListItem } from '../../utils/electionMapper'
+import { primeVoteDetailCacheFromElection } from '../../utils/voteDetailCache'
 import {
   buildVoteTargetPath,
   groupVoteItemsBySeries,
@@ -39,15 +40,15 @@ export function VoteSeriesPage() {
     fetchElections()
       .then((elections) =>
         Promise.all(
-          elections.map(async (election) =>
-            applyManifestToElection(
-              election,
-              await fetchCandidateManifest(
-                election.candidateManifestUri,
-                election.candidateManifestHash,
-              ),
-            ),
-          ),
+          elections.map(async (election) => {
+            const manifest = await fetchCandidateManifest(
+              election.candidateManifestUri,
+              election.candidateManifestHash,
+            )
+            const hydratedElection = applyManifestToElection(election, manifest)
+            primeVoteDetailCacheFromElection(hydratedElection, manifest)
+            return hydratedElection
+          }),
         ),
       )
       .then((elections) => {
@@ -81,6 +82,14 @@ export function VoteSeriesPage() {
   const seriesTitle = seriesGroup?.title ?? locationState.title ?? t('vs_label')
   const seriesHost = seriesGroup?.host ?? locationState.host
   const seriesVerified = seriesGroup?.verified ?? locationState.verified
+  const handleVotePrefetch = (voteId: string) => {
+    const target = seriesGroup?.items.find((candidate) => candidate.id === voteId)
+    if (!target || target.badge === 'end') {
+      return
+    }
+
+    prefetchElectionDetail(voteId)
+  }
 
   return (
     <div className="bg-[#FFFFFF] min-h-screen">
@@ -170,6 +179,7 @@ export function VoteSeriesPage() {
             <VoteListItemCard
               key={item.id}
               item={item}
+              onPrefetch={handleVotePrefetch}
               onNavigate={(id) => {
                 const target = seriesGroup.items.find((candidate) => candidate.id === id)
                 if (!target) return
