@@ -131,9 +131,13 @@ export interface UseMyKarmaResult {
 
 export function useMyKarma(): UseMyKarmaResult {
   const { address, isConnected } = useAccount()
-  const [total, setTotal] = useState(0)
-  const [tierId, setTierId] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
+  const initialCachedProfile =
+    isConnected && address ? readFreshCachedKarmaProfile(address) : null
+  const [total, setTotal] = useState(() => initialCachedProfile?.total ?? 0)
+  const [tierId, setTierId] = useState(() => initialCachedProfile?.tierId ?? 0)
+  const [isLoading, setIsLoading] = useState(
+    () => Boolean(isConnected && address && !initialCachedProfile),
+  )
   const [error, setError] = useState<Error | undefined>(undefined)
 
   const fetchKarma = useCallback(

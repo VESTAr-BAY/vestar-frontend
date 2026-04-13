@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
+import { useAccount } from 'wagmi'
 import completeVoteIcon from '../../assets/complete_vote.svg'
 import verifiedIcon from '../../assets/verified.svg'
 import { prefetchElectionDetail } from '../../api/elections'
@@ -10,7 +11,7 @@ import { useVotedVotes } from '../../hooks/useVotedVotes'
 import { useInfiniteVotes } from '../../hooks/vote/useInfiniteVotes'
 import { useVoteList } from '../../hooks/vote/useVoteList'
 import { useLanguage } from '../../providers/LanguageProvider'
-import type { BadgeVariant, HotVote } from '../../types/vote'
+import type { BadgeVariant, HotVote, VoteListItem } from '../../types/vote'
 import { resolveIpfsUrl } from '../../utils/ipfs'
 import {
   buildVoteSeriesTargetPath,
@@ -382,6 +383,7 @@ function SeriesVoteCard({
 export function VoteListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { address } = useAccount()
   const seriesTab = searchParams.get('tab') === 'ended' ? 'ended' : 'active'
   const { isVoted } = useVotedVotes()
   const { isLoading: isHotLoading, hotVotes } = useVoteList()
@@ -445,8 +447,12 @@ export function VoteListPage() {
     navigate(`/vote/${vote.id}`)
   }
 
-  const handleVotePrefetch = (voteId: string) => {
-    prefetchElectionDetail(voteId)
+  const handleVotePrefetch = (item: VoteListItem) => {
+    if (item.badge === 'end') {
+      return
+    }
+
+    prefetchElectionDetail(item.id, { voterAddress: address })
   }
 
   const handleHotPrefetch = (vote: HotVote) => {
@@ -454,7 +460,7 @@ export function VoteListPage() {
       return
     }
 
-    handleVotePrefetch(vote.id)
+    prefetchElectionDetail(vote.id, { voterAddress: address })
   }
 
   const handleSeriesNavigate = (group: VoteSeriesGroup) => {
@@ -486,7 +492,7 @@ export function VoteListPage() {
       return
     }
 
-    handleVotePrefetch(target.id)
+    handleVotePrefetch(target)
   }
 
   const visibleVoteItems = items.filter((item) => {

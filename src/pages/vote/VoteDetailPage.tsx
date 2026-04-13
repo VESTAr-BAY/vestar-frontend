@@ -6,7 +6,6 @@ import completeVoteIcon from '../../assets/complete_vote.svg'
 import reportProblemIcon from '../../assets/report_problem.svg'
 import { VoteDetailHeaderContext } from '../../components/layout/VoteDetailLayout'
 import { BottomSheet } from '../../components/shared/BottomSheet'
-import { getElectionVoterSnapshot } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useCandidateSelection } from '../../hooks/user/useCandidateSelection'
 import { useMyKarma } from '../../hooks/user/useMyKarma'
@@ -25,6 +24,7 @@ import {
   getVoteSubmissionBlockButtonLabel,
   resolveVoteSubmissionBlockReason,
 } from '../../utils/voteEligibility'
+import { fetchCachedVoterSnapshot, readCachedVoterSnapshot } from '../../utils/voterSnapshotCache'
 import { invalidateViewCache } from '../../utils/viewCache'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 import { CandidateSection, GroupedCandidateSection } from '../user/CandidateSection'
@@ -54,6 +54,12 @@ interface VoteHistoryLocationState {
   historySelectionCandidateKeys?: string[]
   historySelectionLabel?: string
   historyInvalidReason?: string | null
+}
+
+type EligibilitySnapshotState = {
+  key: string | null
+  canSubmitBallot: boolean | null
+  remainingBallots?: number
 }
 
 function DangerConfirmModal({
@@ -179,8 +185,11 @@ export function VoteDetailPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [dangerModalOpen, setDangerModalOpen] = useState(false)
   const [hasVoted, setHasVoted] = useState(() => isVoted(id))
-  const [canSubmitByEligibility, setCanSubmitByEligibility] = useState(true)
-  const [remainingBallots, setRemainingBallots] = useState<number | undefined>(undefined)
+  const [eligibilitySnapshot, setEligibilitySnapshot] = useState<EligibilitySnapshotState>({
+    key: null,
+    canSubmitBallot: null,
+    remainingBallots: undefined,
+  })
 
   const { scrollState } = useContext(VoteDetailHeaderContext)
   const chainId = useChainId()
@@ -222,17 +231,41 @@ export function VoteDetailPage() {
     vote?.paymentMode === 'PAID' && vote.costPerBallot && vote.costPerBallot !== '0'
       ? `${sectionSelection.selectedCount} ${lang === 'ko' ? `섹션 선택됨 · ${formatBallotCostLabel(vote.costPerBallot, lang)}` : `sections selected · ${formatBallotCostLabel(vote.costPerBallot, lang)}`}`
       : `${sectionSelection.selectedCount} ${lang === 'ko' ? '섹션 선택됨 · 무료' : 'sections selected · free'}`
+  const eligibilitySnapshotKey =
+    address && vote?.electionAddress
+      ? `${vote.electionAddress.toLowerCase()}:${address.toLowerCase()}`
+      : null
+  const cachedVoterSnapshot = useMemo(
+    () =>
+      address && vote?.electionAddress
+        ? readCachedVoterSnapshot(vote.electionAddress as Address, address as Address)
+        : null,
+    [address, vote?.electionAddress],
+  )
+  const canSubmitByEligibility =
+    eligibilitySnapshot.key === eligibilitySnapshotKey
+      ? eligibilitySnapshot.canSubmitBallot
+      : null
+  const remainingBallots =
+    eligibilitySnapshot.key === eligibilitySnapshotKey
+      ? eligibilitySnapshot.remainingBallots
+      : undefined
+  const shouldApplyEligibilityGate = Boolean(address && vote?.electionAddress)
+  const isEligibilityPending =
+    shouldApplyEligibilityGate &&
+    (canSubmitByEligibility === null || ((vote?.minKarmaTier ?? 0) > 0 && isKarmaLoading))
   const eligibilityBlockReason = useMemo(
     () =>
       resolveVoteSubmissionBlockReason({
         vote,
-        canSubmitBallot: canSubmitByEligibility,
+        canSubmitBallot: canSubmitByEligibility ?? false,
         remainingBallots,
         currentTierId: address && !isKarmaLoading ? tierId : undefined,
       }),
     [address, canSubmitByEligibility, isKarmaLoading, remainingBallots, tierId, vote],
   )
-  const resolvedHasVoted = isHistorySelectionView || (hasVoted && !canSubmitByEligibility)
+  const resolvedHasVoted =
+    isHistorySelectionView || (hasVoted && shouldApplyEligibilityGate && canSubmitByEligibility === false)
   const showManualWalletOpen = state === 'awaiting_signature' && sheetOpen && isMobileExternalBrowser()
   const shouldHideActionBar = sheetOpen && !resolvedHasVoted && !isEnded
 
@@ -296,35 +329,60 @@ export function VoteDetailPage() {
 
   const votedSectionCount = votedCandidateIds?.size ?? 0
   const activeCanSubmit =
-    (isGrouped ? sectionSelection.canSubmit : canSubmit) && canSubmitByEligibility
+    !isEligibilityPending &&
+    (isGrouped ? sectionSelection.canSubmit : canSubmit) &&
+    (!shouldApplyEligibilityGate || canSubmitByEligibility === true)
 
   useEffect(() => {
     let cancelled = false
     const submissionTxHash = txHash
     void submissionTxHash
 
-    if (!vote?.electionAddress || !address) {
-      setCanSubmitByEligibility(true)
-      setRemainingBallots(undefined)
+    if (!vote?.electionAddress || !address || !eligibilitySnapshotKey) {
+      setEligibilitySnapshot({
+        key: null,
+        canSubmitBallot: null,
+        remainingBallots: undefined,
+      })
       return
     }
 
-    getElectionVoterSnapshot(vote.electionAddress as Address, address as Address)
+    if (cachedVoterSnapshot) {
+      setEligibilitySnapshot({
+        key: eligibilitySnapshotKey,
+        canSubmitBallot: cachedVoterSnapshot.canSubmitBallot,
+        remainingBallots: cachedVoterSnapshot.remainingBallots,
+      })
+    } else {
+      setEligibilitySnapshot({
+        key: eligibilitySnapshotKey,
+        canSubmitBallot: null,
+        remainingBallots: undefined,
+      })
+    }
+
+    fetchCachedVoterSnapshot(vote.electionAddress as Address, address as Address)
       .then((snapshot) => {
         if (cancelled) return
-        setCanSubmitByEligibility(snapshot.canSubmitBallot)
-        setRemainingBallots(snapshot.remainingBallots)
+        setEligibilitySnapshot({
+          key: eligibilitySnapshotKey,
+          canSubmitBallot: snapshot.canSubmitBallot,
+          remainingBallots: snapshot.remainingBallots,
+        })
       })
       .catch(() => {
         if (cancelled) return
-        setCanSubmitByEligibility(true)
-        setRemainingBallots(undefined)
+        setEligibilitySnapshot({
+          key: eligibilitySnapshotKey,
+          canSubmitBallot: true,
+          remainingBallots: undefined,
+        })
       })
 
     return () => {
       cancelled = true
     }
-  }, [address, txHash, vote?.electionAddress])
+  }, [address, cachedVoterSnapshot, eligibilitySnapshotKey, txHash, vote?.electionAddress])
 
   useEffect(() => {
     if (!errorMessage) return
@@ -446,7 +504,9 @@ export function VoteDetailPage() {
     : isGrouped
       ? activeCanSubmit
         ? groupedSelectionLabel
-        : canSubmitByEligibility
+        : isEligibilityPending
+          ? t('vd_checking_eligibility')
+          : !shouldApplyEligibilityGate || canSubmitByEligibility
           ? t('vd_select_section')
           : getVoteSubmissionBlockButtonLabel(eligibilityBlockReason, lang, vote) ??
             (lang === 'ko'
@@ -458,7 +518,9 @@ export function VoteDetailPage() {
               ? `${withKoreanParticle(selectedCandidate?.name ?? '후보', '을/를')} 선택하기`
               : `Vote for "${selectedCandidate?.name}"`
           }`
-        : canSubmitByEligibility
+        : isEligibilityPending
+          ? t('vd_checking_eligibility')
+          : !shouldApplyEligibilityGate || canSubmitByEligibility
           ? t('vd_select_candidate')
           : getVoteSubmissionBlockButtonLabel(eligibilityBlockReason, lang, vote) ??
             (lang === 'ko'

@@ -1,7 +1,9 @@
 import type { Address } from 'viem'
+import { getElectionVoterSnapshot } from '../contracts/vestar/actions'
 
 const VOTER_SNAPSHOT_CACHE_PREFIX = 'vestar_voter_snapshot:'
 const VOTER_SNAPSHOT_TTL_MS = 15_000
+const voterSnapshotRequests = new Map<string, Promise<CachedVoterSnapshot>>()
 
 export interface CachedVoterSnapshot {
   canSubmitBallot: boolean
@@ -59,4 +61,46 @@ export function writeCachedVoterSnapshot(
   } catch {
     return
   }
+}
+
+export async function fetchCachedVoterSnapshot(
+  electionAddress: Address,
+  voterAddress: Address,
+): Promise<CachedVoterSnapshot> {
+  const cached = readCachedVoterSnapshot(electionAddress, voterAddress)
+  if (cached) {
+    return cached
+  }
+
+  const cacheKey = makeSnapshotCacheKey(electionAddress, voterAddress)
+  const existingRequest = voterSnapshotRequests.get(cacheKey)
+  if (existingRequest) {
+    return existingRequest
+  }
+
+  const request = getElectionVoterSnapshot(electionAddress, voterAddress)
+    .then((snapshot) => {
+      const nextSnapshot: CachedVoterSnapshot = {
+        canSubmitBallot: snapshot.canSubmitBallot,
+        remainingBallots: snapshot.remainingBallots,
+        updatedAt: Date.now(),
+      }
+
+      writeCachedVoterSnapshot(electionAddress, voterAddress, {
+        canSubmitBallot: nextSnapshot.canSubmitBallot,
+        remainingBallots: nextSnapshot.remainingBallots,
+      })
+
+      return nextSnapshot
+    })
+    .finally(() => {
+      voterSnapshotRequests.delete(cacheKey)
+    })
+
+  voterSnapshotRequests.set(cacheKey, request)
+  return request
+}
+
+export function prefetchVoterSnapshot(electionAddress: Address, voterAddress: Address) {
+  void fetchCachedVoterSnapshot(electionAddress, voterAddress).catch(() => {})
 }

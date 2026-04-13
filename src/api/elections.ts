@@ -1,4 +1,5 @@
 import { apiFetch } from './client'
+import type { Address } from 'viem'
 import type {
   ApiElection,
   ApiElectionMetadata,
@@ -16,6 +17,7 @@ import {
   findOptimisticElection,
   mergeOptimisticElections,
 } from '../utils/optimisticVotes'
+import { prefetchVoterSnapshot } from '../utils/voterSnapshotCache'
 
 const electionDetailRequestCache = new Map<string, Promise<ApiElection>>()
 
@@ -101,8 +103,22 @@ export function fetchElectionDetail(id: string): Promise<ApiElection> {
   return request
 }
 
-export function prefetchElectionDetail(id: string) {
-  void fetchElectionDetail(id).catch(() => {})
+export function prefetchElectionDetail(
+  id: string,
+  options?: {
+    voterAddress?: Address
+  },
+) {
+  void fetchElectionDetail(id)
+    .then((election) => {
+      if (options?.voterAddress && election.onchainElectionAddress) {
+        prefetchVoterSnapshot(
+          election.onchainElectionAddress as Address,
+          options.voterAddress,
+        )
+      }
+    })
+    .catch(() => {})
 }
 
 export function fetchLiveTally(electionId: string): Promise<ApiLiveTallyRow[]> {

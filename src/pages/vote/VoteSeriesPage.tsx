@@ -1,3 +1,6 @@
+import { useAccount } from 'wagmi'
+import { applyManifestToElection, mapToVoteListItem } from '../../utils/electionMapper'
+import { primeVoteDetailCacheFromElection } from '../../utils/voteDetailCache'
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { fetchCandidateManifest } from "../../api/candidateManifest";
@@ -8,11 +11,6 @@ import { VOTE_ITEMS } from "../../data/mockVotes";
 import { useVotedVotes } from "../../hooks/useVotedVotes";
 import { useLanguage } from "../../providers/LanguageProvider";
 import type { VoteListItem } from "../../types/vote";
-import {
-  applyManifestToElection,
-  mapToVoteListItem,
-} from "../../utils/electionMapper";
-import { primeVoteDetailCacheFromElection } from "../../utils/voteDetailCache";
 import verifiedIcon from "../../assets/verified.svg";
 import {
   buildVoteTargetPath,
@@ -27,15 +25,16 @@ type SeriesLocationState = {
 };
 
 export function VoteSeriesPage() {
-  const { seriesKey } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { isVoted } = useVotedVotes();
-  const { t, lang } = useLanguage();
-  const [isLoading, setIsLoading] = useState(true);
-  const [items, setItems] = useState<VoteListItem[]>([]);
-  const decodedSeriesKey = decodeURIComponent(seriesKey ?? "");
-  const locationState = (location.state ?? {}) as SeriesLocationState;
+  const { seriesKey } = useParams()
+  const navigate = useNavigate()
+  const { address } = useAccount()
+  const location = useLocation()
+  const { isVoted } = useVotedVotes()
+  const { t, lang } = useLanguage()
+  const [isLoading, setIsLoading] = useState(true)
+  const [items, setItems] = useState<VoteListItem[]>([])
+  const decodedSeriesKey = decodeURIComponent(seriesKey ?? '')
+  const locationState = (location.state ?? {}) as SeriesLocationState
 
   useEffect(() => {
     let cancelled = false;
@@ -89,20 +88,16 @@ export function VoteSeriesPage() {
     navigate(buildVoteTargetPath(seriesGroup.items[0]), { replace: true });
   }, [isLoading, navigate, seriesGroup]);
 
-  const seriesTitle =
-    seriesGroup?.title ?? locationState.title ?? t("vs_label");
-  const seriesHost = seriesGroup?.host ?? locationState.host;
-  const seriesVerified = seriesGroup?.verified ?? locationState.verified;
-  const handleVotePrefetch = (voteId: string) => {
-    const target = seriesGroup?.items.find(
-      (candidate) => candidate.id === voteId,
-    );
-    if (!target || target.badge === "end") {
-      return;
+  const seriesTitle = seriesGroup?.title ?? locationState.title ?? t('vs_label')
+  const seriesHost = seriesGroup?.host ?? locationState.host
+  const seriesVerified = seriesGroup?.verified ?? locationState.verified
+  const handleVotePrefetch = (item: VoteListItem) => {
+    if (item.badge === 'end') {
+      return
     }
 
-    prefetchElectionDetail(voteId);
-  };
+    prefetchElectionDetail(item.id, { voterAddress: address })
+  }
 
   return (
     <div className="bg-[#FFFFFF] min-h-screen">
@@ -204,11 +199,10 @@ export function VoteSeriesPage() {
               item={item}
               onPrefetch={handleVotePrefetch}
               onNavigate={(id) => {
-                const target = seriesGroup.items.find(
-                  (candidate) => candidate.id === id,
-                );
-                if (!target) return;
-                navigate(buildVoteTargetPath(target));
+                const target = seriesGroup.items.find((candidate) => candidate.id === id)
+                if (!target) return
+                handleVotePrefetch(target)
+                navigate(buildVoteTargetPath(target))
               }}
               isVoted={isVoted(item.id)}
             />

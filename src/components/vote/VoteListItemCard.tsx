@@ -21,7 +21,7 @@ const BADGE_LABEL: Record<BadgeVariant, string> = {
 interface VoteListItemCardProps {
   item: VoteListItem
   onNavigate: (id: string) => void
-  onPrefetch?: (id: string) => void
+  onPrefetch?: (item: VoteListItem) => void
   isVoted: boolean
 }
 
@@ -33,9 +33,9 @@ export function VoteListItemCard({ item, onNavigate, onPrefetch, isVoted }: Vote
     <button
       type="button"
       onClick={() => onNavigate(item.id)}
-      onMouseEnter={() => onPrefetch?.(item.id)}
-      onFocus={() => onPrefetch?.(item.id)}
-      onTouchStart={() => onPrefetch?.(item.id)}
+      onMouseEnter={() => onPrefetch?.(item)}
+      onFocus={() => onPrefetch?.(item)}
+      onTouchStart={() => onPrefetch?.(item)}
       className="w-full bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-[14px] cursor-pointer transition-[border-color,background] duration-150 hover:border-[rgba(113,64,255,0.25)] hover:bg-[#F0EDFF] active:scale-[0.99] text-left"
     >
       <div

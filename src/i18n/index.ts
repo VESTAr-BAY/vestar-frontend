@@ -92,8 +92,8 @@ const STRINGS = {
     ko: '지갑 연결 후 투표하기',
   },
   vd_checking_eligibility: {
-    en: 'Checking ballot availability…',
-    ko: '투표 가능 여부를 확인하는 중…',
+    en: 'Checking eligibility…',
+    ko: '참여 조건을 확인하는 중…',
   },
   vd_ballot_unavailable: {
     en: 'No ballot available right now',
