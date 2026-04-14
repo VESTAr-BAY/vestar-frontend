@@ -102,13 +102,8 @@ function formatFinalizeError(error: unknown, copy: ReturnType<typeof getFinalTal
 export function HostFinalTallyPage() {
   const { id = '1' } = useParams()
   const navigate = useNavigate()
-  const { vote, isLoading: isVoteLoading } = useVoteDetail(id)
-  const {
-    result,
-    totalSubmissions,
-    totalInvalidVotes,
-    isLoading: isResultLoading,
-  } = useVoteLiveTally(id)
+  const { vote } = useVoteDetail(id)
+  const { result, totalSubmissions, totalInvalidVotes } = useVoteLiveTally(id)
   const { lang } = useLanguage()
   const { addToast } = useToast()
   const chainId = useChainId()
@@ -135,6 +130,22 @@ export function HostFinalTallyPage() {
   const [isFinalizing, setIsFinalizing] = useState(false)
   const [isSettlementSettled, setIsSettlementSettled] = useState(false)
   const copy = useMemo(() => getFinalTallyCopy(lang), [lang])
+  const winner = result?.rankedCandidates.find((candidate) => candidate.rank === 1)
+  const isFinalizeReady = Boolean(
+    vote &&
+      vote.onchainState !== 'FINALIZED' &&
+      ((vote.visibilityMode === 'OPEN' && vote.badge === 'end') ||
+        (vote.visibilityMode === 'PRIVATE' && vote.badge === 'end')),
+  )
+  const resultManifestURI = `frontend://vestar/finalize/${vote?.onchainElectionId ?? ''}`
+  const resultManifestHash = keccak256(toHex(resultManifestURI))
+  const resultSummary = {
+    resultManifestHash,
+    resultManifestURI,
+    totalSubmissions,
+    totalValidVotes: result?.totalVotes ?? 0,
+    totalInvalidVotes,
+  }
 
   useEffect(() => {
     if (!vote?.electionAddress) {
@@ -161,30 +172,9 @@ export function HostFinalTallyPage() {
     }
   }, [vote?.electionAddress])
 
-  if (isVoteLoading || isResultLoading || !vote || !result) {
+  if (!vote || !result) {
     return <LoadingSkeleton />
   }
-
-  const winner = result.rankedCandidates.find((candidate) => candidate.rank === 1)
-  const isFinalizeReady =
-    vote.onchainState !== 'FINALIZED' &&
-    ((vote.visibilityMode === 'OPEN' && vote.badge === 'end') ||
-      (vote.visibilityMode === 'PRIVATE' && vote.badge === 'end'))
-  const resultManifestURI = useMemo(
-    () => `frontend://vestar/finalize/${vote.onchainElectionId}`,
-    [vote.onchainElectionId],
-  )
-  const resultManifestHash = useMemo(() => keccak256(toHex(resultManifestURI)), [resultManifestURI])
-  const resultSummary = useMemo(
-    () => ({
-      resultManifestHash,
-      resultManifestURI,
-      totalSubmissions,
-      totalValidVotes: result.totalVotes,
-      totalInvalidVotes,
-    }),
-    [result.totalVotes, resultManifestHash, resultManifestURI, totalInvalidVotes, totalSubmissions],
-  )
 
   const runFinalize = async () => {
     if (!vote.electionAddress || !vote.onchainElectionId) {
@@ -240,13 +230,13 @@ export function HostFinalTallyPage() {
     if (!vote.electionAddress || !vote.onchainElectionId) {
       addToast({
         type: 'error',
-        message: '온체인 election 주소가 없어 finalize를 진행할 수 없습니다.',
+        message: copy.missingElectionInfo,
       })
       return
     }
 
     if (!walletClient?.account) {
-      addToast({ type: 'error', message: '지갑 연결이 필요합니다.' })
+      addToast({ type: 'error', message: copy.walletRequired })
       return
     }
 
