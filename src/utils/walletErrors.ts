@@ -50,13 +50,81 @@ function collectWalletErrorParts(error: unknown): {
   return { codes, messages, names }
 }
 
+function stripRpcNoise(message: string): string {
+  return message
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter(
+      (line) =>
+        !/^(missing or invalid parameters\.?|double check you have provided the correct parameters\.?|url:|request body:|version:)/i.test(
+          line,
+        ),
+    )
+    .join('\n')
+}
+
+function extractReadableMessage(message: string): string | null {
+  const compact = stripRpcNoise(message)
+
+  if (!compact) {
+    return null
+  }
+
+  const detailsMatch = compact.match(/details:\s*([^\n]+)/i)
+  if (detailsMatch) {
+    return extractReadableMessage(detailsMatch[1]) ?? detailsMatch[1].trim()
+  }
+
+  const revertParenMatch = compact.match(/execution reverted\s*\(([^)]+)\)/i)
+  if (revertParenMatch) {
+    return revertParenMatch[1].trim()
+  }
+
+  const revertColonMatch = compact.match(/execution reverted:?[\s"]+([^\n"]+)/i)
+  if (revertColonMatch) {
+    return revertColonMatch[1].trim()
+  }
+
+  const reasonStringMatch = compact.match(/reverted with reason string ['"]([^'"]+)['"]/i)
+  if (reasonStringMatch) {
+    return reasonStringMatch[1].trim()
+  }
+
+  const vestarReasonMatch = compact.match(/(vestar:\s*[^\n]+)/i)
+  if (vestarReasonMatch) {
+    return vestarReasonMatch[1].trim()
+  }
+
+  if (/execution reverted/i.test(compact)) {
+    return 'Execution reverted'
+  }
+
+  return compact.trim()
+}
+
+export function getReadableWalletErrorMessage(error: unknown): string | null {
+  const { messages } = collectWalletErrorParts(error)
+
+  for (const message of messages) {
+    const readableMessage = extractReadableMessage(message)
+
+    if (readableMessage) {
+      return readableMessage
+    }
+  }
+
+  return null
+}
+
 export function getWalletActionErrorMessage(
   error: unknown,
   { lang, defaultMessage }: NormalizeWalletErrorOptions,
 ): string {
   const { codes, messages, names } = collectWalletErrorParts(error)
+  const readableMessage = getReadableWalletErrorMessage(error)
   const codeSet = new Set(codes.map((code) => String(code)))
-  const text = [...names, ...messages].join('\n').toLowerCase()
+  const text = [...names, ...messages, readableMessage ?? ''].join('\n').toLowerCase()
 
   if (
     codeSet.has('4001') ||
@@ -108,6 +176,34 @@ export function getWalletActionErrorMessage(
     return lang === 'ko'
       ? '잔액이 부족합니다. 유료 투표에 필요한 금액을 충전한 뒤 다시 시도해주세요.'
       : 'Insufficient balance. Add funds for this paid vote and try again.'
+  }
+
+  if (/out of gas/i.test(text)) {
+    return lang === 'ko'
+      ? '트랜잭션 실행 중 gas가 부족했습니다. 다시 시도해주세요.'
+      : 'The transaction ran out of gas during execution. Please try again.'
+  }
+
+  if (/not finalized/i.test(text)) {
+    return lang === 'ko'
+      ? '아직 finalize되지 않아 이 작업을 실행할 수 없습니다.'
+      : 'This action is not available yet because the election is not finalized.'
+  }
+
+  if (/already settled|settled already/i.test(text)) {
+    return lang === 'ko'
+      ? '이미 정산이 완료된 투표입니다.'
+      : 'This election has already been settled.'
+  }
+
+  if (/invalid state|key reveal|reveal pending|execution reverted/i.test(text)) {
+    return lang === 'ko'
+      ? '현재 선거 상태에서는 이 작업을 실행할 수 없습니다.'
+      : 'This action is not available in the current election state.'
+  }
+
+  if (readableMessage) {
+    return readableMessage
   }
 
   if (error instanceof Error && error.message.trim().length > 0) {

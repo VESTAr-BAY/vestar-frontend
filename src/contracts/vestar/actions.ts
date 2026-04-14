@@ -43,6 +43,7 @@ import type {
   VestarPaymentMode,
   VestarVisibilityMode,
 } from './types'
+import { getReadableWalletErrorMessage } from '../../utils/walletErrors'
 
 interface ReadContractOptions {
   abi: Abi
@@ -68,6 +69,11 @@ interface StatusEstimateRpcResult {
   priorityFeePerGas: Hex
 }
 
+interface DebugTraceCall {
+  error?: string
+  calls?: DebugTraceCall[]
+}
+
 export interface StatusFeeEstimate {
   gasLimit: bigint
   baseFeePerGas: bigint
@@ -76,6 +82,8 @@ export interface StatusFeeEstimate {
   estimatedFee: bigint
   isGasless: boolean
 }
+
+const VESTAR_WRITE_GAS_BUFFER = 1_000n
 
 /**
  * Shared public client for Status Network Testnet reads.
@@ -116,8 +124,70 @@ export function toVestarUnixTime(value: TimestampInput = Date.now()): bigint {
   return BigInt(Math.floor(value))
 }
 
+function withBufferedGasLimit(
+  feeEstimate: StatusFeeEstimate,
+  extraGasLimits: Array<bigint | undefined>,
+): StatusFeeEstimate {
+  let highestObservedGasLimit = feeEstimate.gasLimit
+
+  for (const next of extraGasLimits) {
+    if (next !== undefined && next > highestObservedGasLimit) {
+      highestObservedGasLimit = next
+    }
+  }
+
+  const bufferedGasLimit = highestObservedGasLimit + VESTAR_WRITE_GAS_BUFFER
+
+  return {
+    ...feeEstimate,
+    gasLimit: bufferedGasLimit,
+    estimatedFee: bufferedGasLimit * feeEstimate.maxFeePerGas,
+  }
+}
+
+function findDeepestTraceError(trace: DebugTraceCall | null | undefined): string | null {
+  if (!trace) {
+    return null
+  }
+
+  for (const call of trace.calls ?? []) {
+    const nestedError = findDeepestTraceError(call)
+    if (nestedError) {
+      return nestedError
+    }
+  }
+
+  return trace.error?.trim() || null
+}
+
+async function getVestarTransactionFailureReason(hash: Hash): Promise<string | null> {
+  try {
+    const trace = (await vestarPublicClient.request({
+      method: 'debug_traceTransaction',
+      params: [hash, { tracer: 'callTracer' }],
+    } as never)) as DebugTraceCall
+
+    return findDeepestTraceError(trace)
+  } catch (error) {
+    console.warn('[VESTAr] Failed to trace reverted transaction', { hash, error })
+    return null
+  }
+}
+
 export async function waitForVestarTransactionReceipt(hash: Hash): Promise<TransactionReceipt> {
-  return vestarPublicClient.waitForTransactionReceipt({ hash })
+  const receipt = await vestarPublicClient.waitForTransactionReceipt({ hash })
+
+  if (receipt.status !== 'success') {
+    const failureReason = await getVestarTransactionFailureReason(hash)
+
+    throw new Error(
+      failureReason
+        ? `Transaction reverted on-chain: ${failureReason}`
+        : 'Transaction reverted on-chain.',
+    )
+  }
+
+  return receipt
 }
 
 async function readVestarContract<TResult>({
@@ -155,17 +225,35 @@ function getWalletAccount(walletClient: WalletClient, requireStatusChain = true)
 }
 
 async function estimateStatusNetworkFees(call: StatusEstimateRpcCall): Promise<StatusFeeEstimate> {
-  const response = (await vestarPublicClient.request({
-    method: 'linea_estimateGas',
-    params: [
-      {
-        from: call.from,
-        to: call.to,
-        data: call.data,
-        value: call.value ?? '0x0',
-      },
-    ],
-  } as never)) as StatusEstimateRpcResult
+  let response: StatusEstimateRpcResult
+
+  try {
+    response = (await vestarPublicClient.request({
+      method: 'linea_estimateGas',
+      params: [
+        {
+          from: call.from,
+          to: call.to,
+          data: call.data,
+          value: call.value ?? '0x0',
+        },
+      ],
+    } as never)) as StatusEstimateRpcResult
+  } catch (error) {
+    const readableMessage =
+      getReadableWalletErrorMessage(error) ?? 'Status Network fee estimation failed.'
+
+    console.error('[StatusFee] linea_estimateGas failed', {
+      from: call.from,
+      to: call.to,
+      value: call.value ?? '0x0',
+      dataLength: call.data.length,
+      message: readableMessage,
+      error,
+    })
+
+    throw new Error(readableMessage, { cause: error })
+  }
 
   const gasLimit = BigInt(response.gasLimit)
   const baseFeePerGas = BigInt(response.baseFeePerGas)
@@ -222,11 +310,26 @@ async function prepareVestarContractWrite({
     functionName: functionName as never,
     args: normalizedArgs,
   })
-  const feeEstimate = await estimateStatusNetworkFees({
-    from: account.address,
-    to: address,
-    data,
-  })
+  const [rawFeeEstimate, evmGasLimit] = await Promise.all([
+    estimateStatusNetworkFees({
+      from: account.address,
+      to: address,
+      data,
+    }),
+    vestarPublicClient
+      .estimateContractGas({
+        abi,
+        account,
+        address,
+        functionName: functionName as never,
+        args: normalizedArgs,
+      })
+      .catch(() => undefined),
+  ])
+  const feeEstimate = withBufferedGasLimit(rawFeeEstimate, [
+    typeof request.gas === 'bigint' ? request.gas : undefined,
+    evmGasLimit,
+  ])
   const feeOverrides =
     request.type === 'legacy'
       ? {
@@ -260,12 +363,24 @@ export async function estimateVestarContractWrite({
     functionName: functionName as never,
     args: (args ?? []) as never,
   })
+  const [rawFeeEstimate, evmGasLimit] = await Promise.all([
+    estimateStatusNetworkFees({
+      from: account.address,
+      to: address,
+      data,
+    }),
+    vestarPublicClient
+      .estimateContractGas({
+        abi,
+        account,
+        address,
+        functionName: functionName as never,
+        args: (args ?? []) as never,
+      })
+      .catch(() => undefined),
+  ])
 
-  return estimateStatusNetworkFees({
-    from: account.address,
-    to: address,
-    data,
-  })
+  return withBufferedGasLimit(rawFeeEstimate, [evmGasLimit])
 }
 
 async function writeVestarContract({
