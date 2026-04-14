@@ -228,7 +228,7 @@ function SettingsEditor({
           costLabel: '투표 1회당 비용',
           freeCostHelp: '무료 투표는 비용이 없습니다.',
           unlimitedPaidCostHelp: `유료 반복 투표는 컨트랙트 규칙상 ${displayedCostPerBallotLabel} 고정 비용으로 생성됩니다.`,
-          fixedPaidCostHelp: '일반 유료 투표는 100원으로 고정됩니다.',
+          fixedPaidCostHelp: `일반 유료 투표는 ${formatBallotCostLabel(FIXED_PAID_COST_PER_BALLOT, 'ko')}으로 고정됩니다.`,
           unlimitedPaidPaymentNotice: `이 정책은 결제가 필수입니다. 비용: ${formatBallotCostLabel(UNLIMITED_PAID_COST_PER_BALLOT, 'ko')} / 1회`,
         }
       : {
