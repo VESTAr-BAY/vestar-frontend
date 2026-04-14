@@ -2,16 +2,21 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { type Address } from 'viem'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
+import { StatusFeePromptModal } from '../../components/shared/StatusFeePromptModal'
 import {
+  estimateSettleElectionRevenueFee,
   getElectionSnapshot,
   settleElectionRevenue,
   waitForVestarTransactionReceipt,
 } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
+import { useStatusFeePrompt } from '../../hooks/useStatusFeePrompt'
 import { useVoteDetail } from '../../hooks/user/useVoteDetail'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
 import { formatSettlementAmount } from '../../utils/paymentDisplay'
+import { getStatusFeeTransactionNote, buildStatusFeePreview } from '../../utils/statusFee'
+import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 import { VoteHero } from '../user/VoteHero'
 import { VoteInfoSection } from '../user/VoteInfoSection'
 
@@ -136,6 +141,23 @@ export function HostSettlementPage() {
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient()
   const { switchChainAsync } = useSwitchChain()
+  const {
+    prompt: feePrompt,
+    busyAction: feePromptBusyAction,
+    openForAction: openFeePrompt,
+    closePrompt: closeFeePrompt,
+    handleRecheck: handleFeePromptRecheck,
+    handleProceed: handleFeePromptProceed,
+  } = useStatusFeePrompt((error) => {
+    addToast({
+      type: 'error',
+      message: getWalletActionErrorMessage(error, {
+        lang,
+        defaultMessage:
+          lang === 'ko' ? '수수료 상태를 확인하지 못했습니다.' : 'Failed to check the fee status.',
+      }),
+    })
+  })
 
   const [snapshot, setSnapshot] = useState<Awaited<ReturnType<typeof getElectionSnapshot>> | null>(
     null,
@@ -206,7 +228,7 @@ export function HostSettlementPage() {
     [copy, lang, organizerRevenueAmount, platformRevenueAmount, totalCollectedAmount],
   )
 
-  const handleSettle = async () => {
+  const runSettlement = async () => {
     if (!vote?.electionAddress) {
       addToast({ type: 'info', message: copy.missingElectionInfo })
       return
@@ -233,15 +255,6 @@ export function HostSettlementPage() {
     try {
       setIsSettling(true)
 
-      if (chainId !== vestarStatusTestnetChain.id) {
-        await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
-        addToast({
-          type: 'info',
-          message: copy.networkSwitched,
-        })
-        return
-      }
-
       const txHash = await settleElectionRevenue(walletClient, vote.electionAddress as Address)
       addToast({ type: 'info', message: copy.txSubmitted(txHash) })
       await waitForVestarTransactionReceipt(txHash)
@@ -254,6 +267,57 @@ export function HostSettlementPage() {
     } finally {
       setIsSettling(false)
     }
+  }
+
+  const handleSettle = async () => {
+    if (!vote?.electionAddress) {
+      addToast({ type: 'info', message: '온체인 election 정보가 없어 정산을 실행할 수 없습니다.' })
+      return
+    }
+
+    if (!settlement) {
+      addToast({
+        type: 'info',
+        message: '정산 정보를 아직 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
+      })
+      return
+    }
+
+    if (settlement.settled) {
+      addToast({ type: 'info', message: '이미 정산이 완료된 투표입니다.' })
+      return
+    }
+
+    if (!walletClient?.account) {
+      addToast({ type: 'error', message: '지갑 연결이 필요합니다.' })
+      return
+    }
+
+    if (chainId !== vestarStatusTestnetChain.id) {
+      await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
+      addToast({
+        type: 'info',
+        message:
+          lang === 'ko'
+            ? '네트워크를 변경했습니다. 다시 한 번 정산을 눌러주세요.'
+            : 'The network was switched. Please tap settlement again.',
+      })
+      return
+    }
+
+    void openFeePrompt({
+      title: lang === 'ko' ? '수수료 안내' : 'Fee Notice',
+      description:
+        lang === 'ko'
+          ? '현재 정산 트랜잭션이 무료 처리 대상이 아니면 네트워크 수수료가 적용됩니다.'
+          : 'If this settlement transaction is not currently eligible for gasless execution, a network fee will apply.',
+      estimate: async () =>
+        buildStatusFeePreview([
+          await estimateSettleElectionRevenueFee(walletClient, vote.electionAddress as Address),
+        ]),
+      note: (preview) => getStatusFeeTransactionNote(preview.transactionCount, lang),
+      proceed: runSettlement,
+    })
   }
 
   if (isVoteLoading || isSnapshotLoading || !vote) {
@@ -358,6 +422,18 @@ export function HostSettlementPage() {
           </button>
         </div>
       </div>
+
+      <StatusFeePromptModal
+        open={Boolean(feePrompt)}
+        title={feePrompt?.title ?? ''}
+        description={feePrompt?.description ?? ''}
+        estimatedFee={feePrompt?.preview.totalEstimatedFee ?? 0n}
+        note={feePrompt?.note ?? ''}
+        busyAction={feePromptBusyAction}
+        onProceed={() => void handleFeePromptProceed()}
+        onRefresh={() => void handleFeePromptRecheck()}
+        onClose={closeFeePrompt}
+      />
     </>
   )
 }

@@ -6,7 +6,9 @@ import completeVoteIcon from '../../assets/complete_vote.svg'
 import reportProblemIcon from '../../assets/report_problem.svg'
 import { VoteDetailHeaderContext } from '../../components/layout/VoteDetailLayout'
 import { BottomSheet } from '../../components/shared/BottomSheet'
+import { StatusFeePromptModal } from '../../components/shared/StatusFeePromptModal'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
+import { useStatusFeePrompt } from '../../hooks/useStatusFeePrompt'
 import { useCandidateSelection } from '../../hooks/user/useCandidateSelection'
 import { useMyKarma } from '../../hooks/user/useMyKarma'
 import { useMetaMaskDisplayUri } from '../../hooks/useMetaMaskDisplayUri'
@@ -27,6 +29,7 @@ import {
 import { fetchCachedVoterSnapshot, readCachedVoterSnapshot } from '../../utils/voterSnapshotCache'
 import { invalidateViewCache } from '../../utils/viewCache'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
+import { getStatusFeeTransactionNote } from '../../utils/statusFee'
 import { CandidateSection, GroupedCandidateSection } from '../user/CandidateSection'
 import { VoteBottomSheetContent } from '../user/VoteBottomSheetContent'
 import { VoteHero } from '../user/VoteHero'
@@ -177,10 +180,8 @@ export function VoteDetailPage() {
   )
 
   const { isVoted, markVoted, getVotedCandidates } = useVotedVotes()
-  const { state, txHash, errorMessage, karmaEarned, submit, reset } = useVoteSubmit(
-    vote,
-    pendingCandidateKeys,
-  )
+  const { state, txHash, errorMessage, karmaEarned, estimateFeePreview, submit, reset } =
+    useVoteSubmit(vote, pendingCandidateKeys)
   const { displayUri, resetDisplayUri } = useMetaMaskDisplayUri()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [dangerModalOpen, setDangerModalOpen] = useState(false)
@@ -197,6 +198,23 @@ export function VoteDetailPage() {
   const { switchChainAsync } = useSwitchChain()
   const { addToast } = useToast()
   const { t, lang } = useLanguage()
+  const {
+    prompt: feePrompt,
+    busyAction: feePromptBusyAction,
+    openForAction: openFeePrompt,
+    closePrompt: closeFeePrompt,
+    handleRecheck: handleFeePromptRecheck,
+    handleProceed: handleFeePromptProceed,
+  } = useStatusFeePrompt((error) => {
+    addToast({
+      type: 'error',
+      message: getWalletActionErrorMessage(error, {
+        lang,
+        defaultMessage:
+          lang === 'ko' ? '수수료 상태를 확인하지 못했습니다.' : 'Failed to check the fee status.',
+      }),
+    })
+  })
   const { tierId, isLoading: isKarmaLoading } = useMyKarma()
   const voteHistoryState = (location.state ?? null) as VoteHistoryLocationState | null
 
@@ -244,9 +262,7 @@ export function VoteDetailPage() {
     [address, vote?.electionAddress],
   )
   const canSubmitByEligibility =
-    eligibilitySnapshot.key === eligibilitySnapshotKey
-      ? eligibilitySnapshot.canSubmitBallot
-      : null
+    eligibilitySnapshot.key === eligibilitySnapshotKey ? eligibilitySnapshot.canSubmitBallot : null
   const remainingBallots =
     eligibilitySnapshot.key === eligibilitySnapshotKey
       ? eligibilitySnapshot.remainingBallots
@@ -266,14 +282,14 @@ export function VoteDetailPage() {
     [address, canSubmitByEligibility, isKarmaLoading, remainingBallots, tierId, vote],
   )
   const resolvedHasVoted =
-    isHistorySelectionView || (hasVoted && shouldApplyEligibilityGate && canSubmitByEligibility === false)
-  const showManualWalletOpen = state === 'awaiting_signature' && sheetOpen && isMobileExternalBrowser()
+    isHistorySelectionView ||
+    (hasVoted && shouldApplyEligibilityGate && canSubmitByEligibility === false)
+  const showManualWalletOpen =
+    state === 'awaiting_signature' && sheetOpen && isMobileExternalBrowser()
   const shouldHideActionBar = sheetOpen && !resolvedHasVoted && !isEnded
   const canShowTallyButton =
-    vote?.badge !== 'new' &&
-    (vote?.visibilityMode === 'OPEN' || vote?.onchainState === 'FINALIZED')
-  const shouldNavigateToFinalResult =
-    vote?.badge === 'end' || vote?.onchainState === 'FINALIZED'
+    vote?.badge !== 'new' && (vote?.visibilityMode === 'OPEN' || vote?.onchainState === 'FINALIZED')
+  const shouldNavigateToFinalResult = vote?.badge === 'end' || vote?.onchainState === 'FINALIZED'
 
   // ── Voted candidate IDs (from localStorage, stable after voting or on reload) ──
   const votedCandidateIds = useMemo<Set<string> | undefined>(
@@ -446,11 +462,22 @@ export function VoteDetailPage() {
   // Called when user confirms in the danger modal
   const handleDangerConfirm = useCallback(() => {
     if (!vote) return
-    resetDisplayUri()
     setDangerModalOpen(false)
-    setSheetOpen(true)
-    submit(vote, pendingCandidateKeys)
-  }, [pendingCandidateKeys, resetDisplayUri, submit, vote])
+    void openFeePrompt({
+      title: lang === 'ko' ? '수수료 안내' : 'Fee Notice',
+      description:
+        lang === 'ko'
+          ? '현재 이 투표는 무료 처리 대상이 아니면 네트워크 수수료가 적용됩니다.'
+          : 'If this vote is not currently eligible for gasless execution, a network fee will apply.',
+      estimate: () => estimateFeePreview(vote, pendingCandidateKeys),
+      note: (preview) => getStatusFeeTransactionNote(preview.transactionCount, lang),
+      proceed: async () => {
+        resetDisplayUri()
+        setSheetOpen(true)
+        await submit(vote, pendingCandidateKeys)
+      },
+    })
+  }, [estimateFeePreview, lang, openFeePrompt, pendingCandidateKeys, resetDisplayUri, submit, vote])
 
   const handleClose = useCallback(() => {
     if (state === 'awaiting_signature' || state === 'confirming') return
@@ -499,11 +526,11 @@ export function VoteDetailPage() {
         : isEligibilityPending
           ? t('vd_checking_eligibility')
           : !shouldApplyEligibilityGate || canSubmitByEligibility
-          ? t('vd_select_section')
-          : getVoteSubmissionBlockButtonLabel(eligibilityBlockReason, lang, vote) ??
-            (lang === 'ko'
-              ? '현재 제출 가능한 투표권이 없습니다.'
-              : 'No ballot available right now.')
+            ? t('vd_select_section')
+            : (getVoteSubmissionBlockButtonLabel(eligibilityBlockReason, lang, vote) ??
+              (lang === 'ko'
+                ? '현재 제출 가능한 투표권이 없습니다.'
+                : 'No ballot available right now.'))
       : activeCanSubmit
         ? `${
             lang === 'ko'
@@ -513,11 +540,11 @@ export function VoteDetailPage() {
         : isEligibilityPending
           ? t('vd_checking_eligibility')
           : !shouldApplyEligibilityGate || canSubmitByEligibility
-          ? t('vd_select_candidate')
-          : getVoteSubmissionBlockButtonLabel(eligibilityBlockReason, lang, vote) ??
-            (lang === 'ko'
-              ? '현재 제출 가능한 투표권이 없습니다.'
-              : 'No ballot available right now.')
+            ? t('vd_select_candidate')
+            : (getVoteSubmissionBlockButtonLabel(eligibilityBlockReason, lang, vote) ??
+              (lang === 'ko'
+                ? '현재 제출 가능한 투표권이 없습니다.'
+                : 'No ballot available right now.'))
 
   // Danger modal target label
   const dangerTarget = isGrouped
@@ -661,6 +688,18 @@ export function VoteDetailPage() {
         selectedCandidateLabels={selectedCandidateLabels}
         onConfirm={handleDangerConfirm}
         onCancel={() => setDangerModalOpen(false)}
+      />
+
+      <StatusFeePromptModal
+        open={Boolean(feePrompt)}
+        title={feePrompt?.title ?? ''}
+        description={feePrompt?.description ?? ''}
+        estimatedFee={feePrompt?.preview.totalEstimatedFee ?? 0n}
+        note={feePrompt?.note ?? ''}
+        busyAction={feePromptBusyAction}
+        onProceed={() => void handleFeePromptProceed()}
+        onRefresh={() => void handleFeePromptRecheck()}
+        onClose={closeFeePrompt}
       />
 
       {/* Bottom sheet — progress + receipt (only before voting) */}

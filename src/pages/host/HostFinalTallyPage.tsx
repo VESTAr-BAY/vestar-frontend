@@ -2,16 +2,21 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { type Address, keccak256, toHex } from 'viem'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
+import { StatusFeePromptModal } from '../../components/shared/StatusFeePromptModal'
 import {
+  estimateFinalizeElectionResultsFee,
   finalizeElectionResults,
   getElectionSnapshot,
   waitForVestarTransactionReceipt,
 } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
+import { useStatusFeePrompt } from '../../hooks/useStatusFeePrompt'
 import { useVoteDetail } from '../../hooks/user/useVoteDetail'
 import { useVoteLiveTally } from '../../hooks/user/useVoteLiveTally'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
+import { buildStatusFeePreview, getStatusFeeTransactionNote } from '../../utils/statusFee'
+import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 import { VoteResultRankings } from '../user/VoteResultRankings'
 import { VoteResultWinner } from '../user/VoteResultWinner'
 
@@ -107,8 +112,25 @@ export function HostFinalTallyPage() {
   const { lang } = useLanguage()
   const { addToast } = useToast()
   const chainId = useChainId()
-  const { data: walletClient } = useWalletClient({ chainId: vestarStatusTestnetChain.id })
+  const { data: walletClient } = useWalletClient()
   const { switchChainAsync } = useSwitchChain()
+  const {
+    prompt: feePrompt,
+    busyAction: feePromptBusyAction,
+    openForAction: openFeePrompt,
+    closePrompt: closeFeePrompt,
+    handleRecheck: handleFeePromptRecheck,
+    handleProceed: handleFeePromptProceed,
+  } = useStatusFeePrompt((error) => {
+    addToast({
+      type: 'error',
+      message: getWalletActionErrorMessage(error, {
+        lang,
+        defaultMessage:
+          lang === 'ko' ? '수수료 상태를 확인하지 못했습니다.' : 'Failed to check the fee status.',
+      }),
+    })
+  })
 
   const [isFinalizing, setIsFinalizing] = useState(false)
   const [isSettlementSettled, setIsSettlementSettled] = useState(false)
@@ -148,8 +170,23 @@ export function HostFinalTallyPage() {
     vote.onchainState !== 'FINALIZED' &&
     ((vote.visibilityMode === 'OPEN' && vote.badge === 'end') ||
       (vote.visibilityMode === 'PRIVATE' && vote.badge === 'end'))
+  const resultManifestURI = useMemo(
+    () => `frontend://vestar/finalize/${vote.onchainElectionId}`,
+    [vote.onchainElectionId],
+  )
+  const resultManifestHash = useMemo(() => keccak256(toHex(resultManifestURI)), [resultManifestURI])
+  const resultSummary = useMemo(
+    () => ({
+      resultManifestHash,
+      resultManifestURI,
+      totalSubmissions,
+      totalValidVotes: result.totalVotes,
+      totalInvalidVotes,
+    }),
+    [result.totalVotes, resultManifestHash, resultManifestURI, totalInvalidVotes, totalSubmissions],
+  )
 
-  const handleFinalize = async () => {
+  const runFinalize = async () => {
     if (!vote.electionAddress || !vote.onchainElectionId) {
       addToast({
         type: 'error',
@@ -168,17 +205,18 @@ export function HostFinalTallyPage() {
 
       if (chainId !== vestarStatusTestnetChain.id) {
         await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
+        addToast({
+          type: 'info',
+          message:
+            lang === 'ko'
+              ? '네트워크를 변경했습니다. 다시 한 번 finalize를 눌러주세요.'
+              : 'The network was switched. Please tap finalize again.',
+        })
+        return
       }
 
-      const resultManifestURI = `frontend://vestar/finalize/${vote.onchainElectionId}`
-      const resultManifestHash = keccak256(toHex(resultManifestURI))
-
       const txHash = await finalizeElectionResults(walletClient, vote.electionAddress as Address, {
-        resultManifestHash,
-        resultManifestURI,
-        totalSubmissions,
-        totalValidVotes: result.totalVotes,
-        totalInvalidVotes,
+        ...resultSummary,
       })
 
       addToast({ type: 'info', message: copy.txSubmitted(txHash) })
@@ -196,6 +234,51 @@ export function HostFinalTallyPage() {
     } finally {
       setIsFinalizing(false)
     }
+  }
+
+  const handleFinalize = async () => {
+    if (!vote.electionAddress || !vote.onchainElectionId) {
+      addToast({
+        type: 'error',
+        message: '온체인 election 주소가 없어 finalize를 진행할 수 없습니다.',
+      })
+      return
+    }
+
+    if (!walletClient?.account) {
+      addToast({ type: 'error', message: '지갑 연결이 필요합니다.' })
+      return
+    }
+
+    if (chainId !== vestarStatusTestnetChain.id) {
+      await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
+      addToast({
+        type: 'info',
+        message:
+          lang === 'ko'
+            ? '네트워크를 변경했습니다. 다시 한 번 finalize를 눌러주세요.'
+            : 'The network was switched. Please tap finalize again.',
+      })
+      return
+    }
+
+    void openFeePrompt({
+      title: lang === 'ko' ? '수수료 안내' : 'Fee Notice',
+      description:
+        lang === 'ko'
+          ? '현재 finalize 트랜잭션이 무료 처리 대상이 아니면 네트워크 수수료가 적용됩니다.'
+          : 'If this finalize transaction is not currently eligible for gasless execution, a network fee will apply.',
+      estimate: async () =>
+        buildStatusFeePreview([
+          await estimateFinalizeElectionResultsFee(
+            walletClient,
+            vote.electionAddress as Address,
+            resultSummary,
+          ),
+        ]),
+      note: (preview) => getStatusFeeTransactionNote(preview.transactionCount, lang),
+      proceed: runFinalize,
+    })
   }
 
   return (
@@ -253,6 +336,18 @@ export function HostFinalTallyPage() {
           </button>
         </div>
       </div>
+
+      <StatusFeePromptModal
+        open={Boolean(feePrompt)}
+        title={feePrompt?.title ?? ''}
+        description={feePrompt?.description ?? ''}
+        estimatedFee={feePrompt?.preview.totalEstimatedFee ?? 0n}
+        note={feePrompt?.note ?? ''}
+        busyAction={feePromptBusyAction}
+        onProceed={() => void handleFeePromptProceed()}
+        onRefresh={() => void handleFeePromptRecheck()}
+        onClose={closeFeePrompt}
+      />
     </>
   )
 }

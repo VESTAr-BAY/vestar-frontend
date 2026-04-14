@@ -38,6 +38,20 @@ This app owns the browser-side write path and the presentation-side read path.
 | Render metadata | IPFS manifest | Render titles, series names, cover images, candidate images |
 | Final authority | On-chain contracts | Override or confirm selected state and counters when needed |
 
+### Status Network Fee UX
+
+The write path uses Status Network's `linea_estimateGas` as the fee source of truth.
+
+- Every contract write is simulated first, then estimated through `linea_estimateGas` with `from`.
+- The returned `gasLimit`, `baseFeePerGas`, and `priorityFeePerGas` are applied to the outgoing write request.
+- When both fee fields are `0`, the frontend treats the transaction as gasless and proceeds without an extra warning.
+- When either fee field is non-zero, the frontend shows a premium-fee prompt with three actions:
+  - `Pay Fee`
+  - `Recheck`
+  - `Later`
+- Recheck always re-estimates close to send time instead of trusting cached values.
+- Paid vote submission may involve more than one network transaction when ERC-20 approval is still required, so the UI aggregates the estimated fee across the pending approval + vote flow.
+
 ### Architecture
 
 ```mermaid
@@ -252,6 +266,20 @@ vestar-frontend/
 | election 목록 / 상세 / tally / 히스토리 | 백엔드 indexer DB | `/elections`, `/live-tally`, `/finalized-tally`, `/result-summaries`, `/vote-submissions/history` 사용 |
 | 렌더링 메타데이터 | IPFS manifest | 제목, 시리즈명, 커버 이미지, 후보 이미지 렌더링 |
 | 최종 권위 | 온체인 컨트랙트 | 필요 시 상태와 카운터를 직접 확인 또는 보정 |
+
+### Status Network 수수료 UX
+
+현재 write 경로는 Status Network의 `linea_estimateGas`를 수수료 기준값으로 사용한다.
+
+- 모든 contract write는 먼저 simulate한 뒤 `from`을 포함한 `linea_estimateGas`로 다시 추정한다.
+- 반환된 `gasLimit`, `baseFeePerGas`, `priorityFeePerGas`를 실제 write request에 반영한다.
+- 두 수수료 필드가 모두 `0`이면 프론트는 가스리스 상태로 보고 추가 경고 없이 진행한다.
+- 둘 중 하나라도 `0`이 아니면 프런트는 premium 수수료 안내 모달을 띄우고 아래 세 가지 액션을 제공한다.
+  - `수수료 내기`
+  - `재확인하기`
+  - `나중에 하기`
+- `재확인하기`는 캐시된 값을 믿지 않고 전송 직전 기준으로 다시 추정한다.
+- 유료 투표는 ERC-20 approve가 아직 필요할 때 `approve + vote` 두 트랜잭션이 이어질 수 있으므로, UI는 이 흐름의 예상 수수료를 합산해서 보여준다.
 
 ### 아키텍처
 

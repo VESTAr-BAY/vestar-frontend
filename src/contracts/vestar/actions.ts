@@ -2,6 +2,7 @@ import {
   type Abi,
   type Address,
   createPublicClient,
+  encodeFunctionData,
   type Hash,
   type Hex,
   http,
@@ -52,6 +53,28 @@ interface ReadContractOptions {
 
 interface WriteContractOptions extends ReadContractOptions {
   walletClient: WalletClient
+}
+
+interface StatusEstimateRpcCall {
+  from: Address
+  to: Address
+  data: Hex
+  value?: Hex
+}
+
+interface StatusEstimateRpcResult {
+  gasLimit: Hex
+  baseFeePerGas: Hex
+  priorityFeePerGas: Hex
+}
+
+export interface StatusFeeEstimate {
+  gasLimit: bigint
+  baseFeePerGas: bigint
+  priorityFeePerGas: bigint
+  maxFeePerGas: bigint
+  estimatedFee: bigint
+  isGasless: boolean
 }
 
 /**
@@ -111,20 +134,138 @@ async function readVestarContract<TResult>({
   }) as Promise<TResult>
 }
 
-function getWalletAccount(walletClient: WalletClient) {
+function getWalletAccount(walletClient: WalletClient, requireStatusChain = true) {
   if (!walletClient.account) {
     throw new Error(
       "walletClient.account is missing. Pass the result of wagmi's useWalletClient() or a connected viem WalletClient.",
     )
   }
 
-  if (walletClient.chain && walletClient.chain.id !== vestarStatusTestnetChain.id) {
+  if (
+    requireStatusChain &&
+    walletClient.chain &&
+    walletClient.chain.id !== vestarStatusTestnetChain.id
+  ) {
     throw new Error(
       `VESTAr contracts are deployed on Status Network Testnet (${vestarStatusTestnetChain.id}).`,
     )
   }
 
   return walletClient.account
+}
+
+async function estimateStatusNetworkFees(call: StatusEstimateRpcCall): Promise<StatusFeeEstimate> {
+  const response = (await vestarPublicClient.request({
+    method: 'linea_estimateGas',
+    params: [
+      {
+        from: call.from,
+        to: call.to,
+        data: call.data,
+        value: call.value ?? '0x0',
+      },
+    ],
+  } as never)) as StatusEstimateRpcResult
+
+  const gasLimit = BigInt(response.gasLimit)
+  const baseFeePerGas = BigInt(response.baseFeePerGas)
+  const priorityFeePerGas = BigInt(response.priorityFeePerGas)
+  const maxFeePerGas = baseFeePerGas + priorityFeePerGas
+  const isGasless = baseFeePerGas === 0n && priorityFeePerGas === 0n
+
+  console.info('[StatusFee] linea_estimateGas response', {
+    from: call.from,
+    to: call.to,
+    value: call.value ?? '0x0',
+    dataLength: call.data.length,
+    response,
+    parsed: {
+      gasLimit: gasLimit.toString(),
+      baseFeePerGas: baseFeePerGas.toString(),
+      priorityFeePerGas: priorityFeePerGas.toString(),
+      maxFeePerGas: maxFeePerGas.toString(),
+    },
+    derived: {
+      isGasless,
+    },
+  })
+
+  return {
+    gasLimit,
+    baseFeePerGas,
+    priorityFeePerGas,
+    maxFeePerGas,
+    estimatedFee: gasLimit * maxFeePerGas,
+    isGasless,
+  }
+}
+
+async function prepareVestarContractWrite({
+  walletClient,
+  abi,
+  address,
+  functionName,
+  args,
+}: WriteContractOptions) {
+  const account = getWalletAccount(walletClient)
+  const normalizedArgs = (args ?? []) as never
+  const { request } = await vestarPublicClient.simulateContract({
+    abi,
+    account,
+    address,
+    chain: vestarStatusTestnetChain,
+    functionName: functionName as never,
+    args: normalizedArgs,
+  })
+  const data = encodeFunctionData({
+    abi,
+    functionName: functionName as never,
+    args: normalizedArgs,
+  })
+  const feeEstimate = await estimateStatusNetworkFees({
+    from: account.address,
+    to: address,
+    data,
+  })
+  const feeOverrides =
+    request.type === 'legacy'
+      ? {
+          gasPrice: feeEstimate.maxFeePerGas,
+        }
+      : {
+          maxFeePerGas: feeEstimate.maxFeePerGas,
+          maxPriorityFeePerGas: feeEstimate.priorityFeePerGas,
+        }
+
+  return {
+    feeEstimate,
+    request: {
+      ...request,
+      gas: feeEstimate.gasLimit,
+      ...feeOverrides,
+    },
+  }
+}
+
+export async function estimateVestarContractWrite({
+  walletClient,
+  abi,
+  address,
+  functionName,
+  args,
+}: WriteContractOptions): Promise<StatusFeeEstimate> {
+  const account = getWalletAccount(walletClient, false)
+  const data = encodeFunctionData({
+    abi,
+    functionName: functionName as never,
+    args: (args ?? []) as never,
+  })
+
+  return estimateStatusNetworkFees({
+    from: account.address,
+    to: address,
+    data,
+  })
 }
 
 async function writeVestarContract({
@@ -134,17 +275,15 @@ async function writeVestarContract({
   functionName,
   args,
 }: WriteContractOptions): Promise<Hash> {
-  const account = getWalletAccount(walletClient)
-  const { request } = await vestarPublicClient.simulateContract({
+  const { request } = await prepareVestarContractWrite({
+    walletClient,
     abi,
-    account,
     address,
-    chain: vestarStatusTestnetChain,
-    functionName: functionName as never,
-    args: (args ?? []) as never,
+    functionName,
+    args,
   })
 
-  return walletClient.writeContract(request)
+  return walletClient.writeContract(request as never)
 }
 
 export async function getOrganizerProfile(organizerAddress: Address): Promise<OrganizerProfile> {
@@ -261,6 +400,21 @@ export async function approveErc20Spender(
   amount: bigint,
 ): Promise<Hash> {
   return writeVestarContract({
+    walletClient,
+    abi: mockUsdtAbi,
+    address: tokenAddress,
+    functionName: 'approve',
+    args: [spender, amount],
+  })
+}
+
+export async function estimateApproveErc20SpenderFee(
+  walletClient: WalletClient,
+  tokenAddress: Address,
+  spender: Address,
+  amount: bigint,
+): Promise<StatusFeeEstimate> {
+  return estimateVestarContractWrite({
     walletClient,
     abi: mockUsdtAbi,
     address: tokenAddress,
@@ -625,12 +779,40 @@ export async function submitOpenVote(
   })
 }
 
+export async function estimateSubmitOpenVoteFee(
+  walletClient: WalletClient,
+  electionAddress: Address,
+  candidateKeys: string[],
+): Promise<StatusFeeEstimate> {
+  return estimateVestarContractWrite({
+    walletClient,
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: 'submitOpenVote',
+    args: [candidateKeys],
+  })
+}
+
 export async function submitEncryptedVote(
   walletClient: WalletClient,
   electionAddress: Address,
   encryptedBallot: Hex,
 ): Promise<Hash> {
   return writeVestarContract({
+    walletClient,
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: 'submitEncryptedVote',
+    args: [encryptedBallot],
+  })
+}
+
+export async function estimateSubmitEncryptedVoteFee(
+  walletClient: WalletClient,
+  electionAddress: Address,
+  encryptedBallot: Hex,
+): Promise<StatusFeeEstimate> {
+  return estimateVestarContractWrite({
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
@@ -696,6 +878,18 @@ export async function settleElectionRevenue(
   })
 }
 
+export async function estimateSettleElectionRevenueFee(
+  walletClient: WalletClient,
+  electionAddress: Address,
+): Promise<StatusFeeEstimate> {
+  return estimateVestarContractWrite({
+    walletClient,
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: 'settleRevenue',
+  })
+}
+
 export async function enableElectionRefunds(
   walletClient: WalletClient,
   electionAddress: Address,
@@ -726,6 +920,20 @@ export async function finalizeElectionResults(
   resultSummary: ResultSummaryInput,
 ): Promise<Hash> {
   return writeVestarContract({
+    walletClient,
+    abi: vestarElectionAbi,
+    address: electionAddress,
+    functionName: 'finalizeResults',
+    args: [resultSummary],
+  })
+}
+
+export async function estimateFinalizeElectionResultsFee(
+  walletClient: WalletClient,
+  electionAddress: Address,
+  resultSummary: ResultSummaryInput,
+): Promise<StatusFeeEstimate> {
+  return estimateVestarContractWrite({
     walletClient,
     abi: vestarElectionAbi,
     address: electionAddress,
