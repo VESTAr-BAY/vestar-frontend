@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { normalizeElectionSettingsDraft } from './hostElectionSettings'
 import type { ElectionSettingsDraft } from '../types/host'
+import { SHARED_PAID_BALLOT_COST_DECIMAL } from './paymentConstants'
 
 const BASE_SETTINGS: ElectionSettingsDraft = {
   startDate: '2026-04-13T11:00',
@@ -26,7 +27,7 @@ describe('normalizeElectionSettingsDraft', () => {
       costPerBallotEth: '100',
     })
 
-    expect(normalized.costPerBallotEth).toBe('0.066')
+    expect(normalized.costPerBallotEth).toBe(SHARED_PAID_BALLOT_COST_DECIMAL)
   })
 
   it('forces unlimited paid elections to the shared 0.066 ballot cost', () => {
@@ -37,6 +38,6 @@ describe('normalizeElectionSettingsDraft', () => {
       costPerBallotEth: '100',
     })
 
-    expect(normalized.costPerBallotEth).toBe('0.066')
+    expect(normalized.costPerBallotEth).toBe(SHARED_PAID_BALLOT_COST_DECIMAL)
   })
 })

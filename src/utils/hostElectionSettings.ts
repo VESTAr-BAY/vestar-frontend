@@ -1,8 +1,9 @@
 import type { ElectionSettingsDraft } from '../types/host'
+import { SHARED_PAID_BALLOT_COST_DECIMAL } from './paymentConstants'
 
-export const FIXED_PAID_COST_PER_BALLOT = '0.066'
-// sungje : 현재 유료 투표는 일반/반복 정책 모두 0.066 mUSDT(66_000 raw, 6 decimals)로 맞춘다.
-export const UNLIMITED_PAID_COST_PER_BALLOT = '0.066'
+export const FIXED_PAID_COST_PER_BALLOT = SHARED_PAID_BALLOT_COST_DECIMAL
+// Shared product pricing: standard paid and unlimited paid ballots both resolve to one global cost.
+export const UNLIMITED_PAID_COST_PER_BALLOT = SHARED_PAID_BALLOT_COST_DECIMAL
 
 export function normalizeElectionSettingsDraft<T extends ElectionSettingsDraft>(settings: T): T {
   const isOpenVote = settings.visibilityMode === 'OPEN'

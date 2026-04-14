@@ -19,6 +19,10 @@ export function VoteResultWinner({
 }: VoteResultWinnerProps) {
   const { t, lang } = useLanguage()
   const footerCount = summaryCount ?? result.totalVotes
+  const liveBadgeLabel = lang === 'en' ? 'Live Tally' : '실시간 집계'
+  const liveSnapshotLabel = lang === 'en' ? 'snapshot' : '기준 집계'
+  const topCandidateLabel = lang === 'en' ? 'Current Leader' : '현재 1위'
+  const votesLabel = lang === 'en' ? 'votes' : '표'
   const footerLabel =
     summaryKind === 'participants'
       ? lang === 'en'
@@ -36,10 +40,10 @@ export function VoteResultWinner({
       {/* Top: badge + end date */}
       <div className="flex items-center gap-2 mb-5">
         <span className="text-[10px] font-bold font-mono px-2.5 py-1 rounded-[10px] tracking-[0.4px] uppercase bg-[rgba(245,158,11,0.15)] text-[#F59E0B] border border-[rgba(245,158,11,0.25)]">
-          {mode === 'live' ? 'LIVE TALLY' : t('vr_results')}
+          {mode === 'live' ? liveBadgeLabel : t('vr_results')}
         </span>
         <span className="text-[12px] font-mono text-white/40">
-          {result.endDate} {mode === 'live' ? '기준 집계' : t('vr_ended')}
+          {result.endDate} {mode === 'live' ? liveSnapshotLabel : t('vr_ended')}
         </span>
       </div>
 
@@ -52,7 +56,7 @@ export function VoteResultWinner({
       {/* Winner card */}
       <div className="bg-white/[0.07] border border-[rgba(245,158,11,0.3)] rounded-2xl p-5">
         <div className="text-[11px] font-mono text-[#F59E0B] mb-3 uppercase tracking-wider">
-          {mode === 'live' ? '현재 1위' : t('vr_1st_place')}
+          {mode === 'live' ? topCandidateLabel : t('vr_1st_place')}
         </div>
         <div className="flex items-center gap-4">
           <CandidateAvatar
@@ -70,7 +74,7 @@ export function VoteResultWinner({
                 {winner.percentage.toFixed(1)}%
               </span>
               <span className="text-[12px] font-mono text-white/40">
-                ({winner.votes.toLocaleString()} votes)
+                ({winner.votes.toLocaleString()} {votesLabel})
               </span>
             </div>
           </div>

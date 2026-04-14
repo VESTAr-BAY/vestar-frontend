@@ -25,11 +25,12 @@ export function VoteResultRankings({
 }: VoteResultRankingsProps) {
   const { t, lang } = useLanguage()
   const sorted = [...rankedCandidates].sort((a, b) => a.rank - b.rank)
+  const liveHeading = lang === 'en' ? 'Live Tally' : '실시간 집계'
 
   return (
     <div className="mx-5 mt-5 mb-6">
       <div className="text-[13px] font-semibold text-[#707070] uppercase tracking-wider font-mono mb-3">
-        {mode === 'live' ? '실시간 집계' : t('vr_rankings')}
+        {mode === 'live' ? liveHeading : t('vr_rankings')}
       </div>
 
       <div className="flex flex-col gap-3">

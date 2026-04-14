@@ -3,10 +3,19 @@ import { describe, expect, it, vi } from 'vitest'
 import type { RankedCandidate, VoteResultData } from '../../types/vote'
 import { VoteResultWinner } from './VoteResultWinner'
 
+let mockLang: 'en' | 'ko' = 'ko'
+
 vi.mock('../../providers/LanguageProvider', () => ({
   useLanguage: () => ({
-    lang: 'ko',
-    t: (key: string) => ({ vr_results: '결과 발표', vr_ended: '종료', vr_1st_place: '1위' })[key] ?? key,
+    lang: mockLang,
+    t: (key: string) =>
+      (
+        ({
+          vr_results: mockLang === 'ko' ? '결과 발표' : 'Results',
+          vr_ended: mockLang === 'ko' ? '종료' : 'Ended',
+          vr_1st_place: mockLang === 'ko' ? '1위' : '1st Place',
+        }) as const
+      )[key] ?? key,
   }),
 }))
 
@@ -35,6 +44,7 @@ const baseResult: VoteResultData = {
 
 describe('VoteResultWinner', () => {
   it('uses total vote wording by default', () => {
+    mockLang = 'ko'
     render(<VoteResultWinner result={baseResult} winner={baseWinner} />)
 
     expect(screen.getByText('5')).toBeInTheDocument()
@@ -42,6 +52,7 @@ describe('VoteResultWinner', () => {
   })
 
   it('can render participant wording when a submission count is provided', () => {
+    mockLang = 'ko'
     render(
       <VoteResultWinner
         result={baseResult}
@@ -54,5 +65,15 @@ describe('VoteResultWinner', () => {
 
     expect(screen.getByText('3')).toBeInTheDocument()
     expect(screen.getByText('명 참여 중')).toBeInTheDocument()
+  })
+
+  it('renders live tally labels in English when the locale is English', () => {
+    mockLang = 'en'
+    render(<VoteResultWinner result={baseResult} winner={baseWinner} mode="live" />)
+
+    expect(screen.getByText('Live Tally')).toBeInTheDocument()
+    expect(screen.getByText('Current Leader')).toBeInTheDocument()
+    expect(screen.getByText('total votes')).toBeInTheDocument()
+    expect(screen.getByText('(2 votes)')).toBeInTheDocument()
   })
 })

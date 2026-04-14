@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { type Address, keccak256, toHex } from 'viem'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
@@ -10,6 +10,7 @@ import {
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useVoteDetail } from '../../hooks/user/useVoteDetail'
 import { useVoteLiveTally } from '../../hooks/user/useVoteLiveTally'
+import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
 import { VoteResultRankings } from '../user/VoteResultRankings'
 import { VoteResultWinner } from '../user/VoteResultWinner'
@@ -22,26 +23,75 @@ function LoadingSkeleton() {
   )
 }
 
-function formatFinalizeError(error: unknown) {
+function getFinalTallyCopy(lang: 'en' | 'ko') {
+  return lang === 'ko'
+    ? {
+        eyebrow: '최종 집계',
+        title: '최종 집계 확정',
+        description:
+          '현재 집계 결과를 확인하고, 필요하면 finalize로 온체인 최종 결과를 확정합니다.',
+        statusSettled: '정산 완료',
+        statusFinalized: 'Finalize 완료',
+        statusPending: 'Finalize 대기',
+        actionLoading: 'Finalize 진행 중...',
+        actionIdle: 'Finalize 실행',
+        backToSettlement: '정산 결과 보기',
+        backToManagement: '관리 화면으로 돌아가기',
+        missingElectionInfo: '온체인 election 주소가 없어 finalize를 진행할 수 없습니다.',
+        walletRequired: '지갑 연결이 필요합니다.',
+        txSubmitted: (txHash: string) => `Finalize 트랜잭션 제출됨: ${txHash}`,
+        success: '온체인 finalize가 완료되었습니다. 정산 화면으로 이동합니다.',
+        errorDefault: 'Finalize에 실패했습니다.',
+        errorNotReady:
+          '아직 finalize 가능한 단계가 아닙니다. 상태 전이를 확인한 뒤 다시 시도해 주세요.',
+        errorUserRejected: '지갑에서 트랜잭션 서명이 취소되었습니다.',
+        errorNetwork: '네트워크를 Status Testnet으로 전환한 뒤 다시 시도해 주세요.',
+        errorTransactionFailed:
+          'Finalize 트랜잭션 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+      }
+    : {
+        eyebrow: 'Final Tally',
+        title: 'Finalize Results',
+        description: 'Review the current tally and finalize the on-chain result when it is ready.',
+        statusSettled: 'Settled',
+        statusFinalized: 'Finalized',
+        statusPending: 'Awaiting Finalize',
+        actionLoading: 'Finalizing...',
+        actionIdle: 'Run Finalize',
+        backToSettlement: 'View Settlement Summary',
+        backToManagement: 'Back to Management',
+        missingElectionInfo: 'Finalize cannot run because the on-chain election is missing.',
+        walletRequired: 'Connect your wallet to continue.',
+        txSubmitted: (txHash: string) => `Finalize transaction submitted: ${txHash}`,
+        success: 'On-chain finalization completed. Moving to settlement.',
+        errorDefault: 'Finalization failed.',
+        errorNotReady: 'Finalization is not available yet. Check the election state and try again.',
+        errorUserRejected: 'Transaction signature was rejected in the wallet.',
+        errorNetwork: 'Switch to Status Testnet and try again.',
+        errorTransactionFailed: 'Finalize transaction failed. Please try again shortly.',
+      }
+}
+
+function formatFinalizeError(error: unknown, copy: ReturnType<typeof getFinalTallyCopy>) {
   if (!(error instanceof Error)) {
-    return 'Finalize에 실패했습니다.'
+    return copy.errorDefault
   }
 
   const message = error.message.trim()
 
   if (/revert|not finalized|invalid state|key reveal|reveal/i.test(message)) {
-    return '아직 finalize 가능한 단계가 아닙니다. 상태 전이를 확인한 뒤 다시 시도해 주세요.'
+    return copy.errorNotReady
   }
 
   if (/user rejected|denied|rejected/i.test(message)) {
-    return '지갑에서 트랜잭션 서명이 취소되었습니다.'
+    return copy.errorUserRejected
   }
 
   if (/network|chain/i.test(message)) {
-    return '네트워크를 Status Testnet으로 전환한 뒤 다시 시도해 주세요.'
+    return copy.errorNetwork
   }
 
-  return 'Finalize 트랜잭션 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.'
+  return copy.errorTransactionFailed
 }
 
 export function HostFinalTallyPage() {
@@ -54,6 +104,7 @@ export function HostFinalTallyPage() {
     totalInvalidVotes,
     isLoading: isResultLoading,
   } = useVoteLiveTally(id)
+  const { lang } = useLanguage()
   const { addToast } = useToast()
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient({ chainId: vestarStatusTestnetChain.id })
@@ -61,6 +112,7 @@ export function HostFinalTallyPage() {
 
   const [isFinalizing, setIsFinalizing] = useState(false)
   const [isSettlementSettled, setIsSettlementSettled] = useState(false)
+  const copy = useMemo(() => getFinalTallyCopy(lang), [lang])
 
   useEffect(() => {
     if (!vote?.electionAddress) {
@@ -101,13 +153,13 @@ export function HostFinalTallyPage() {
     if (!vote.electionAddress || !vote.onchainElectionId) {
       addToast({
         type: 'error',
-        message: '온체인 election 주소가 없어 finalize를 진행할 수 없습니다.',
+        message: copy.missingElectionInfo,
       })
       return
     }
 
     if (!walletClient?.account) {
-      addToast({ type: 'error', message: '지갑 연결이 필요합니다.' })
+      addToast({ type: 'error', message: copy.walletRequired })
       return
     }
 
@@ -129,17 +181,17 @@ export function HostFinalTallyPage() {
         totalInvalidVotes,
       })
 
-      addToast({ type: 'info', message: `Finalize 트랜잭션 제출됨: ${txHash}` })
+      addToast({ type: 'info', message: copy.txSubmitted(txHash) })
       await waitForVestarTransactionReceipt(txHash)
       addToast({
         type: 'success',
-        message: '온체인 finalize가 완료되었습니다. 정산 화면으로 이동합니다.',
+        message: copy.success,
       })
       navigate(`/host/${id}/settlement`)
     } catch (error) {
       addToast({
         type: 'info',
-        message: formatFinalizeError(error),
+        message: formatFinalizeError(error, copy),
       })
     } finally {
       setIsFinalizing(false)
@@ -154,11 +206,11 @@ export function HostFinalTallyPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[1px] text-[#7140FF] font-mono">
-                Final Tally
+                {copy.eyebrow}
               </div>
-              <div className="mt-2 text-[19px] font-semibold text-[#090A0B]">최종 집계 확정</div>
+              <div className="mt-2 text-[19px] font-semibold text-[#090A0B]">{copy.title}</div>
               <div className="mt-2 text-[13px] leading-relaxed text-[#707070]">
-                현재 집계 결과를 확인하고, 필요하면 finalize로 온체인 최종 결과를 확정합니다.
+                {copy.description}
               </div>
             </div>
             <span
@@ -171,10 +223,10 @@ export function HostFinalTallyPage() {
               }`}
             >
               {isSettlementSettled
-                ? '정산 완료'
+                ? copy.statusSettled
                 : vote.onchainState === 'FINALIZED'
-                  ? 'Finalize 완료'
-                  : 'Finalize 대기'}
+                  ? copy.statusFinalized
+                  : copy.statusPending}
             </span>
           </div>
         </div>
@@ -188,7 +240,7 @@ export function HostFinalTallyPage() {
             onClick={handleFinalize}
             className="w-full rounded-2xl bg-[#7140FF] py-4 text-[15px] font-bold text-white disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:cursor-default hover:enabled:opacity-90 transition-opacity active:enabled:scale-[0.99]"
           >
-            {isFinalizing ? 'Finalize 진행 중...' : 'Finalize 실행'}
+            {isFinalizing ? copy.actionLoading : copy.actionIdle}
           </button>
           <button
             type="button"
@@ -197,7 +249,7 @@ export function HostFinalTallyPage() {
             }
             className="w-full rounded-2xl border border-[#E7E9ED] bg-white py-4 text-[15px] font-bold text-[#090A0B] transition-colors hover:border-[#d9ddf3] active:scale-[0.99]"
           >
-            {isSettlementSettled ? '정산 결과 보기' : '관리 화면으로 돌아가기'}
+            {isSettlementSettled ? copy.backToSettlement : copy.backToManagement}
           </button>
         </div>
       </div>
