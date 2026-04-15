@@ -1,13 +1,31 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VoteDetailData, VoteResultData } from '../../types/vote'
 import { HostFinalTallyPage } from './HostFinalTallyPage'
 
+let mockLang: 'en' | 'ko' = 'en'
 let mockVoteLoading = true
 let mockResultLoading = true
 let mockVoteValue: VoteDetailData | null = null
 let mockResultValue: VoteResultData | null = null
+let mockSettlementSettled = false
+
+const mockAddToast = vi.fn()
+const mockOpenFeePrompt = vi.fn()
+const mockSwitchChainAsync = vi.fn()
+const mockFinalizeElectionResults = vi.fn()
+const mockWaitForReceipt = vi.fn()
+const mockEstimateFinalizeElectionResultsFee = vi.fn()
+
+let mockWalletClientData: { account: { address: `0x${string}` } } | null = null
+let capturedFeePromptConfig: {
+  title: string
+  description: string
+  estimate: () => Promise<unknown>
+  note: (preview: { transactionCount: number }) => string
+  proceed: () => Promise<void>
+} | null = null
 
 const mockVote: VoteDetailData = {
   id: '1412',
@@ -32,6 +50,7 @@ const mockVote: VoteDetailData = {
   voteFrequency: 'Unlimited paid',
   voteLimit: 'Up to 1 choice',
   resultPublic: true,
+  paymentMode: 'PAID',
   candidates: [
     {
       id: 'candidate-1',
@@ -89,13 +108,13 @@ vi.mock('../../hooks/user/useVoteLiveTally', () => ({
 
 vi.mock('../../providers/LanguageProvider', () => ({
   useLanguage: () => ({
-    lang: 'en' as const,
+    lang: mockLang,
   }),
 }))
 
 vi.mock('../../providers/ToastProvider', () => ({
   useToast: () => ({
-    addToast: vi.fn(),
+    addToast: mockAddToast,
   }),
 }))
 
@@ -103,7 +122,10 @@ vi.mock('../../hooks/useStatusFeePrompt', () => ({
   useStatusFeePrompt: () => ({
     prompt: null,
     busyAction: null,
-    openForAction: vi.fn(),
+    openForAction: (config: typeof capturedFeePromptConfig) => {
+      capturedFeePromptConfig = config
+      mockOpenFeePrompt(config)
+    },
     closePrompt: vi.fn(),
     handleRecheck: vi.fn(),
     handleProceed: vi.fn(),
@@ -113,20 +135,24 @@ vi.mock('../../hooks/useStatusFeePrompt', () => ({
 vi.mock('wagmi', () => ({
   useChainId: () => 1660990954,
   useSwitchChain: () => ({
-    switchChainAsync: vi.fn(),
+    switchChainAsync: mockSwitchChainAsync,
   }),
   useWalletClient: () => ({
-    data: null,
+    data: mockWalletClientData,
   }),
 }))
 
 vi.mock('../../contracts/vestar/actions', () => ({
-  estimateFinalizeElectionResultsFee: vi.fn(),
-  finalizeElectionResults: vi.fn(),
+  estimateFinalizeElectionResultsFee: (
+    ...args: Parameters<typeof mockEstimateFinalizeElectionResultsFee>
+  ) => mockEstimateFinalizeElectionResultsFee(...args),
+  finalizeElectionResults: (...args: Parameters<typeof mockFinalizeElectionResults>) =>
+    mockFinalizeElectionResults(...args),
   getElectionSnapshot: vi.fn(async () => ({
-    settlementSummary: { settled: false },
+    settlementSummary: { settled: mockSettlementSettled },
   })),
-  waitForVestarTransactionReceipt: vi.fn(),
+  waitForVestarTransactionReceipt: (...args: Parameters<typeof mockWaitForReceipt>) =>
+    mockWaitForReceipt(...args),
 }))
 
 vi.mock('../../contracts/vestar/chain', () => ({
@@ -161,6 +187,8 @@ function renderPage() {
     <MemoryRouter initialEntries={['/host/1412/result']}>
       <Routes>
         <Route path="/host/:id/result" element={<HostFinalTallyPage />} />
+        <Route path="/host/:id/settlement" element={<div>Settlement Route</div>} />
+        <Route path="/host/manage/:id" element={<div>Management Route</div>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -168,10 +196,22 @@ function renderPage() {
 
 describe('HostFinalTallyPage', () => {
   beforeEach(() => {
+    mockLang = 'en'
     mockVoteLoading = true
     mockResultLoading = true
     mockVoteValue = null
     mockResultValue = null
+    mockSettlementSettled = false
+    mockWalletClientData = null
+    capturedFeePromptConfig = null
+    mockAddToast.mockReset()
+    mockOpenFeePrompt.mockReset()
+    mockSwitchChainAsync.mockReset()
+    mockFinalizeElectionResults.mockReset()
+    mockFinalizeElectionResults.mockResolvedValue('0xhash')
+    mockWaitForReceipt.mockReset()
+    mockWaitForReceipt.mockResolvedValue(undefined)
+    mockEstimateFinalizeElectionResultsFee.mockReset()
   })
 
   it('keeps hook order stable when loading state resolves', async () => {
@@ -187,6 +227,8 @@ describe('HostFinalTallyPage', () => {
         <MemoryRouter initialEntries={['/host/1412/result']}>
           <Routes>
             <Route path="/host/:id/result" element={<HostFinalTallyPage />} />
+            <Route path="/host/:id/settlement" element={<div>Settlement Route</div>} />
+            <Route path="/host/manage/:id" element={<div>Management Route</div>} />
           </Routes>
         </MemoryRouter>,
       ),
@@ -214,10 +256,100 @@ describe('HostFinalTallyPage', () => {
       <MemoryRouter initialEntries={['/host/1412/result']}>
         <Routes>
           <Route path="/host/:id/result" element={<HostFinalTallyPage />} />
+          <Route path="/host/:id/settlement" element={<div>Settlement Route</div>} />
+          <Route path="/host/manage/:id" element={<div>Management Route</div>} />
         </Routes>
       </MemoryRouter>,
     )
 
     expect(screen.getByText('Finalize Results')).toBeInTheDocument()
+  })
+
+  it('explains free-vote finalization in English and returns to management after success', async () => {
+    mockVoteLoading = false
+    mockResultLoading = false
+    mockVoteValue = {
+      ...mockVote,
+      paymentMode: 'FREE',
+    }
+    mockResultValue = mockResult
+    mockWalletClientData = {
+      account: {
+        address: '0x0000000000000000000000000000000000001412',
+      },
+    }
+
+    renderPage()
+
+    expect(
+      screen.getByText(
+        'Review the current tally and finalize the on-chain result when it is ready.',
+      ),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finalize Guide' }))
+
+    expect(
+      screen.getByText(
+        /Free votes still need finalization to lock the final result on-chain after voting ends\./,
+      ),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run Finalize' }))
+
+    await waitFor(() => {
+      expect(capturedFeePromptConfig).not.toBeNull()
+    })
+
+    await act(async () => {
+      await capturedFeePromptConfig?.proceed()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Management Route')).toBeInTheDocument()
+    })
+  })
+
+  it('keeps paid votes on the settlement flow after finalize succeeds', async () => {
+    mockVoteLoading = false
+    mockResultLoading = false
+    mockVoteValue = {
+      ...mockVote,
+      paymentMode: 'PAID',
+    }
+    mockResultValue = mockResult
+    mockWalletClientData = {
+      account: {
+        address: '0x0000000000000000000000000000000000001412',
+      },
+    }
+
+    renderPage()
+
+    expect(
+      screen.getByText(
+        'Review the current tally and finalize the on-chain result when it is ready.',
+      ),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finalize Guide' }))
+
+    expect(
+      screen.getByText(/Settlement becomes available only after finalization\./),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run Finalize' }))
+
+    await waitFor(() => {
+      expect(capturedFeePromptConfig).not.toBeNull()
+    })
+
+    await act(async () => {
+      await capturedFeePromptConfig?.proceed()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Settlement Route')).toBeInTheDocument()
+    })
   })
 })
