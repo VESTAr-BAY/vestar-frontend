@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchLiveTally, fetchResultSummaries } from '../../api/elections'
 import type { RankedCandidate, VoteResultData } from '../../types/vote'
-import { assignCompetitionRanks } from '../../utils/ranking'
 import { resolveDisplayedParticipantCount } from '../../utils/electionMapper'
+import { assignCompetitionRanks } from '../../utils/ranking'
 import { useVoteDetail } from './useVoteDetail'
 
 export interface UseVoteLiveTallyResult {
@@ -18,6 +18,7 @@ export function useVoteLiveTally(id: string): UseVoteLiveTallyResult {
   const [totalSubmissions, setTotalSubmissions] = useState(0)
   const [totalInvalidVotes, setTotalInvalidVotes] = useState(0)
   const [isTallyLoading, setIsTallyLoading] = useState(true)
+  const loadedTallyIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!vote) {
@@ -29,7 +30,8 @@ export function useVoteLiveTally(id: string): UseVoteLiveTallyResult {
     }
 
     let cancelled = false
-    setIsTallyLoading(true)
+    const shouldBlockWhileLoading = loadedTallyIdRef.current !== id
+    setIsTallyLoading(shouldBlockWhileLoading)
 
     Promise.all([
       fetchResultSummaries(id),
@@ -84,7 +86,12 @@ export function useVoteLiveTally(id: string): UseVoteLiveTallyResult {
             fallbackParticipantCount: participantCount ?? 0,
             candidateVotes:
               vote.visibilityMode === 'OPEN'
-                ? new Map(nextRankedCandidates.map((candidate) => [candidate.id, BigInt(candidate.votes)]))
+                ? new Map(
+                    nextRankedCandidates.map((candidate) => [
+                      candidate.id,
+                      BigInt(candidate.votes),
+                    ]),
+                  )
                 : undefined,
           }),
         )
@@ -98,6 +105,7 @@ export function useVoteLiveTally(id: string): UseVoteLiveTallyResult {
       })
       .finally(() => {
         if (!cancelled) {
+          loadedTallyIdRef.current = id
           setIsTallyLoading(false)
         }
       })

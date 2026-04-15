@@ -10,11 +10,12 @@ import {
   waitForVestarTransactionReceipt,
 } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
-import { useStatusFeePrompt } from '../../hooks/useStatusFeePrompt'
 import { useVoteDetail } from '../../hooks/user/useVoteDetail'
 import { useVoteLiveTally } from '../../hooks/user/useVoteLiveTally'
+import { useStatusFeePrompt } from '../../hooks/useStatusFeePrompt'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
+import type { VoteDetailData } from '../../types/vote'
 import { buildStatusFeePreview, getStatusFeeTransactionNote } from '../../utils/statusFee'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 import { VoteResultRankings } from '../user/VoteResultRankings'
@@ -28,16 +29,39 @@ function LoadingSkeleton() {
   )
 }
 
-function getFinalTallyCopy(lang: 'en' | 'ko') {
+function hasSettlementStep(vote: VoteDetailData) {
+  if (vote.paymentMode === 'PAID') {
+    return true
+  }
+
+  if (vote.paymentMode === 'FREE') {
+    return false
+  }
+
+  return Boolean(vote.costPerBallot && vote.costPerBallot !== '0')
+}
+
+function getFinalTallyCopy(lang: 'en' | 'ko', needsSettlement: boolean) {
   return lang === 'ko'
     ? {
         eyebrow: '최종 집계',
         title: '최종 집계 확정',
-        description:
-          '현재 집계 결과를 확인하고, 필요하면 finalize로 온체인 최종 결과를 확정합니다.',
+        descriptionPending: needsSettlement
+          ? '현재 집계 결과를 확인하고, 필요하면 finalize로 온체인 최종 결과를 확정하세요.'
+          : '현재 집계 결과를 확인하고, 필요하면 finalize로 온체인 최종 결과를 확정하세요.',
+        descriptionFinalized: needsSettlement
+          ? '온체인 최종 확정이 완료되었습니다. 다음 단계로 정산을 진행할 수 있습니다.'
+          : '온체인 최종 확정이 완료되었습니다. 이 무료 투표는 추가 정산 단계 없이 결과만 확인하면 됩니다.',
+        descriptionSettled: '최종 확정과 정산이 모두 완료된 상태입니다.',
+        guideCta: 'Finalize Guide',
+        guideText: needsSettlement
+          ? 'finalize는 투표 종료 후 최종 결과를 온체인에 확정하는 단계입니다. finalize가 끝나야 이후 정산을 진행할 수 있습니다.'
+          : '무료 투표도 finalize를 통해 최종 결과를 온체인에 확정해야 선거 상태가 마무리됩니다. 정산은 없지만, 결과를 최종 상태로 고정하려면 finalize가 필요합니다.',
         statusSettled: '정산 완료',
         statusFinalized: 'Finalize 완료',
         statusPending: 'Finalize 대기',
+        actionSettled: '정산 완료',
+        actionCompleted: '최종 확정 완료',
         actionLoading: 'Finalize 진행 중...',
         actionIdle: 'Finalize 실행',
         backToSettlement: '정산 결과 보기',
@@ -45,7 +69,8 @@ function getFinalTallyCopy(lang: 'en' | 'ko') {
         missingElectionInfo: '온체인 election 주소가 없어 finalize를 진행할 수 없습니다.',
         walletRequired: '지갑 연결이 필요합니다.',
         txSubmitted: (txHash: string) => `Finalize 트랜잭션 제출됨: ${txHash}`,
-        success: '온체인 finalize가 완료되었습니다. 정산 화면으로 이동합니다.',
+        successWithSettlement: '온체인 finalize가 완료되었습니다. 정산 화면으로 이동합니다.',
+        successWithoutSettlement: '온체인 최종 확정이 완료되었습니다. 관리 화면으로 돌아갑니다.',
         errorDefault: 'Finalize에 실패했습니다.',
         errorNotReady:
           '아직 finalize 가능한 단계가 아닙니다. 상태 전이를 확인한 뒤 다시 시도해 주세요.',
@@ -57,10 +82,22 @@ function getFinalTallyCopy(lang: 'en' | 'ko') {
     : {
         eyebrow: 'Final Tally',
         title: 'Finalize Results',
-        description: 'Review the current tally and finalize the on-chain result when it is ready.',
+        descriptionPending: needsSettlement
+          ? 'Review the current tally and finalize the on-chain result when it is ready.'
+          : 'Review the current tally and finalize the on-chain result when it is ready.',
+        descriptionFinalized: needsSettlement
+          ? 'The on-chain final result is already locked. Settlement is the next step.'
+          : 'The on-chain final result is already locked. There is no settlement step for this free vote.',
+        descriptionSettled: 'Both finalization and settlement are already complete.',
+        guideCta: 'Finalize Guide',
+        guideText: needsSettlement
+          ? 'Finalize locks the final result on-chain after voting ends. Settlement becomes available only after finalization.'
+          : 'Free votes still need finalization to lock the final result on-chain after voting ends. There is no settlement step, but finalize is required to complete the election state.',
         statusSettled: 'Settled',
         statusFinalized: 'Finalized',
         statusPending: 'Awaiting Finalize',
+        actionSettled: 'Settlement Completed',
+        actionCompleted: 'Finalization Completed',
         actionLoading: 'Finalizing...',
         actionIdle: 'Run Finalize',
         backToSettlement: 'View Settlement Summary',
@@ -68,7 +105,8 @@ function getFinalTallyCopy(lang: 'en' | 'ko') {
         missingElectionInfo: 'Finalize cannot run because the on-chain election is missing.',
         walletRequired: 'Connect your wallet to continue.',
         txSubmitted: (txHash: string) => `Finalize transaction submitted: ${txHash}`,
-        success: 'On-chain finalization completed. Moving to settlement.',
+        successWithSettlement: 'On-chain finalization completed. Moving to settlement.',
+        successWithoutSettlement: 'On-chain finalization completed. Returning to management.',
         errorDefault: 'Finalization failed.',
         errorNotReady: 'Finalization is not available yet. Check the election state and try again.',
         errorUserRejected: 'Transaction signature was rejected in the wallet.',
@@ -129,7 +167,9 @@ export function HostFinalTallyPage() {
 
   const [isFinalizing, setIsFinalizing] = useState(false)
   const [isSettlementSettled, setIsSettlementSettled] = useState(false)
-  const copy = useMemo(() => getFinalTallyCopy(lang), [lang])
+  const [isGuideOpen, setIsGuideOpen] = useState(false)
+  const needsSettlement = vote ? hasSettlementStep(vote) : false
+  const copy = useMemo(() => getFinalTallyCopy(lang, needsSettlement), [lang, needsSettlement])
   const winner = result?.rankedCandidates.find((candidate) => candidate.rank === 1)
   const isFinalizeReady = Boolean(
     vote &&
@@ -176,6 +216,21 @@ export function HostFinalTallyPage() {
     return <LoadingSkeleton />
   }
 
+  const headerDescription = isSettlementSettled
+    ? copy.descriptionSettled
+    : vote.onchainState === 'FINALIZED'
+      ? copy.descriptionFinalized
+      : copy.descriptionPending
+  const backPath =
+    isSettlementSettled && needsSettlement ? `/host/${id}/settlement` : `/host/manage/${id}`
+  const actionLabel = isSettlementSettled
+    ? copy.actionSettled
+    : vote.onchainState === 'FINALIZED'
+      ? copy.actionCompleted
+      : isFinalizing
+        ? copy.actionLoading
+        : copy.actionIdle
+
   const runFinalize = async () => {
     if (!vote.electionAddress || !vote.onchainElectionId) {
       addToast({
@@ -213,9 +268,9 @@ export function HostFinalTallyPage() {
       await waitForVestarTransactionReceipt(txHash)
       addToast({
         type: 'success',
-        message: copy.success,
+        message: needsSettlement ? copy.successWithSettlement : copy.successWithoutSettlement,
       })
-      navigate(`/host/${id}/settlement`)
+      navigate(needsSettlement ? `/host/${id}/settlement` : `/host/manage/${id}`)
     } catch (error) {
       addToast({
         type: 'info',
@@ -274,8 +329,8 @@ export function HostFinalTallyPage() {
   return (
     <>
       {winner ? <VoteResultWinner result={result} winner={winner} mode="finalized" /> : null}
-      <div className="min-h-full pb-8">
-        <div className="mx-5 -mt-4 rounded-[28px] border border-[#E7E9ED] bg-[linear-gradient(180deg,#FFFFFF_0%,#FBF9FF_100%)] px-5 py-5 shadow-[0_10px_30px_rgba(113,64,255,0.06)] relative z-[1]">
+      <div className="min-h-full bg-white pt-5 pb-8">
+        <div className="mx-5 rounded-[28px] border border-[#E7E9ED] bg-[linear-gradient(180deg,#FFFFFF_0%,#FBF9FF_100%)] px-5 py-5 shadow-[0_10px_30px_rgba(113,64,255,0.06)]">
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[1px] text-[#7140FF] font-mono">
@@ -283,7 +338,7 @@ export function HostFinalTallyPage() {
               </div>
               <div className="mt-2 text-[19px] font-semibold text-[#090A0B]">{copy.title}</div>
               <div className="mt-2 text-[13px] leading-relaxed text-[#707070]">
-                {copy.description}
+                {headerDescription}
               </div>
             </div>
             <span
@@ -304,25 +359,44 @@ export function HostFinalTallyPage() {
           </div>
         </div>
 
+        <button
+          type="button"
+          onClick={() => setIsGuideOpen((prev) => !prev)}
+          className="mx-5 mt-4 flex w-[calc(100%-2.5rem)] items-center justify-between rounded-2xl border border-[#DCCEFF] bg-[rgba(113,64,255,0.05)] px-4 py-3 text-left text-[13px] font-semibold text-[#7140FF] transition-colors hover:border-[#c9b2ff]"
+          aria-expanded={isGuideOpen}
+          aria-label={copy.guideCta}
+        >
+          <span>{copy.guideCta}</span>
+          <span aria-hidden="true">{isGuideOpen ? '−' : '+'}</span>
+        </button>
+        {isGuideOpen ? (
+          <div className="mx-5 mt-3 rounded-2xl border border-[#DCCEFF] bg-[rgba(113,64,255,0.05)] px-4 py-3">
+            <div className="text-[13px] leading-relaxed text-[#5B6470]">{copy.guideText}</div>
+          </div>
+        ) : null}
+
         <VoteResultRankings rankedCandidates={result.rankedCandidates} mode="finalized" />
 
         <div className="px-5 pt-2 flex flex-col gap-3">
           <button
             type="button"
-            disabled={isSettlementSettled || !isFinalizeReady || isFinalizing}
+            disabled={
+              isSettlementSettled ||
+              vote.onchainState === 'FINALIZED' ||
+              !isFinalizeReady ||
+              isFinalizing
+            }
             onClick={handleFinalize}
             className="w-full rounded-2xl bg-[#7140FF] py-4 text-[15px] font-bold text-white disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:cursor-default hover:enabled:opacity-90 transition-opacity active:enabled:scale-[0.99]"
           >
-            {isFinalizing ? copy.actionLoading : copy.actionIdle}
+            {actionLabel}
           </button>
           <button
             type="button"
-            onClick={() =>
-              navigate(isSettlementSettled ? `/host/${id}/settlement` : `/host/manage/${id}`)
-            }
+            onClick={() => navigate(backPath)}
             className="w-full rounded-2xl border border-[#E7E9ED] bg-white py-4 text-[15px] font-bold text-[#090A0B] transition-colors hover:border-[#d9ddf3] active:scale-[0.99]"
           >
-            {isSettlementSettled ? copy.backToSettlement : copy.backToManagement}
+            {isSettlementSettled && needsSettlement ? copy.backToSettlement : copy.backToManagement}
           </button>
         </div>
       </div>

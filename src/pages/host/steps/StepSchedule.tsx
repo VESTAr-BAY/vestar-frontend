@@ -11,6 +11,9 @@ import { formatBallotCostLabel } from '../../../utils/paymentDisplay'
 const INPUT_CLASS =
   'block min-w-0 w-full max-w-full appearance-none bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all'
 
+const NATIVE_DATETIME_INPUT_CLASS =
+  'block min-w-0 w-full max-w-full bg-white border border-[#E7E9ED] rounded-xl px-4 py-3 text-[14px] text-[#090A0B] outline-none focus:border-[#7140FF] focus:ring-2 focus:ring-[#7140FF]/10 transition-all'
+
 const HELPER_TEXT_CLASS = 'mt-1 text-[12px] leading-5 text-[#7140FF]'
 
 // ── Karma tier options derived from the shared utility (no local duplication) ──
@@ -47,7 +50,9 @@ function DateTimePicker({ value, onChange, min }: DateTimePickerProps) {
   const emit = (d: string, t: string) => onChange(`${d}T${t}`)
 
   const dateEmpty = !datePart
-  const dateInputClass = `${INPUT_CLASS} ${dateEmpty ? 'border-amber-300 focus:border-amber-400 focus:ring-amber-400/10' : ''}`
+  const dateInputClass = `${NATIVE_DATETIME_INPUT_CLASS} ${
+    dateEmpty ? 'border-amber-300 focus:border-amber-400 focus:ring-amber-400/10' : ''
+  }`
 
   return (
     <div className="flex gap-2">
@@ -65,7 +70,7 @@ function DateTimePicker({ value, onChange, min }: DateTimePickerProps) {
           className={dateInputClass}
         />
       </div>
-      <div className="w-[120px] flex-none flex flex-col gap-1">
+      <div className="w-[132px] flex-none flex flex-col gap-1">
         <span className="text-[11px] font-semibold text-[#707070]">
           {lang === 'ko' ? '시간' : 'Time'}
         </span>
@@ -74,7 +79,7 @@ function DateTimePicker({ value, onChange, min }: DateTimePickerProps) {
           value={timePart ?? ''}
           min={minTime}
           onChange={(e) => emit(datePart ?? '', e.target.value)}
-          className={INPUT_CLASS}
+          className={NATIVE_DATETIME_INPUT_CLASS}
         />
       </div>
     </div>
@@ -152,10 +157,10 @@ function ChoiceCard({
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="block text-[13px] font-semibold text-[#090A0B] mb-2">{label}</label>
+    <fieldset className="min-w-0 border-0 p-0">
+      <legend className="mb-2 px-0 text-[13px] font-semibold text-[#090A0B]">{label}</legend>
       {children}
-    </div>
+    </fieldset>
   )
 }
 
