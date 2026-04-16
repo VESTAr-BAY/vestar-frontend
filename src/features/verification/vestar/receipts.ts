@@ -3,6 +3,7 @@ import { getLogsChunked } from './chain'
 import { electionWriteAbi, encryptedVoteEvent, openVoteEvent, publicClient } from './constants'
 import { decryptCanonicalBallotPayload, decryptDemoPrivateSelectionIndex } from './crypto'
 import { resolveVerificationLanguage } from './language'
+import { mapWithConcurrency, scheduleVerificationRpc } from './rpc'
 import type {
   CandidateManifest,
   OpenReceiptLog,
@@ -19,6 +20,8 @@ import {
   truncateAddress,
 } from './utils'
 
+const RECEIPT_RPC_CONCURRENCY = 3
+
 export async function loadOpenReceipts(
   electionAddress: Address,
   fromBlock: bigint,
@@ -32,20 +35,25 @@ export async function loadOpenReceipts(
     toBlock: 'latest',
   })
 
-  const receipts = await Promise.all(
-    receiptLogs.map(async (log, index): Promise<VerificationReceipt | null> => {
+  const receipts = await mapWithConcurrency(
+    receiptLogs,
+    RECEIPT_RPC_CONCURRENCY,
+    async (log, index): Promise<VerificationReceipt | null> => {
       if (!log.transactionHash || !log.args.voter) {
         return null
       }
 
+      const transactionHash = log.transactionHash
       const submittedAtLabel = await readBlockTimestampLabel(blockCache, log.blockNumber)
-      const transaction = await publicClient.getTransaction({ hash: log.transactionHash })
+      const transaction = await scheduleVerificationRpc(() =>
+        publicClient.getTransaction({ hash: transactionHash }),
+      )
       const selections = decodeOpenSelections(transaction.input, candidateManifest)
 
       return {
-        id: `${log.transactionHash}-${index}`,
-        transactionHash: log.transactionHash,
-        transactionExplorerUrl: makeExplorerUrl('tx', log.transactionHash),
+        id: `${transactionHash}-${index}`,
+        transactionHash,
+        transactionExplorerUrl: makeExplorerUrl('tx', transactionHash),
         walletAddress: log.args.voter,
         walletLabel: truncateAddress(log.args.voter),
         walletExplorerUrl: makeExplorerUrl('address', log.args.voter),
@@ -53,7 +61,7 @@ export async function loadOpenReceipts(
         selections,
         encryptedBallot: null,
       }
-    }),
+    },
   )
 
   return receipts.filter((receipt): receipt is VerificationReceipt => receipt !== null)
@@ -74,14 +82,19 @@ export async function loadPrivateReceipts(
     toBlock: 'latest',
   })
 
-  const receipts = await Promise.all(
-    receiptLogs.map(async (log, index): Promise<VerificationReceipt | null> => {
+  const receipts = await mapWithConcurrency(
+    receiptLogs,
+    RECEIPT_RPC_CONCURRENCY,
+    async (log, index): Promise<VerificationReceipt | null> => {
       if (!log.transactionHash || !log.args.voter) {
         return null
       }
 
+      const transactionHash = log.transactionHash
       const submittedAtLabel = await readBlockTimestampLabel(blockCache, log.blockNumber)
-      const transaction = await publicClient.getTransaction({ hash: log.transactionHash })
+      const transaction = await scheduleVerificationRpc(() =>
+        publicClient.getTransaction({ hash: transactionHash }),
+      )
       const encryptedBallot = decodeEncryptedBallot(transaction.input)
       const selections = await decryptPrivateSelections(
         electionId,
@@ -93,9 +106,9 @@ export async function loadPrivateReceipts(
       )
 
       return {
-        id: `${log.transactionHash}-${index}`,
-        transactionHash: log.transactionHash,
-        transactionExplorerUrl: makeExplorerUrl('tx', log.transactionHash),
+        id: `${transactionHash}-${index}`,
+        transactionHash,
+        transactionExplorerUrl: makeExplorerUrl('tx', transactionHash),
         walletAddress: log.args.voter,
         walletLabel: truncateAddress(log.args.voter),
         walletExplorerUrl: makeExplorerUrl('address', log.args.voter),
@@ -103,7 +116,7 @@ export async function loadPrivateReceipts(
         selections,
         encryptedBallot,
       }
-    }),
+    },
   )
 
   return receipts.filter((receipt): receipt is VerificationReceipt => receipt !== null)
@@ -252,7 +265,7 @@ async function readBlockTimestampLabel(blockCache: Map<string, bigint>, blockNum
   let timestamp = blockCache.get(cacheKey)
 
   if (timestamp === undefined) {
-    const block = await publicClient.getBlock({ blockNumber })
+    const block = await scheduleVerificationRpc(() => publicClient.getBlock({ blockNumber }))
     timestamp = block.timestamp
     blockCache.set(cacheKey, timestamp)
   }

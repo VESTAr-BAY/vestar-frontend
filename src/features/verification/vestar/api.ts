@@ -32,6 +32,7 @@ import {
 } from './constants'
 import { resolveVerificationLanguage } from './language'
 import { readCandidateManifest, readResultManifest } from './manifests'
+import { mapWithConcurrency, scheduleVerificationRpc } from './rpc'
 import {
   buildOpenCandidates,
   buildPrivateCandidates,
@@ -68,6 +69,8 @@ import {
 
 export { readCachedVerificationElectionDetail, readCachedVerificationElectionSummaries }
 
+const VERIFICATION_SUMMARY_CONCURRENCY = 2
+
 export async function syncVerificationElectionSummaries() {
   const lang = resolveVerificationLanguage()
   const cached = readStoredIndexCache()
@@ -76,7 +79,7 @@ export async function syncVerificationElectionSummaries() {
       (entry) => [entry.address.toLowerCase(), normalizeElectionSummary(entry)] as const,
     ),
   )
-  const latestBlock = await publicClient.getBlockNumber()
+  const latestBlock = await scheduleVerificationRpc(() => publicClient.getBlockNumber())
   const createdFromBlock = cached ? BigInt(cached.lastSyncedBlock) + 1n : undefined
   const createdLogs =
     createdFromBlock !== undefined && createdFromBlock > latestBlock
@@ -148,13 +151,14 @@ export async function syncVerificationElectionSummaries() {
     })
   }
 
-  const nextSummaries = await Promise.all(
-    [...cachedMap.values()].map((entry) =>
+  const nextSummaries = await mapWithConcurrency(
+    [...cachedMap.values()],
+    VERIFICATION_SUMMARY_CONCURRENCY,
+    (entry) =>
       loadElectionSummary(entry, {
         fromBlock: cached ? BigInt(cached.lastSyncedBlock) + 1n : undefined,
         log: logMap.get(entry.address.toLowerCase()),
       }),
-    ),
   )
 
   const trackedElections = await hydrateFallbackElectionSummaries(
@@ -292,48 +296,55 @@ async function loadElectionSummary(
       (resolveVerificationLanguage() === 'ko' ? '아직 없음' : 'Not available yet') ||
     context.fromBlock !== undefined
 
-  const [state, electionId, config, result, revealedPrivateKey, resultLogs, receiptLogs] =
-    await Promise.all([
-      publicClient.readContract({
-        address: electionAddress,
-        abi: electionReadAbi,
-        functionName: 'state',
-      }),
-      publicClient.readContract({
-        address: electionAddress,
-        abi: electionReadAbi,
-        functionName: 'electionId',
-      }) as Promise<Hex>,
-      publicClient.readContract({
-        address: electionAddress,
-        abi: electionReadAbi,
-        functionName: 'getElectionConfig',
-      }) as Promise<ElectionConfig>,
-      publicClient.readContract({
-        address: electionAddress,
-        abi: electionReadAbi,
-        functionName: 'getResultSummary',
-      }) as Promise<ResultSummary>,
-      publicClient.readContract({
-        address: electionAddress,
-        abi: electionReadAbi,
-        functionName: 'revealedPrivateKey',
-      }) as Promise<Hex>,
-      shouldReadFinalizeLogs
-        ? getLogsChunked<ResultFinalizedLog>({
+  const [readResults, resultLogs, receiptLogs] = await Promise.all([
+    scheduleVerificationRpc(() =>
+      publicClient.multicall({
+        allowFailure: false,
+        contracts: [
+          {
             address: electionAddress,
-            event: resultFinalizedEvent,
-            fromBlock: eventFromBlock,
-            toBlock: 'latest',
-          })
-        : Promise.resolve([]),
-      getLogsChunked<OpenReceiptLog | PrivateReceiptLog>({
-        address: electionAddress,
-        event: visibilityHint === 1 ? encryptedVoteEvent : openVoteEvent,
-        fromBlock: eventFromBlock,
-        toBlock: 'latest',
+            abi: electionReadAbi,
+            functionName: 'state',
+          },
+          {
+            address: electionAddress,
+            abi: electionReadAbi,
+            functionName: 'electionId',
+          },
+          {
+            address: electionAddress,
+            abi: electionReadAbi,
+            functionName: 'getElectionConfig',
+          },
+          {
+            address: electionAddress,
+            abi: electionReadAbi,
+            functionName: 'getResultSummary',
+          },
+          {
+            address: electionAddress,
+            abi: electionReadAbi,
+            functionName: 'revealedPrivateKey',
+          },
+        ],
       }),
-    ])
+    ) as Promise<[number, Hex, ElectionConfig, ResultSummary, Hex]>,
+    shouldReadFinalizeLogs
+      ? getLogsChunked<ResultFinalizedLog>({
+          address: electionAddress,
+          event: resultFinalizedEvent,
+          fromBlock: eventFromBlock,
+          toBlock: 'latest',
+        })
+      : Promise.resolve([]),
+    getLogsChunked<OpenReceiptLog | PrivateReceiptLog>({
+      address: electionAddress,
+      event: visibilityHint === 1 ? encryptedVoteEvent : openVoteEvent,
+      fromBlock: eventFromBlock,
+      toBlock: 'latest',
+    }),
+  ])
+  const [state, electionId, config, result, revealedPrivateKey] = readResults
 
   const mode = toVisibilityMode(config.visibilityMode)
   const isFinalized = Number(state) === FINALIZED_STATE

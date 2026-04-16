@@ -157,7 +157,7 @@ function App() {
   const navigate = useNavigate()
   const initialCache = readCachedVerificationElectionSummaries()
   const [elections, setElections] = useState<VerificationElectionSummary[]>(initialCache.elections)
-  const [viewTab, setViewTab] = useState<ViewTab>('current')
+  const [viewTab, setViewTab] = useState<ViewTab>('finished')
   const [selectedSeriesKey, setSelectedSeriesKey] = useState<string | null>(null)
   const [selectedElectionId, setSelectedElectionId] = useState<string | null>(
     initialCache.elections[0]?.id ?? null,

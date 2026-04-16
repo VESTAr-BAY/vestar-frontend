@@ -1,5 +1,6 @@
 import type { Address } from 'viem'
 import { LOG_BLOCK_CHUNK_SIZE, publicClient } from './constants'
+import { scheduleVerificationRpc } from './rpc'
 
 export async function getLogsChunked<TLog>({
   address,
@@ -13,15 +14,20 @@ export async function getLogsChunked<TLog>({
   toBlock: bigint | 'latest'
 }) {
   if (fromBlock === 'earliest') {
-    return (await publicClient.getLogs({
-      address,
-      event: event as never,
-      fromBlock,
-      toBlock,
-    })) as TLog[]
+    return (await scheduleVerificationRpc(() =>
+      publicClient.getLogs({
+        address,
+        event: event as never,
+        fromBlock,
+        toBlock,
+      }),
+    )) as TLog[]
   }
 
-  const latestBlock = toBlock === 'latest' ? await publicClient.getBlockNumber() : toBlock
+  const latestBlock =
+    toBlock === 'latest'
+      ? await scheduleVerificationRpc(() => publicClient.getBlockNumber())
+      : toBlock
   if (fromBlock > latestBlock) {
     return [] as TLog[]
   }
@@ -32,12 +38,14 @@ export async function getLogsChunked<TLog>({
   while (cursor <= latestBlock) {
     const chunkEnd =
       cursor + LOG_BLOCK_CHUNK_SIZE > latestBlock ? latestBlock : cursor + LOG_BLOCK_CHUNK_SIZE
-    const chunkLogs = (await publicClient.getLogs({
-      address,
-      event: event as never,
-      fromBlock: cursor,
-      toBlock: chunkEnd,
-    })) as TLog[]
+    const chunkLogs = (await scheduleVerificationRpc(() =>
+      publicClient.getLogs({
+        address,
+        event: event as never,
+        fromBlock: cursor,
+        toBlock: chunkEnd,
+      }),
+    )) as TLog[]
 
     logs.push(...chunkLogs)
     cursor = chunkEnd + 1n
