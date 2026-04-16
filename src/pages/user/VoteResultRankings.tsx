@@ -25,7 +25,8 @@ export function VoteResultRankings({
 }: VoteResultRankingsProps) {
   const { t, lang } = useLanguage()
   const sorted = [...rankedCandidates].sort((a, b) => a.rank - b.rank)
-  const liveHeading = lang === 'en' ? 'Live Tally' : '실시간 집계'
+  const liveHeading = t('vr_live_tally')
+  const votesSuffix = t('vr_votes_suffix')
 
   return (
     <div className="mx-5 mt-5 mb-6">
@@ -71,8 +72,9 @@ export function VoteResultRankings({
                   {candidate.percentage.toFixed(1)}%
                 </div>
                 <div className="text-[11px] font-mono text-[#707070]">
-                  {candidate.votes.toLocaleString()}
-                  {lang === 'en' ? ' votes' : '표'}
+                  {lang === 'ko'
+                    ? `${candidate.votes.toLocaleString()}${votesSuffix}`
+                    : `${candidate.votes.toLocaleString()} ${votesSuffix}`}
                 </div>
               </div>
             </div>

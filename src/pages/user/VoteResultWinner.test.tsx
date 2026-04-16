@@ -14,6 +14,12 @@ vi.mock('../../providers/LanguageProvider', () => ({
           vr_results: mockLang === 'ko' ? '결과 발표' : 'Results',
           vr_ended: mockLang === 'ko' ? '종료' : 'Ended',
           vr_1st_place: mockLang === 'ko' ? '1위' : '1st Place',
+          vr_live_tally: mockLang === 'ko' ? '실시간 집계' : 'Live Tally',
+          vr_live_snapshot: mockLang === 'ko' ? '기준 집계' : 'snapshot',
+          vr_current_leader: mockLang === 'ko' ? '현재 1위' : 'Current Leader',
+          vr_votes_suffix: mockLang === 'ko' ? '표' : 'votes',
+          vr_participating: mockLang === 'ko' ? '명 참여 중' : 'participating',
+          vr_total_votes: mockLang === 'ko' ? '총 표 수' : 'total votes',
         }) as const
       )[key] ?? key,
   }),

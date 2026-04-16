@@ -212,6 +212,21 @@ const STRINGS = {
   vr_ended: { en: '· Ended', ko: '종료' },
   vr_1st_place: { en: '1st Place', ko: '1위' },
   vr_rankings: { en: 'Rankings', ko: '전체 순위' },
+  vr_live_tally: { en: 'Live Tally', ko: '실시간 집계' },
+  vr_live_snapshot: { en: 'snapshot', ko: '기준 집계' },
+  vr_current_leader: { en: 'Current Leader', ko: '현재 1위' },
+  vr_votes_suffix: { en: 'votes', ko: '표' },
+  vr_participating: { en: 'participating', ko: '명 참여 중' },
+  vr_total_votes: { en: 'total votes', ko: '총 표 수' },
+  vlt_empty_title: {
+    en: 'There is no live tally to display yet.',
+    ko: '아직 표시할 실시간 집계가 없습니다.',
+  },
+  vlt_empty_description: {
+    en: 'Live rankings will appear on this screen once tally data is available.',
+    ko: '집계 데이터가 반영되면 이 화면에서 실시간 순위를 볼 수 있습니다.',
+  },
+  vlt_back_to_detail: { en: 'Back to Detail', ko: '상세 화면으로 돌아가기' },
 
   // ── Vote Series ─────────────────────────────────────────────────────────────
   vs_back_to_list: { en: 'Back to list', ko: '목록으로 돌아가기' },

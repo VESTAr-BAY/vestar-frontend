@@ -12,6 +12,8 @@ vi.mock('../../providers/LanguageProvider', () => ({
       (
         ({
           vr_rankings: mockLang === 'ko' ? '전체 순위' : 'Rankings',
+          vr_live_tally: mockLang === 'ko' ? '실시간 집계' : 'Live Tally',
+          vr_votes_suffix: mockLang === 'ko' ? '표' : 'votes',
         }) as const
       )[key] ?? key,
   }),

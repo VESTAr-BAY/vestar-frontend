@@ -19,18 +19,16 @@ export function VoteResultWinner({
 }: VoteResultWinnerProps) {
   const { t, lang } = useLanguage()
   const footerCount = summaryCount ?? result.totalVotes
-  const liveBadgeLabel = lang === 'en' ? 'Live Tally' : '실시간 집계'
-  const liveSnapshotLabel = lang === 'en' ? 'snapshot' : '기준 집계'
-  const topCandidateLabel = lang === 'en' ? 'Current Leader' : '현재 1위'
-  const votesLabel = lang === 'en' ? 'votes' : '표'
+  const liveBadgeLabel = t('vr_live_tally')
+  const liveSnapshotLabel = t('vr_live_snapshot')
+  const topCandidateLabel = t('vr_current_leader')
+  const votesLabel = t('vr_votes_suffix')
   const footerLabel =
-    summaryKind === 'participants'
-      ? lang === 'en'
-        ? 'participating'
-        : '명 참여 중'
-      : lang === 'en'
-        ? 'total votes'
-        : '총 표 수'
+    summaryKind === 'participants' ? t('vr_participating') : t('vr_total_votes')
+  const winnerVotesLabel =
+    lang === 'ko'
+      ? `(${winner.votes.toLocaleString()}${votesLabel})`
+      : `(${winner.votes.toLocaleString()} ${votesLabel})`
 
   return (
     <div className="bg-[linear-gradient(180deg,#1a1035_0%,#0f0a24_60%,#090A0B_100%)] px-5 pt-6 pb-8 relative overflow-hidden">
@@ -73,9 +71,7 @@ export function VoteResultWinner({
               <span className="text-[18px] font-bold font-mono text-[#F59E0B]">
                 {winner.percentage.toFixed(1)}%
               </span>
-              <span className="text-[12px] font-mono text-white/40">
-                ({winner.votes.toLocaleString()} {votesLabel})
-              </span>
+              <span className="text-[12px] font-mono text-white/40">{winnerVotesLabel}</span>
             </div>
           </div>
         </div>
