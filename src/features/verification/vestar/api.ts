@@ -387,6 +387,7 @@ async function loadElectionSummary(
   const resultLeader = resultManifest?.results?.[0]
   const topCandidate = resultLeader
     ? {
+        rank: 1,
         key: resultLeader.candidateKey,
         name: resultLeader.displayName ?? formatCandidateName(resultLeader.candidateKey),
         emoji: pickEmoji(resultLeader.candidateKey),

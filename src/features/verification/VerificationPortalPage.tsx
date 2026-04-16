@@ -1207,7 +1207,7 @@ function ResultsTab({
       {showDecryptedResults ? (
         election.candidates.length > 0 ? (
           <div className="flex flex-col gap-3">
-            {election.candidates.map((candidate, index) => (
+            {election.candidates.map((candidate) => (
               <ResultCard
                 key={candidate.key}
                 rank={candidate.rank}
