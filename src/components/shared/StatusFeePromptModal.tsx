@@ -85,7 +85,7 @@ export function StatusFeePromptModal({
             type="button"
             onClick={onProceed}
             disabled={isBusy}
-            className="w-full rounded-2xl bg-[#7140FF] py-4 text-[15px] font-bold text-white disabled:bg-[#D9CCFF] disabled:text-white/80"
+            className="w-full rounded-2xl bg-[#F7F8FA] py-4 text-[15px] font-bold text-[#707070] disabled:bg-[#EEF1F5] disabled:text-[#A7AFBC]"
           >
             {copy.proceed}
           </button>
@@ -101,7 +101,7 @@ export function StatusFeePromptModal({
             type="button"
             onClick={onClose}
             disabled={isBusy}
-            className="w-full rounded-2xl bg-[#F7F8FA] py-4 text-[15px] font-semibold text-[#707070] disabled:text-[#A7AFBC]"
+            className="w-full rounded-2xl bg-[#7140FF] py-4 text-[15px] font-semibold text-white disabled:bg-[#D9CCFF] disabled:text-white/80"
           >
             {copy.close}
           </button>

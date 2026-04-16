@@ -13,7 +13,11 @@ import { useAccount, useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { preparePrivateElection } from '../../api/elections'
 import type { ApiElection, ApiElectionState, PreparePrivateElectionResponse } from '../../api/types'
 import { fetchVerifiedOrganizerByWallet } from '../../api/verifiedOrganizers'
-import { getKarmaTier, getOrganizerCreationStatus } from '../../contracts/vestar/actions'
+import {
+  estimateCreateElectionFee,
+  getKarmaTier,
+  getOrganizerCreationStatus,
+} from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { vestarFactory, vestarUtils } from '../../contracts/vestar/client'
 import { vestarContractAddresses } from '../../contracts/vestar/generated'
@@ -49,6 +53,7 @@ import {
 } from '../../utils/ipfs'
 import { saveLocalOpenElectionMetadata } from '../../utils/localOpenElectionMetadata'
 import { saveOptimisticElection } from '../../utils/optimisticVotes'
+import { buildStatusFeePreview, type StatusFeePreview } from '../../utils/statusFee'
 import { invalidateViewCache } from '../../utils/viewCache'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 
@@ -527,6 +532,84 @@ function extractPublicKeyValue(publicKey: { value: string }): string {
 
 function buildCandidateHashes(candidates: FlattenedCandidate[]) {
   return candidates.map((candidate) => keccak256(toHex(candidate.candidateKey)))
+}
+
+function buildSeriesId(organizerAddress: Address, seriesTitle: string) {
+  return keccak256(encodePacked(['address', 'string'], [organizerAddress, seriesTitle]))
+}
+
+function buildOnchainElectionConfig(
+  seriesId: Hex,
+  preparedElection: PreparedSubmissionElection,
+): ElectionConfigInput {
+  const { normalizedSettings } = preparedElection
+
+  let electionPublicKey: Hex
+  let privateKeyCommitmentHash: Hex
+
+  if (normalizedSettings.visibilityMode === 'PRIVATE') {
+    const prepareResponse = preparedElection.privatePrepare
+    if (!prepareResponse) {
+      throw new Error('비공개 투표 준비 정보가 누락되었습니다.')
+    }
+    electionPublicKey = toHex(extractPublicKeyValue(prepareResponse.publicKey))
+    privateKeyCommitmentHash = prepareResponse.privateKeyCommitmentHash
+  } else {
+    electionPublicKey = '0x'
+    privateKeyCommitmentHash = zeroHash
+  }
+
+  const normalizedAllowMultipleChoice =
+    normalizedSettings.ballotPolicy === 'UNLIMITED_PAID' ? false : normalizedSettings.maxChoices > 1
+  const normalizedMaxSelectionsPerSubmission = normalizedAllowMultipleChoice
+    ? Math.max(2, normalizedSettings.maxChoices)
+    : 1
+  const effectiveResultRevealAt = getEffectiveResultRevealAt(normalizedSettings)
+
+  return {
+    seriesId,
+    visibilityMode:
+      normalizedSettings.visibilityMode === 'PRIVATE'
+        ? VESTAR_VISIBILITY_MODE.PRIVATE
+        : VESTAR_VISIBILITY_MODE.OPEN,
+    titleHash: preparedElection.titleHash,
+    candidateManifestHash: preparedElection.candidateManifestHash,
+    candidateManifestURI: preparedElection.candidateManifestURI,
+    startAt: Math.floor(Date.parse(normalizedSettings.startDate) / 1000),
+    endAt: Math.floor(Date.parse(normalizedSettings.endDate) / 1000),
+    resultRevealAt: Math.floor(Date.parse(effectiveResultRevealAt) / 1000),
+    minKarmaTier: Number(normalizedSettings.minKarmaTier),
+    ballotPolicy:
+      normalizedSettings.ballotPolicy === 'ONE_PER_ELECTION'
+        ? VESTAR_BALLOT_POLICY.ONE_PER_ELECTION
+        : normalizedSettings.ballotPolicy === 'ONE_PER_INTERVAL'
+          ? VESTAR_BALLOT_POLICY.ONE_PER_INTERVAL
+          : VESTAR_BALLOT_POLICY.UNLIMITED_PAID,
+    resetInterval:
+      normalizedSettings.ballotPolicy === 'ONE_PER_INTERVAL'
+        ? convertResetIntervalToSeconds(
+            normalizedSettings.resetIntervalValue,
+            normalizedSettings.resetIntervalUnit,
+          )
+        : 0,
+    paymentMode:
+      normalizedSettings.paymentMode === 'PAID'
+        ? VESTAR_PAYMENT_MODE.PAID
+        : VESTAR_PAYMENT_MODE.FREE,
+    costPerBallot:
+      normalizedSettings.paymentMode === 'PAID'
+        ? parseUnits(normalizedSettings.costPerBallotEth || '0', 6)
+        : 0n,
+    allowMultipleChoice: normalizedAllowMultipleChoice,
+    maxSelectionsPerSubmission: normalizedMaxSelectionsPerSubmission,
+    timezoneWindowOffset: -new Date().getTimezoneOffset() * 60,
+    paymentToken:
+      normalizedSettings.paymentMode === 'PAID' ? vestarContractAddresses.mockUsdt : zeroAddress,
+    electionPublicKey,
+    privateKeyCommitmentHash,
+    keySchemeVersion:
+      normalizedSettings.visibilityMode === 'PRIVATE' ? PRIVATE_ELECTION_KEY_SCHEME_VERSION : 0,
+  }
 }
 
 function serializePreparationFile(file?: File | null) {
@@ -1077,6 +1160,7 @@ export interface UseCreateVoteDraftResult {
   clearSections: () => void
   nextStep: () => void
   prevStep: () => void
+  estimateFeePreview: () => Promise<StatusFeePreview>
   submit: () => Promise<SubmitVoteResult>
   isSubmitting: boolean
 }
@@ -1386,7 +1470,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     }
   }, [currentPreparationSignature, draft, ensurePreparedSubmission])
 
-  const submit = useCallback(async () => {
+  const ensureSubmissionReady = useCallback(async () => {
     if (!walletClient) {
       throw new Error(`${vestarStatusTestnetChain.name}에 연결된 지갑이 필요합니다.`)
     }
@@ -1399,33 +1483,72 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
       throw new Error('투표 입력값이 아직 완성되지 않았습니다.')
     }
 
+    if (chainId !== vestarStatusTestnetChain.id) {
+      await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
+      throw new Error(
+        lang === 'ko'
+          ? '네트워크를 Status testnet으로 변경했습니다. 다시 한 번 투표 만들기를 눌러주세요.'
+          : 'The network was switched to Status testnet. Please tap create vote again.',
+      )
+    }
+
+    const organizerAddress = address
+    const karmaTier = await getKarmaTier(organizerAddress)
+    const creationStatus = await getOrganizerCreationStatus(organizerAddress, karmaTier)
+
+    if (creationStatus === ORGANIZER_CREATION_STATUS_UNVERIFIED_INELIGIBLE) {
+      throw new Error(
+        lang === 'ko'
+          ? '카르마가 부족해서 투표를 생성할 수 없습니다. 카르마 1 이상이 필요합니다.'
+          : 'You need at least Karma tier 1 to create a vote.',
+      )
+    }
+
+    const draftPreparationSignature = buildDraftPreparationSignature(draft)
+    let preparedSubmission = await ensurePreparedSubmission(draftPreparationSignature, draft)
+
+    if (shouldRefreshPreparedSubmission(preparedSubmission)) {
+      preparedSubmissionCacheRef.current.delete(draftPreparationSignature)
+      preparedSubmission = await ensurePreparedSubmission(draftPreparationSignature, draft)
+    }
+
+    return {
+      organizerAddress,
+      preparedSubmission,
+      walletClient,
+    }
+  }, [address, chainId, draft, ensurePreparedSubmission, lang, switchChainAsync, walletClient])
+
+  const estimateFeePreview = useCallback(async () => {
+    const {
+      organizerAddress,
+      preparedSubmission,
+      walletClient: connectedWalletClient,
+    } = await ensureSubmissionReady()
+
+    const seriesId = buildSeriesId(organizerAddress, draft.title.trim())
+    const feeEstimates = await Promise.all(
+      preparedSubmission.elections.map((preparedElection) =>
+        estimateCreateElectionFee(
+          connectedWalletClient,
+          buildOnchainElectionConfig(seriesId, preparedElection),
+          preparedElection.initialCandidateHashes,
+        ),
+      ),
+    )
+
+    return buildStatusFeePreview(feeEstimates, preparedSubmission.elections.length)
+  }, [draft.title, ensureSubmissionReady])
+
+  const submit = useCallback(async () => {
     setIsSubmitting(true)
 
     try {
-      const organizerAddress = address
-
-      if (chainId !== vestarStatusTestnetChain.id) {
-        await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
-      }
-
-      const karmaTier = await getKarmaTier(organizerAddress)
-      const creationStatus = await getOrganizerCreationStatus(organizerAddress, karmaTier)
-
-      if (creationStatus === ORGANIZER_CREATION_STATUS_UNVERIFIED_INELIGIBLE) {
-        throw new Error(
-          lang === 'ko'
-            ? '카르마가 부족해서 투표를 생성할 수 없습니다. 카르마 1 이상이 필요합니다.'
-            : 'You need at least Karma tier 1 to create a vote.',
-        )
-      }
-
-      const draftPreparationSignature = buildDraftPreparationSignature(draft)
-      let preparedSubmission = await ensurePreparedSubmission(draftPreparationSignature, draft)
-
-      if (shouldRefreshPreparedSubmission(preparedSubmission)) {
-        preparedSubmissionCacheRef.current.delete(draftPreparationSignature)
-        preparedSubmission = await ensurePreparedSubmission(draftPreparationSignature, draft)
-      }
+      const {
+        organizerAddress,
+        preparedSubmission,
+        walletClient: connectedWalletClient,
+      } = await ensureSubmissionReady()
 
       const { bannerUploadMissing, candidateUploadsMissing } = preparedSubmission
 
@@ -1449,6 +1572,8 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         currentTitle: null,
       })
 
+      const seriesId = buildSeriesId(organizerAddress, draft.title.trim())
+
       for (const [index, preparedElection] of preparedSubmission.elections.entries()) {
         setSubmissionProgress({
           stage: 'awaiting_signature',
@@ -1456,89 +1581,10 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
           total: preparedSubmission.elections.length,
           currentTitle: preparedElection.title,
         })
-
-        // sungje : manifest hash는 백엔드 prepare 응답이 아니라 프론트가 실제로 업로드한 json bytes 기준으로 고정한다.
-        const seriesId = keccak256(
-          encodePacked(['address', 'string'], [organizerAddress, draft.title.trim()]),
-        )
-        const { normalizedSettings } = preparedElection
-
-        let electionPublicKey: Hex
-        let privateKeyCommitmentHash: Hex
-
-        if (normalizedSettings.visibilityMode === 'PRIVATE') {
-          const prepareResponse = preparedElection.privatePrepare
-          if (!prepareResponse) {
-            throw new Error('비공개 투표 준비 정보가 누락되었습니다.')
-          }
-          electionPublicKey = toHex(extractPublicKeyValue(prepareResponse.publicKey))
-          privateKeyCommitmentHash = prepareResponse.privateKeyCommitmentHash
-        } else {
-          electionPublicKey = '0x'
-          privateKeyCommitmentHash = zeroHash
-        }
-
-        const normalizedAllowMultipleChoice =
-          normalizedSettings.ballotPolicy === 'UNLIMITED_PAID'
-            ? false
-            : normalizedSettings.maxChoices > 1
-        const normalizedMaxSelectionsPerSubmission = normalizedAllowMultipleChoice
-          ? Math.max(2, normalizedSettings.maxChoices)
-          : 1
-        const effectiveResultRevealAt = getEffectiveResultRevealAt(normalizedSettings)
-
-        const config: ElectionConfigInput = {
-          seriesId,
-          visibilityMode:
-            normalizedSettings.visibilityMode === 'PRIVATE'
-              ? VESTAR_VISIBILITY_MODE.PRIVATE
-              : VESTAR_VISIBILITY_MODE.OPEN,
-          titleHash: preparedElection.titleHash,
-          candidateManifestHash: preparedElection.candidateManifestHash,
-          candidateManifestURI: preparedElection.candidateManifestURI,
-          startAt: Math.floor(Date.parse(normalizedSettings.startDate) / 1000),
-          endAt: Math.floor(Date.parse(normalizedSettings.endDate) / 1000),
-          // sungje : 공개 투표는 화면에서 결과 공개 시각을 숨기지만 컨트랙트 검증상 종료 시각 이상 값이 필요해서 endAt으로 맞춘다.
-          resultRevealAt: Math.floor(Date.parse(effectiveResultRevealAt) / 1000),
-          minKarmaTier: Number(normalizedSettings.minKarmaTier),
-          ballotPolicy:
-            normalizedSettings.ballotPolicy === 'ONE_PER_ELECTION'
-              ? VESTAR_BALLOT_POLICY.ONE_PER_ELECTION
-              : normalizedSettings.ballotPolicy === 'ONE_PER_INTERVAL'
-                ? VESTAR_BALLOT_POLICY.ONE_PER_INTERVAL
-                : VESTAR_BALLOT_POLICY.UNLIMITED_PAID,
-          resetInterval:
-            normalizedSettings.ballotPolicy === 'ONE_PER_INTERVAL'
-              ? convertResetIntervalToSeconds(
-                  normalizedSettings.resetIntervalValue,
-                  normalizedSettings.resetIntervalUnit,
-                )
-              : 0,
-          paymentMode:
-            normalizedSettings.paymentMode === 'PAID'
-              ? VESTAR_PAYMENT_MODE.PAID
-              : VESTAR_PAYMENT_MODE.FREE,
-          costPerBallot:
-            normalizedSettings.paymentMode === 'PAID'
-              ? parseUnits(normalizedSettings.costPerBallotEth || '0', 6)
-              : 0n,
-          allowMultipleChoice: normalizedAllowMultipleChoice,
-          maxSelectionsPerSubmission: normalizedMaxSelectionsPerSubmission,
-          timezoneWindowOffset: -new Date().getTimezoneOffset() * 60,
-          paymentToken:
-            normalizedSettings.paymentMode === 'PAID'
-              ? vestarContractAddresses.mockUsdt
-              : zeroAddress,
-          electionPublicKey,
-          privateKeyCommitmentHash,
-          keySchemeVersion:
-            normalizedSettings.visibilityMode === 'PRIVATE'
-              ? PRIVATE_ELECTION_KEY_SCHEME_VERSION
-              : 0,
-        }
+        const config = buildOnchainElectionConfig(seriesId, preparedElection)
 
         const txHash = await vestarFactory.createElection(
-          walletClient,
+          connectedWalletClient,
           config,
           preparedElection.initialCandidateHashes,
         )
@@ -1606,16 +1652,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
         currentTitle: null,
       })
     }
-  }, [
-    address,
-    addToast,
-    chainId,
-    draft,
-    ensurePreparedSubmission,
-    lang,
-    switchChainAsync,
-    walletClient,
-  ])
+  }, [addToast, draft, ensureSubmissionReady, lang])
 
   return {
     draft,
@@ -1639,6 +1676,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
     clearSections,
     nextStep,
     prevStep,
+    estimateFeePreview,
     submit,
     isSubmitting,
   }

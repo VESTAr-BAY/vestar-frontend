@@ -599,6 +599,37 @@ export async function createElection(
   })
 }
 
+export async function estimateCreateElectionFee(
+  walletClient: WalletClient,
+  input: CreateElectionInput,
+): Promise<StatusFeeEstimate>
+export async function estimateCreateElectionFee(
+  walletClient: WalletClient,
+  config: ElectionConfigInput,
+  initialCandidateHashes: readonly Hex[],
+): Promise<StatusFeeEstimate>
+export async function estimateCreateElectionFee(
+  walletClient: WalletClient,
+  inputOrConfig: CreateElectionInput | ElectionConfigInput,
+  maybeInitialCandidateHashes?: readonly Hex[],
+): Promise<StatusFeeEstimate> {
+  const input: CreateElectionInput =
+    maybeInitialCandidateHashes === undefined
+      ? (inputOrConfig as CreateElectionInput)
+      : {
+          config: inputOrConfig as ElectionConfigInput,
+          initialCandidateHashes: [...maybeInitialCandidateHashes],
+        }
+
+  return estimateVestarContractWrite({
+    walletClient,
+    abi: vestarElectionFactoryAbi,
+    address: vestarContractAddresses.electionFactory,
+    functionName: 'createElection',
+    args: [input.config, input.initialCandidateHashes],
+  })
+}
+
 export async function getElectionAddress(electionId: Hex): Promise<Address> {
   return readVestarContract<Address>({
     abi: vestarElectionFactoryAbi,

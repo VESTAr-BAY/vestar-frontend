@@ -1,10 +1,13 @@
 import { useNavigate } from 'react-router'
-import { useMetaMaskDisplayUri } from '../../hooks/useMetaMaskDisplayUri'
+import { StatusFeePromptModal } from '../../components/shared/StatusFeePromptModal'
 import { useCreateVoteDraft } from '../../hooks/host/useCreateVoteDraft'
+import { useMetaMaskDisplayUri } from '../../hooks/useMetaMaskDisplayUri'
 import { useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
+import { useStatusFeePrompt } from '../../hooks/useStatusFeePrompt'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
 import { isMobileExternalBrowser, openMetaMaskLink } from '../../utils/mobileWallet'
+import { getStatusFeeTransactionNote } from '../../utils/statusFee'
 import { StepBasicInfo } from './steps/StepBasicInfo'
 import { StepCandidates } from './steps/StepCandidates'
 import { StepSchedule } from './steps/StepSchedule'
@@ -84,42 +87,63 @@ export function VoteCreatePage() {
     clearSections,
     nextStep,
     prevStep,
+    estimateFeePreview,
     submit,
     isSubmitting,
   } = useCreateVoteDraft()
+  const {
+    prompt: feePrompt,
+    busyAction: feePromptBusyAction,
+    isEstimating: isFeePromptEstimating,
+    openForAction: openFeePrompt,
+    closePrompt: closeFeePrompt,
+    handleRecheck: handleFeePromptRecheck,
+    handleProceed: handleFeePromptProceed,
+  } = useStatusFeePrompt((error) => {
+    addToast({
+      type: 'error',
+      message:
+        error instanceof Error
+          ? error.message
+          : lang === 'ko'
+            ? '수수료 상태를 확인하지 못했습니다.'
+            : 'Failed to check the fee status.',
+    })
+  })
   const showManualWalletOpen =
     isSubmitting && submissionProgress.stage === 'awaiting_signature' && isMobileExternalBrowser()
 
   const handleSubmit = async () => {
-    if (!isCurrentStepValid) return
+    if (!isCurrentStepValid || isSubmitting || isFeePromptEstimating) return
 
-    try {
-      resetDisplayUri()
-      const result = await submit()
-      const successMessage =
-        result.elections.length > 1
-          ? lang === 'ko'
-            ? `${result.elections.length}개의 투표가 같은 시리즈로 생성되었습니다.`
-            : `${result.elections.length} votes were created in the same series.`
-          : lang === 'ko'
-            ? `투표가 생성되었습니다. election: ${result.electionAddress.slice(0, 6)}...${result.electionAddress.slice(-4)}`
-            : `Vote created. election: ${result.electionAddress.slice(0, 6)}...${result.electionAddress.slice(-4)}`
-      addToast({
-        type: 'success',
-        message: successMessage,
-      })
-      navigate('/host')
-    } catch (error) {
-      addToast({
-        type: 'error',
-        message:
-          error instanceof Error
-            ? error.message
+    resetDisplayUri()
+
+    void openFeePrompt({
+      title: lang === 'ko' ? '수수료 안내' : 'Fee Notice',
+      description:
+        lang === 'ko'
+          ? '현재 투표 생성 트랜잭션이 무료 처리 대상이 아니면 네트워크 수수료가 적용됩니다.'
+          : 'If this vote creation transaction is not currently eligible for gasless execution, a network fee will apply.',
+      estimate: estimateFeePreview,
+      note: (preview) => getStatusFeeTransactionNote(preview.transactionCount, lang),
+      proceed: async () => {
+        const result = await submit()
+        const successMessage =
+          result.elections.length > 1
+            ? lang === 'ko'
+              ? `${result.elections.length}개의 투표가 같은 시리즈로 생성되었습니다.`
+              : `${result.elections.length} votes were created in the same series.`
             : lang === 'ko'
-              ? '투표 생성에 실패했습니다.'
-              : 'Failed to create the vote.',
-      })
-    }
+              ? `투표가 생성되었습니다. election: ${result.electionAddress.slice(0, 6)}...${result.electionAddress.slice(-4)}`
+              : `Vote created. election: ${result.electionAddress.slice(0, 6)}...${result.electionAddress.slice(-4)}`
+
+        addToast({
+          type: 'success',
+          message: successMessage,
+        })
+        navigate('/host')
+      },
+    })
   }
 
   return (
@@ -200,7 +224,7 @@ export function VoteCreatePage() {
       <div className="fixed bottom-0 left-1/2 z-[100] w-full max-w-[430px] -translate-x-1/2 border-t border-[#E7E9ED] bg-white px-[calc(1.25rem+var(--safe-left))] py-4 pb-[calc(1rem+var(--safe-bottom))] pr-[calc(1.25rem+var(--safe-right))]">
         <button
           type="button"
-          disabled={!isCurrentStepValid || isSubmitting}
+          disabled={!isCurrentStepValid || isSubmitting || isFeePromptEstimating}
           onClick={step === 3 ? () => void handleSubmit() : nextStep}
           className="w-full bg-[#7140FF] text-white rounded-2xl py-4 text-[15px] font-bold disabled:bg-[#E7E9ED] disabled:text-[#707070] disabled:cursor-default hover:enabled:opacity-85 transition-opacity active:enabled:scale-[0.99] flex items-center justify-center gap-2"
         >
@@ -289,6 +313,18 @@ export function VoteCreatePage() {
           </>
         ) : null}
       </div>
+
+      <StatusFeePromptModal
+        open={Boolean(feePrompt)}
+        title={feePrompt?.title ?? ''}
+        description={feePrompt?.description ?? ''}
+        estimatedFee={feePrompt?.preview.totalEstimatedFee ?? 0n}
+        note={feePrompt?.note ?? ''}
+        busyAction={feePromptBusyAction}
+        onProceed={() => void handleFeePromptProceed()}
+        onRefresh={() => void handleFeePromptRecheck()}
+        onClose={closeFeePrompt}
+      />
     </div>
   )
 }
