@@ -1,3 +1,4 @@
+import { vestarStatusTestnetChain } from '../contracts/vestar/chain'
 import type { Lang } from '../i18n'
 
 interface NormalizeWalletErrorOptions {
@@ -159,13 +160,13 @@ export function getWalletActionErrorMessage(
 
   if (
     codeSet.has('4902') ||
-    /unsupported chain|chain not configured|switch chain|switch network|wrong network|status network testnet/i.test(
+    /unsupported chain|chain not configured|switch chain|switch network|wrong network|status network (testnet|hoodi)/i.test(
       text,
     )
   ) {
     return lang === 'ko'
-      ? 'Status Network Testnet으로 전환한 뒤 다시 시도해주세요.'
-      : 'Switch to Status Network Testnet and try again.'
+      ? `${vestarStatusTestnetChain.name}으로 전환한 뒤 다시 시도해주세요.`
+      : `Switch to ${vestarStatusTestnetChain.name} and try again.`
   }
 
   if (

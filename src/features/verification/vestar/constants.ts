@@ -1,14 +1,14 @@
 import { createPublicClient, getAbiItem, getAddress, http } from 'viem'
+import { vestarStatusExplorerUrl, vestarStatusTestnetChain } from '../../../contracts/vestar/chain'
 import {
   vestarContractAddresses,
   vestarElectionAbi,
   vestarElectionFactoryAbi,
-  vestarStatusTestnet,
 } from '../../../contracts/vestar/generated'
 
-export const STATUS_CHAIN_ID = 1660990954
-export const STATUS_RPC_URL = vestarStatusTestnet.rpcUrl
-export const STATUS_EXPLORER_URL = 'https://sepoliascan.status.network'
+export const STATUS_CHAIN_ID = vestarStatusTestnetChain.id
+export const STATUS_RPC_URL = vestarStatusTestnetChain.rpcUrls.default.http[0]
+export const STATUS_EXPLORER_URL = vestarStatusExplorerUrl
 export const VERIFICATION_FACTORY = getAddress(vestarContractAddresses.electionFactory)
 export const KEY_REVEALED_STATE = 4
 export const FINALIZED_STATE = 5
@@ -44,14 +44,6 @@ export const resultFinalizedEvent = getAbiItem({
 })!
 
 export const publicClient = createPublicClient({
-  chain: {
-    id: STATUS_CHAIN_ID,
-    name: 'Status Network Testnet',
-    nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-    rpcUrls: {
-      default: { http: [STATUS_RPC_URL] },
-      public: { http: [STATUS_RPC_URL] },
-    },
-  },
+  chain: vestarStatusTestnetChain,
   transport: http(STATUS_RPC_URL),
 })

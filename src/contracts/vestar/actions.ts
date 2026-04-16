@@ -11,15 +11,16 @@ import {
   toHex,
   type WalletClient,
 } from 'viem'
+import { getReadableWalletErrorMessage } from '../../utils/walletErrors'
 import { vestarStatusTestnetChain } from './chain'
 import {
   mockUsdtAbi,
   vestarContractAddresses,
+  vestarDeployment,
   vestarElectionAbi,
   vestarElectionFactoryAbi,
   vestarKarmaRegistryAbi,
   vestarOrganizerRegistryAbi,
-  vestarStatusTestnet,
 } from './generated'
 import type {
   CancellationSummary,
@@ -43,7 +44,6 @@ import type {
   VestarPaymentMode,
   VestarVisibilityMode,
 } from './types'
-import { getReadableWalletErrorMessage } from '../../utils/walletErrors'
 
 interface ReadContractOptions {
   abi: Abi
@@ -86,11 +86,11 @@ export interface StatusFeeEstimate {
 const VESTAR_WRITE_GAS_BUFFER = 1_000n
 
 /**
- * Shared public client for Status Network Testnet reads.
+ * Shared public client for the current VESTAr deployment network.
  */
 export const vestarPublicClient = createPublicClient({
   chain: vestarStatusTestnetChain,
-  transport: http(vestarStatusTestnet.rpcUrl),
+  transport: http(vestarDeployment.rpcUrl),
 })
 
 export function isVestarStatusTestnetChain(chainId?: number): boolean {
@@ -217,7 +217,7 @@ function getWalletAccount(walletClient: WalletClient, requireStatusChain = true)
     walletClient.chain.id !== vestarStatusTestnetChain.id
   ) {
     throw new Error(
-      `VESTAr contracts are deployed on Status Network Testnet (${vestarStatusTestnetChain.id}).`,
+      `VESTAr contracts are deployed on ${vestarStatusTestnetChain.name} (${vestarStatusTestnetChain.id}).`,
     )
   }
 

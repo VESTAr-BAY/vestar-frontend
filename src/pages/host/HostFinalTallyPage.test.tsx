@@ -133,7 +133,7 @@ vi.mock('../../hooks/useStatusFeePrompt', () => ({
 }))
 
 vi.mock('wagmi', () => ({
-  useChainId: () => 1660990954,
+  useChainId: () => 374,
   useSwitchChain: () => ({
     switchChainAsync: mockSwitchChainAsync,
   }),
@@ -157,7 +157,7 @@ vi.mock('../../contracts/vestar/actions', () => ({
 
 vi.mock('../../contracts/vestar/chain', () => ({
   vestarStatusTestnetChain: {
-    id: 1660990954,
+    id: 374,
   },
 }))
 

@@ -1,5 +1,5 @@
 import { createConfig, http } from 'wagmi'
-import { mainnet, sepolia } from 'wagmi/chains'
+import { mainnet } from 'wagmi/chains'
 import { injected, metaMask } from 'wagmi/connectors'
 import { vestarStatusTestnetChain } from '../contracts/vestar/chain'
 import { isMobileExternalBrowser } from '../utils/mobileWallet'
@@ -9,7 +9,7 @@ const shouldUseMobileMetaMaskConfig =
   typeof window !== 'undefined' ? isMobileExternalBrowser() : false
 
 export const wagmiConfig = createConfig({
-  chains: [vestarStatusTestnetChain, mainnet, sepolia],
+  chains: [vestarStatusTestnetChain, mainnet],
   connectors: [
     metaMask({
       dapp: {
@@ -39,6 +39,5 @@ export const wagmiConfig = createConfig({
   transports: {
     [vestarStatusTestnetChain.id]: http(vestarStatusTestnetChain.rpcUrls.default.http[0]),
     [mainnet.id]: http(),
-    [sepolia.id]: http(),
   },
 })

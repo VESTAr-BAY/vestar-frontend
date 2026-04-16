@@ -6,7 +6,7 @@ describe('walletErrors', () => {
     const error = new Error(`Missing or invalid parameters.
 Double check you have provided the correct parameters.
 
-URL: https://public.sepolia.rpc.status.network
+URL: https://public.hoodi.rpc.status.network
 Request body: {"method":"linea_estimateGas","params":[{"from":"0x1","to":"0x2","data":"0x438b32fb","value":"0x0"}]}
 
 Details: Execution reverted (VESTAr: not finalized)

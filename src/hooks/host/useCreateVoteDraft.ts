@@ -919,14 +919,15 @@ function buildOptimisticElection(params: {
   draft: VoteCreateDraft
 }): ApiElection {
   const now = new Date().toISOString()
-  const effectiveResultRevealAt = getEffectiveResultRevealAt(params.preparedElection.normalizedSettings)
-  const organizer =
-    params.createdElection.organizerVerifiedSnapshot
-      ? {
-          walletAddress: params.organizerAddress,
-          organizationName: params.organizationName || params.organizerAddress,
-        }
-      : null
+  const effectiveResultRevealAt = getEffectiveResultRevealAt(
+    params.preparedElection.normalizedSettings,
+  )
+  const organizer = params.createdElection.organizerVerifiedSnapshot
+    ? {
+        walletAddress: params.organizerAddress,
+        organizationName: params.organizationName || params.organizerAddress,
+      }
+    : null
 
   return {
     id: params.id,
@@ -1387,7 +1388,7 @@ export function useCreateVoteDraft(): UseCreateVoteDraftResult {
 
   const submit = useCallback(async () => {
     if (!walletClient) {
-      throw new Error('Status Network Testnet에 연결된 지갑이 필요합니다.')
+      throw new Error(`${vestarStatusTestnetChain.name}에 연결된 지갑이 필요합니다.`)
     }
 
     if (!address) {

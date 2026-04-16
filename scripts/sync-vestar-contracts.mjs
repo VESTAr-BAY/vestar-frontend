@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 // - `src/contracts/vestar/generated/*Abi.ts`
 //   각 ABI json array를 `as const satisfies Abi` 형태로 export
 // - `src/contracts/vestar/generated/addresses.ts`
-//   status testnet 주소/체인 메타데이터를 프론트에서 바로 쓰는 상수로 export
+//   현재 사용 가능한 최신 VESTAr 배포 주소 스냅샷을 프론트에서 바로 쓰는 상수로 export
 // - `src/contracts/vestar/generated/index.ts`
 //   generated 파일들의 barrel export
 
@@ -72,10 +72,33 @@ async function generateAbiModules() {
   }
 }
 
+async function resolveAddressSourceFile() {
+  const candidates = ['status-hoodi.addresses.json', 'status-sepolia.addresses.json']
+
+  for (const filename of candidates) {
+    const sourcePath = path.join(abiSourceDir, filename)
+
+    try {
+      await readFile(sourcePath, 'utf8')
+      return { filename, sourcePath }
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+        continue
+      }
+
+      throw error
+    }
+  }
+
+  throw new Error(
+    `Could not find a deployment address file in ${abiSourceDir}. Expected one of: ${candidates.join(', ')}`,
+  )
+}
+
 async function generateAddressesModule() {
   // 배포 주소 파일은 컨트랙트 팀의 naming을 유지하면서도,
   // 프론트에서는 camelCase key로 바로 쓰기 쉽게 한 번 더 정리한다.
-  const sourcePath = path.join(abiSourceDir, 'status-testnet.addresses.json')
+  const { filename, sourcePath } = await resolveAddressSourceFile()
   const targetPath = path.join(outputDir, 'addresses.ts')
   const rawAddresses = JSON.parse(await readFile(sourcePath, 'utf8'))
   const contractAddresses = {
@@ -88,7 +111,9 @@ async function generateAddressesModule() {
 
   const moduleSource = formatTsModule(
     [
-      `export const vestarStatusTestnet = ${JSON.stringify(rawAddresses, null, 2)} as const;`,
+      `export const vestarDeployment = ${JSON.stringify(rawAddresses, null, 2)} as const;`,
+      '',
+      `export const vestarDeploymentSource = ${JSON.stringify(filename)} as const;`,
       '',
       `export const vestarContractAddresses = ${JSON.stringify(contractAddresses, null, 2)} as const;`,
       '',

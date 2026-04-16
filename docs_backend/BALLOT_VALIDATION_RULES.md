@@ -33,7 +33,7 @@
 {
   "schemaVersion": 1,
   "electionId": "0x...",
-  "chainId": 1660990954,
+  "chainId": 374,
   "electionAddress": "0x...",
   "voterAddress": "0x...",
   "candidateKeys": ["IU", "ParkHyoShin"],

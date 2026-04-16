@@ -205,8 +205,8 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
         type: 'error',
         message:
           lang === 'ko'
-            ? 'Status Network Testnet에 연결된 지갑이 필요합니다.'
-            : 'A wallet connected to Status Network Testnet is required.',
+            ? `${vestarStatusTestnetChain.name}에 연결된 지갑이 필요합니다.`
+            : `A wallet connected to ${vestarStatusTestnetChain.name} is required.`,
       })
       return
     }

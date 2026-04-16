@@ -55,7 +55,7 @@ src/
 │   └── host.ts                         ← HostVote · VoteStats
 │
 ├── config/
-│   ├── wagmi.ts                        ← wagmi config (mainnet + sepolia, WalletConnect)
+│   ├── wagmi.ts                        ← wagmi config (Status Hoodi + mainnet, WalletConnect)
 │   └── hosts.ts                        ← HOST_ADDRESSES 허용 목록 + isHost()
 │
 ├── providers/
