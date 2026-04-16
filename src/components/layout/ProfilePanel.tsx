@@ -21,6 +21,7 @@ import mockUsdtIcon from '../../assets/mock_usdt.svg'
 import sttStakingIcon from '../../assets/stt_staking.svg'
 import verifiedIcon from '../../assets/verified.svg'
 import {
+  estimateMintMockUsdtFee,
   getMockUsdtBalance,
   mintMockUsdt,
   waitForVestarTransactionReceipt,
@@ -28,11 +29,14 @@ import {
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
 import { useMyKarma } from '../../hooks/user/useMyKarma'
 import { useMyVotes } from '../../hooks/user/useMyVotes'
+import { useStatusFeePrompt } from '../../hooks/useStatusFeePrompt'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
 import { isMobileExternalBrowser } from '../../utils/mobileWallet'
+import { buildStatusFeePreview, getStatusFeeTransactionNote } from '../../utils/statusFee'
 import { requestWalletConnection } from '../../utils/walletConnection'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
+import { StatusFeePromptModal } from '../shared/StatusFeePromptModal'
 
 interface ProfilePanelProps {
   open: boolean
@@ -156,6 +160,26 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   const [isMintingMockUsdt, setIsMintingMockUsdt] = useState(false)
   const [mockUsdtBalance, setMockUsdtBalance] = useState('—')
   const verificationPortalPath = `${import.meta.env.BASE_URL}verification`
+  const {
+    prompt: feePrompt,
+    busyAction: feePromptBusyAction,
+    isEstimating: isFeePromptEstimating,
+    openForAction: openFeePrompt,
+    closePrompt: closeFeePrompt,
+    handleRecheck: handleFeePromptRecheck,
+    handleProceed: handleFeePromptProceed,
+  } = useStatusFeePrompt((error) => {
+    addToast({
+      type: 'error',
+      message:
+        error instanceof Error
+          ? error.message
+          : lang === 'ko'
+            ? '수수료 상태를 확인하지 못했습니다.'
+            : 'Failed to check the fee status.',
+    })
+  })
+  const isMintMockUsdtBusy = isMintingMockUsdt || isFeePromptEstimating
 
   useEffect(() => {
     let cancelled = false
@@ -192,6 +216,10 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   const isDisconnectAction = isConnected
 
   const handleMintMockUsdt = async () => {
+    if (isMintMockUsdtBusy) {
+      return
+    }
+
     if (!isConnected || !address) {
       addToast({
         type: 'error',
@@ -211,35 +239,49 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
       return
     }
 
-    setIsMintingMockUsdt(true)
+    void openFeePrompt({
+      title: lang === 'ko' ? '수수료 안내' : 'Fee Notice',
+      description:
+        lang === 'ko'
+          ? '현재 MockUSDT 민트 트랜잭션이 무료 처리 대상이 아니면 네트워크 수수료가 적용됩니다.'
+          : 'If this MockUSDT mint transaction is not currently eligible for gasless execution, a network fee will apply.',
+      estimate: async () =>
+        buildStatusFeePreview([
+          await estimateMintMockUsdtFee(walletClient, address, MOCK_USDT_MINT_AMOUNT),
+        ]),
+      note: (preview) => getStatusFeeTransactionNote(preview.transactionCount, lang),
+      proceed: async () => {
+        setIsMintingMockUsdt(true)
 
-    try {
-      if (chainId !== vestarStatusTestnetChain.id) {
-        await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
-      }
+        try {
+          if (chainId !== vestarStatusTestnetChain.id) {
+            await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
+          }
 
-      const hash = await mintMockUsdt(walletClient, address, MOCK_USDT_MINT_AMOUNT)
-      await waitForVestarTransactionReceipt(hash)
-      const balance = await getMockUsdtBalance(address)
-      setMockUsdtBalance(formatMockUsdtBalance(balance))
+          const hash = await mintMockUsdt(walletClient, address, MOCK_USDT_MINT_AMOUNT)
+          await waitForVestarTransactionReceipt(hash)
+          const balance = await getMockUsdtBalance(address)
+          setMockUsdtBalance(formatMockUsdtBalance(balance))
 
-      addToast({
-        type: 'success',
-        message: lang === 'ko' ? '1,000 MockUSDT가 지급되었습니다.' : '1,000 MockUSDT minted.',
-      })
-    } catch (error) {
-      console.error('[ProfilePanel] failed to mint MockUSDT:', error)
-      addToast({
-        type: 'error',
-        message: getWalletActionErrorMessage(error, {
-          lang,
-          defaultMessage:
-            lang === 'ko' ? 'MockUSDT 민트에 실패했습니다.' : 'Failed to mint MockUSDT.',
-        }),
-      })
-    } finally {
-      setIsMintingMockUsdt(false)
-    }
+          addToast({
+            type: 'success',
+            message: lang === 'ko' ? '1,000 MockUSDT가 지급되었습니다.' : '1,000 MockUSDT minted.',
+          })
+        } catch (error) {
+          console.error('[ProfilePanel] failed to mint MockUSDT:', error)
+          addToast({
+            type: 'error',
+            message: getWalletActionErrorMessage(error, {
+              lang,
+              defaultMessage:
+                lang === 'ko' ? 'MockUSDT 민트에 실패했습니다.' : 'Failed to mint MockUSDT.',
+            }),
+          })
+        } finally {
+          setIsMintingMockUsdt(false)
+        }
+      },
+    })
   }
 
   return (
@@ -391,10 +433,10 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
             <MenuRow
               icon={mockUsdtIcon}
               bg="#FFF5E8"
-              label={isMintingMockUsdt ? t('pp_mint_mock_usdt_loading') : t('pp_mint_mock_usdt')}
+              label={isMintMockUsdtBusy ? t('pp_mint_mock_usdt_loading') : t('pp_mint_mock_usdt')}
               onClick={handleMintMockUsdt}
-              disabled={!isConnected || isMintingMockUsdt}
-              trailing={isMintingMockUsdt ? 'spinner' : 'chevron'}
+              disabled={!isConnected || isMintMockUsdtBusy}
+              trailing={isMintMockUsdtBusy ? 'spinner' : 'chevron'}
             />
 
             <MenuRow
@@ -478,6 +520,17 @@ export function ProfilePanel({ open, onClose }: ProfilePanelProps) {
           </div>
         </div>
       </div>
+      <StatusFeePromptModal
+        open={Boolean(feePrompt)}
+        title={feePrompt?.title ?? ''}
+        description={feePrompt?.description ?? ''}
+        estimatedFee={feePrompt?.preview.totalEstimatedFee ?? 0n}
+        note={feePrompt?.note ?? ''}
+        busyAction={feePromptBusyAction}
+        onProceed={handleFeePromptProceed}
+        onRefresh={handleFeePromptRecheck}
+        onClose={closeFeePrompt}
+      />
     </>
   )
 }

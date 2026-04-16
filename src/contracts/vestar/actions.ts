@@ -981,6 +981,20 @@ export async function mintMockUsdt(
   })
 }
 
+export async function estimateMintMockUsdtFee(
+  walletClient: WalletClient,
+  to: Address,
+  amount: bigint,
+): Promise<StatusFeeEstimate> {
+  return estimateVestarContractWrite({
+    walletClient,
+    abi: mockUsdtAbi,
+    address: vestarContractAddresses.mockUsdt,
+    functionName: 'mint',
+    args: [to, amount],
+  })
+}
+
 export async function closeElection(
   walletClient: WalletClient,
   electionAddress: Address,
