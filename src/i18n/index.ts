@@ -267,6 +267,18 @@ const STRINGS = {
     en: 'No votes match the selected status.',
     ko: '선택한 상태의 투표가 없습니다.',
   },
+  hlt_eyebrow: { en: 'Host Live Tally', ko: '호스트 실시간 집계' },
+  hlt_title: { en: 'Organizer live tally', ko: '주최자 전용 실시간 집계 화면' },
+  hlt_description: {
+    en: 'You can monitor running totals here, even for private votes.',
+    ko: '비공개 투표도 진행 중 누적 집계를 확인할 수 있습니다.',
+  },
+  hlt_empty_title: { en: 'No tally data yet.', ko: '아직 집계 데이터가 없습니다.' },
+  hlt_empty_description: {
+    en: 'Organizer live tallies will appear here once votes start coming in.',
+    ko: '투표가 쌓이면 주최자 전용 실시간 집계가 여기에 표시됩니다.',
+  },
+  hlt_back_button: { en: 'Back to Management', ko: '관리 화면으로 돌아가기' },
 } as const
 
 export type StringKey = keyof typeof STRINGS
