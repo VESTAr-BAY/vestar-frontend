@@ -10,6 +10,7 @@ import type {
   ReceiptSelection,
   VerificationReceipt,
 } from './types'
+import { assignCompetitionRanks } from '../../../utils/ranking'
 import {
   formatCandidateName,
   formatDateTime,
@@ -108,6 +109,20 @@ export async function loadPrivateReceipts(
   return receipts.filter((receipt): receipt is VerificationReceipt => receipt !== null)
 }
 
+function assignVerificationRanks<T extends { votes: number }>(items: T[]) {
+  return assignCompetitionRanks(
+    items.map((item, originalOrder) => ({
+      ...item,
+      originalOrder,
+    })),
+  )
+    .sort((left, right) => {
+      if (left.rank !== right.rank) return left.rank - right.rank
+      return left.originalOrder - right.originalOrder
+    })
+    .map(({ originalOrder: _, ...item }) => item)
+}
+
 export function buildOpenCandidates(
   receipts: VerificationReceipt[],
   candidateManifest: CandidateManifest | null,
@@ -152,13 +167,16 @@ export function buildOpenCandidates(
     })
   })
 
-  return [...tallies.values()]
-    .map((candidate) => ({
-      ...candidate,
-      subtitle: candidate.subtitle,
-      percentage: totalVotes > 0 ? (candidate.votes / totalVotes) * 100 : 0,
-    }))
-    .sort((left, right) => right.votes - left.votes)
+  return assignVerificationRanks(
+    [...tallies.values()]
+      .map((candidate) => ({
+        rank: 0,
+        ...candidate,
+        subtitle: candidate.subtitle,
+        percentage: totalVotes > 0 ? (candidate.votes / totalVotes) * 100 : 0,
+      }))
+      .sort((left, right) => right.votes - left.votes),
+  )
 }
 
 export function buildPrivateCandidates(
@@ -209,22 +227,24 @@ export function buildPrivateCandidates(
     })
   })
 
-  return [...tallies.values()]
-    .map((candidate) => ({
-      key: candidate.key,
-      name: candidate.name,
-      emoji: candidate.emoji,
-      imageUrl: candidate.imageUrl,
-      subtitle: candidate.subtitle,
-      votes: candidate.votes,
-      percentage: totalVotes > 0 ? (candidate.votes / totalVotes) * 100 : 0,
-      index: candidate.index,
-    }))
-    .sort((left, right) => {
-      if (right.votes !== left.votes) return right.votes - left.votes
-      return left.index - right.index
-    })
-    .map(({ index: _, ...candidate }) => candidate)
+  return assignVerificationRanks(
+    [...tallies.values()]
+      .map((candidate) => ({
+        rank: 0,
+        key: candidate.key,
+        name: candidate.name,
+        emoji: candidate.emoji,
+        imageUrl: candidate.imageUrl,
+        subtitle: candidate.subtitle,
+        votes: candidate.votes,
+        percentage: totalVotes > 0 ? (candidate.votes / totalVotes) * 100 : 0,
+        index: candidate.index,
+      }))
+      .sort((left, right) => {
+        if (right.votes !== left.votes) return right.votes - left.votes
+        return left.index - right.index
+      }),
+  ).map(({ index: _, ...candidate }) => candidate)
 }
 
 async function readBlockTimestampLabel(blockCache: Map<string, bigint>, blockNumber: bigint) {

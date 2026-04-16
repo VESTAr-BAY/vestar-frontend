@@ -99,6 +99,7 @@ export type VerificationReceipt = {
 }
 
 export type VerificationCandidate = {
+  rank: number
   key: string
   name: string
   emoji: string
@@ -124,7 +125,7 @@ export type VerificationElectionSummary = {
   hostBadge: string
   address: Address
   addressExplorerUrl: string
-  endedAtLabel: string
+  resultRevealAtLabel: string
   finalizeTransactionHash: string
   finalizeExplorerUrl: string
   resultSummaryNote: string | null

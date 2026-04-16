@@ -72,6 +72,15 @@ function getPrivateKeyStatusLabel(
       : 'Private key hidden'
 }
 
+function formatResultRevealLabel(
+  election: Pick<VerificationElectionSummary, 'resultRevealAtLabel'>,
+  lang: 'en' | 'ko',
+) {
+  return lang === 'ko'
+    ? `${election.resultRevealAtLabel} 결과 공개`
+    : `Result reveal ${election.resultRevealAtLabel}`
+}
+
 function compareBigIntString(left: string, right: string) {
   const leftBlock = BigInt(left)
   const rightBlock = BigInt(right)
@@ -637,7 +646,9 @@ function App() {
                         <span className={isSelected ? 'text-white/55' : 'text-[#707070]'}>
                           {latestElection.hostName}
                         </span>
-                        <span className="shrink-0 font-mono">{latestElection.endedAtLabel}</span>
+                        <span className="shrink-0 font-mono">
+                          {formatResultRevealLabel(latestElection, lang)}
+                        </span>
                       </div>
                     </button>
                   )
@@ -760,7 +771,9 @@ function App() {
                           <span className={isSelected ? 'text-white/55' : 'text-[#707070]'}>
                             {election.hostName}
                           </span>
-                          <span className="shrink-0 font-mono">{election.endedAtLabel}</span>
+                          <span className="shrink-0 font-mono">
+                            {formatResultRevealLabel(election, lang)}
+                          </span>
                         </div>
                       </button>
                     )
@@ -799,7 +812,9 @@ function App() {
                     <PortalPill size="sm">{selectedElection.hostName}</PortalPill>
                     <PortalPill size="sm">{selectedElection.hostBadge}</PortalPill>
                     <PortalPill size="sm">{selectedElection.modeLabel}</PortalPill>
-                    <PortalPill size="sm">{selectedElection.endedAtLabel}</PortalPill>
+                    <PortalPill size="sm">
+                      {formatResultRevealLabel(selectedElection, lang)}
+                    </PortalPill>
                   </div>
                 </div>
                 <PortalPill tone={selectedElection.isFinalized ? 'success' : 'accent'}>
@@ -1040,12 +1055,13 @@ function ResultsTab({
         </PortalPanel>
 
         <div className="flex flex-col gap-3">
-          {election.candidates.map((candidate, index) => (
+          {election.candidates.map((candidate) => (
             <ResultCard
               key={candidate.key}
-              rank={index + 1}
+              rank={candidate.rank}
               name={candidate.name}
               emoji={candidate.emoji}
+              imageUrl={candidate.imageUrl}
               subtitle={candidate.subtitle}
               votes={candidate.votes}
               percentage={candidate.percentage}
@@ -1191,10 +1207,10 @@ function ResultsTab({
       {showDecryptedResults ? (
         election.candidates.length > 0 ? (
           <div className="flex flex-col gap-3">
-            {election.candidates.map((candidate, index) => (
+            {election.candidates.map((candidate) => (
               <ResultCard
                 key={candidate.key}
-                rank={index + 1}
+                rank={candidate.rank}
                 name={candidate.name}
                 emoji={candidate.emoji}
                 imageUrl={candidate.imageUrl}
@@ -1364,8 +1380,8 @@ function ProofTab({
             : 'The result was finalized after voting ended',
         description:
           lang === 'ko'
-            ? `${election.endedAtLabel} 이후 이 투표는 최종 결과가 고정된 상태예요.`
-            : `After ${election.endedAtLabel}, this vote moved into a finalized state.`,
+            ? `${election.resultRevealAtLabel} 결과 공개 이후 이 투표는 최종 결과가 고정된 상태예요.`
+            : `After the result reveal at ${election.resultRevealAtLabel}, this vote moved into a finalized state.`,
         tone: 'success' as const,
       }
     }
@@ -1378,8 +1394,8 @@ function ProofTab({
             : 'The result will be finalized after the vote ends',
         description:
           lang === 'ko'
-            ? `${election.endedAtLabel} 이후 결과 확정 단계로 넘어갈 수 있어요. 지금은 아직 진행 중이에요.`
-            : `After ${election.endedAtLabel}, this vote can move into the finalization stage. It is still active right now.`,
+            ? `${election.resultRevealAtLabel} 결과 공개 이후 결과 확정 단계로 넘어갈 수 있어요. 지금은 아직 진행 중이에요.`
+            : `After the result reveal at ${election.resultRevealAtLabel}, this vote can move into the finalization stage. It is still active right now.`,
         tone: 'warning' as const,
       }
     }
@@ -1392,8 +1408,8 @@ function ProofTab({
             : 'Receipt records will appear once voting begins',
         description:
           lang === 'ko'
-            ? `${election.endedAtLabel} 전에 투표가 시작되면, 그때부터 제출된 기록과 결과 흐름을 확인할 수 있어요.`
-            : `Once voting starts before ${election.endedAtLabel}, submitted records and the result flow will appear here.`,
+            ? `${election.resultRevealAtLabel} 결과 공개 전까지 투표가 진행되며, 그동안 제출된 기록과 결과 흐름을 확인할 수 있어요.`
+            : `Voting continues until the result reveal at ${election.resultRevealAtLabel}, and submitted records plus the result flow will appear here in the meantime.`,
         tone: 'warning' as const,
       }
     }
