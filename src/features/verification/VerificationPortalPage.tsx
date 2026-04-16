@@ -1132,7 +1132,12 @@ function ResultsTab({
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <PortalButton fullWidth size="sm" onClick={() => setShowPublicKey((current) => !current)}>
+          <PortalButton
+            fullWidth
+            size="sm"
+            className="min-w-0 whitespace-normal px-4 py-3 text-center leading-[1.2]"
+            onClick={() => setShowPublicKey((current) => !current)}
+          >
             {showPublicKey
               ? lang === 'ko'
                 ? '공개키 접기'
@@ -1144,6 +1149,7 @@ function ResultsTab({
           <PortalButton
             fullWidth
             size="sm"
+            className="min-w-0 whitespace-normal px-4 py-3 text-center leading-[1.2]"
             disabled={!privateKeyRevealed}
             onClick={() => {
               if (!privateKeyRevealed) return
@@ -1157,7 +1163,7 @@ function ResultsTab({
               : privateKeyRevealed
                 ? lang === 'ko'
                   ? '공개된 개인키 보기'
-                  : 'Show revealed private key'
+                  : 'Show private key'
                 : lang === 'ko'
                   ? '개인키 미공개'
                   : 'Private key hidden'}
@@ -1166,6 +1172,7 @@ function ResultsTab({
             <PortalButton
               fullWidth
               size="sm"
+              className="whitespace-normal px-4 py-3 text-center leading-[1.2]"
               disabled={!canDecryptResults}
               onClick={() => {
                 if (!canDecryptResults) return

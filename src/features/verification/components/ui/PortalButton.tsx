@@ -3,6 +3,7 @@ import { cn } from './cn'
 
 type PortalButtonProps = {
   children: ReactNode
+  className?: string
   href?: string
   onClick?: () => void
   disabled?: boolean
@@ -28,6 +29,7 @@ const HEADER_SIZE_CLASS = 'min-h-9 px-3.5 text-[13px]'
 
 export function PortalButton({
   children,
+  className,
   href,
   onClick,
   disabled = false,
@@ -37,24 +39,25 @@ export function PortalButton({
 }: PortalButtonProps) {
   const sizeClass = variant === 'header' ? HEADER_SIZE_CLASS : SIZE_CLASS[size]
 
-  const className = cn(
+  const combinedClassName = cn(
     BASE_CLASS,
     VARIANT_CLASS[variant],
     sizeClass,
     fullWidth ? 'w-full' : 'w-auto',
     disabled && 'cursor-not-allowed opacity-40',
+    className,
   )
 
   if (href && !disabled) {
     return (
-      <a href={href} target="_blank" rel="noreferrer" className={className}>
+      <a href={href} target="_blank" rel="noreferrer" className={combinedClassName}>
         {children}
       </a>
     )
   }
 
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className={className}>
+    <button type="button" onClick={onClick} disabled={disabled} className={combinedClassName}>
       {children}
     </button>
   )
