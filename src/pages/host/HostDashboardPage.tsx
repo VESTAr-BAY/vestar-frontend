@@ -36,16 +36,9 @@ function VoteCard({ vote, onNavigate }: { vote: HostVoteCard; onNavigate: (id: s
   }
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={() => onNavigate(`/host/manage/${vote.id}`)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onNavigate(`/host/manage/${vote.id}`)
-        }
-      }}
       className="w-full bg-white border border-[#E7E9ED] rounded-2xl p-4 flex items-center gap-4 text-left transition-colors hover:border-[#d9ddf3]"
     >
       <div className="w-12 h-12 rounded-xl bg-[#F0EDFF] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
@@ -69,7 +62,7 @@ function VoteCard({ vote, onNavigate }: { vote: HostVoteCard; onNavigate: (id: s
           {badgeLabel[vote.badge]}
         </span>
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -151,7 +144,7 @@ export function HostDashboardPage() {
           <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-[#7140FF]/30 bg-[rgba(113,64,255,0.12)] px-3 py-[5px]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#a78bff]" />
             <span className="font-mono text-[10px] font-bold uppercase tracking-[1.2px] text-[#a78bff]">
-              Host Dashboard
+              {t('hd_eyebrow')}
             </span>
           </span>
           <h1 className="mb-2 text-[26px] font-bold tracking-tight leading-tight text-white">
@@ -233,7 +226,7 @@ export function HostDashboardPage() {
         <div className="flex flex-col gap-3 pb-4">
           {isLoading ? (
             <div className="bg-white border border-[#E7E9ED] rounded-2xl p-6 text-center text-[13px] text-[#707070]">
-              불러오는 중...
+              {t('hd_loading')}
             </div>
           ) : filteredVotes.length > 0 ? (
             filteredVotes.map((vote) => (
@@ -241,9 +234,7 @@ export function HostDashboardPage() {
             ))
           ) : (
             <div className="bg-white border border-[#E7E9ED] rounded-2xl p-6 text-center text-[13px] text-[#707070]">
-              {statusFilter === 'all'
-                ? '아직 생성한 투표가 없습니다.'
-                : '선택한 상태의 투표가 없습니다.'}
+              {statusFilter === 'all' ? t('hd_empty_all') : t('hd_empty_filtered')}
             </div>
           )}
         </div>

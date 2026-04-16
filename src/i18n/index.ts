@@ -248,6 +248,7 @@ const STRINGS = {
 
   // ── Host Dashboard ──────────────────────────────────────────────────────────
   hd_title: { en: 'Manage My Votes', ko: '내 투표 관리' },
+  hd_eyebrow: { en: 'Host Dashboard', ko: '호스트 대시보드' },
   hd_sub: {
     en: 'Create votes and check results',
     ko: '투표를 만들고 결과를 확인하세요',
@@ -260,6 +261,12 @@ const STRINGS = {
   hd_my_votes: { en: 'My Votes', ko: '내 투표 목록' },
   hd_view_results: { en: 'View Results', ko: '결과 보기' },
   hd_manage: { en: 'Manage', ko: '관리' },
+  hd_loading: { en: 'Loading votes...', ko: '불러오는 중...' },
+  hd_empty_all: { en: 'No votes created yet.', ko: '아직 생성한 투표가 없습니다.' },
+  hd_empty_filtered: {
+    en: 'No votes match the selected status.',
+    ko: '선택한 상태의 투표가 없습니다.',
+  },
 } as const
 
 export type StringKey = keyof typeof STRINGS

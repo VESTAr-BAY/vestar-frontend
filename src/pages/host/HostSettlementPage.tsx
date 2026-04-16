@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { type Address } from 'viem'
+import type { Address } from 'viem'
 import { useChainId, useSwitchChain, useWalletClient } from 'wagmi'
 import { StatusFeePromptModal } from '../../components/shared/StatusFeePromptModal'
 import {
@@ -10,12 +10,12 @@ import {
   waitForVestarTransactionReceipt,
 } from '../../contracts/vestar/actions'
 import { vestarStatusTestnetChain } from '../../contracts/vestar/chain'
-import { useStatusFeePrompt } from '../../hooks/useStatusFeePrompt'
 import { useVoteDetail } from '../../hooks/user/useVoteDetail'
+import { useStatusFeePrompt } from '../../hooks/useStatusFeePrompt'
 import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
 import { formatSettlementAmount } from '../../utils/paymentDisplay'
-import { getStatusFeeTransactionNote, buildStatusFeePreview } from '../../utils/statusFee'
+import { buildStatusFeePreview, getStatusFeeTransactionNote } from '../../utils/statusFee'
 import { getWalletActionErrorMessage } from '../../utils/walletErrors'
 import { VoteHero } from '../user/VoteHero'
 import { VoteInfoSection } from '../user/VoteInfoSection'
@@ -271,25 +271,25 @@ export function HostSettlementPage() {
 
   const handleSettle = async () => {
     if (!vote?.electionAddress) {
-      addToast({ type: 'info', message: '온체인 election 정보가 없어 정산을 실행할 수 없습니다.' })
+      addToast({ type: 'info', message: copy.missingElectionInfo })
       return
     }
 
     if (!settlement) {
       addToast({
         type: 'info',
-        message: '정산 정보를 아직 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
+        message: copy.missingSummary,
       })
       return
     }
 
     if (settlement.settled) {
-      addToast({ type: 'info', message: '이미 정산이 완료된 투표입니다.' })
+      addToast({ type: 'info', message: copy.alreadySettled })
       return
     }
 
     if (!walletClient?.account) {
-      addToast({ type: 'error', message: '지갑 연결이 필요합니다.' })
+      addToast({ type: 'error', message: copy.walletRequired })
       return
     }
 
@@ -297,10 +297,7 @@ export function HostSettlementPage() {
       await switchChainAsync({ chainId: vestarStatusTestnetChain.id })
       addToast({
         type: 'info',
-        message:
-          lang === 'ko'
-            ? '네트워크를 변경했습니다. 다시 한 번 정산을 눌러주세요.'
-            : 'The network was switched. Please tap settlement again.',
+        message: copy.networkSwitched,
       })
       return
     }

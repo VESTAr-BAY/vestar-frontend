@@ -1,11 +1,28 @@
 import { useNavigate, useParams } from 'react-router'
 import { useEditVoteDraft } from '../../hooks/host/useEditVoteDraft'
 import { useSmartBackNavigation } from '../../hooks/useSmartBackNavigation'
+import { useLanguage } from '../../providers/LanguageProvider'
 import { useToast } from '../../providers/ToastProvider'
 import { StepBasicInfo } from './steps/StepBasicInfo'
 import { StepCandidates } from './steps/StepCandidates'
 
-const STEP_LABELS = ['기본 정보', '후보 수정']
+function getVoteEditCopy(lang: 'en' | 'ko') {
+  return lang === 'ko'
+    ? {
+        stepLabels: ['기본 정보', '후보 수정'],
+        updatedToast: '투표 내용이 성공적으로 수정되었습니다.',
+        backButton: '뒤로가기',
+        submitButton: '수정 완료',
+        nextStep: '다음 단계',
+      }
+    : {
+        stepLabels: ['Basic Info', 'Edit Candidates'],
+        updatedToast: 'Vote updated successfully.',
+        backButton: 'Go back',
+        submitButton: 'Save Changes',
+        nextStep: 'Next Step',
+      }
+}
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
@@ -23,6 +40,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
           >
             {n < current ? (
               <svg
+                aria-hidden="true"
                 width="10"
                 height="10"
                 viewBox="0 0 24 24"
@@ -61,6 +79,7 @@ export function VoteEditPage() {
   const { id = '1' } = useParams()
   const navigate = useNavigate()
   const navigateBack = useSmartBackNavigation(`/host/manage/${id}`)
+  const { lang } = useLanguage()
   const { addToast } = useToast()
   const {
     isLoading,
@@ -86,11 +105,12 @@ export function VoteEditPage() {
     submit,
     isSubmitting,
   } = useEditVoteDraft(id)
+  const copy = getVoteEditCopy(lang)
 
   const handleSubmit = async () => {
     if (!isCurrentStepValid || !hasChanges) return
     await submit()
-    addToast({ type: 'success', message: '투표 내용이 성공적으로 수정되었습니다.' })
+    addToast({ type: 'success', message: copy.updatedToast })
     navigate(`/host/manage/${id}`)
   }
 
@@ -102,11 +122,12 @@ export function VoteEditPage() {
       <header className="fixed left-1/2 -translate-x-1/2 z-[100] w-full max-w-[430px] h-14 bg-[#13141A] flex items-center px-4 gap-3">
         <button
           type="button"
-          aria-label="뒤로가기"
+          aria-label={copy.backButton}
           onClick={() => (step === 1 ? navigateBack() : prevStep())}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.08] hover:bg-white/[0.14] transition-colors flex-shrink-0"
         >
           <svg
+            aria-hidden="true"
             width="18"
             height="18"
             viewBox="0 0 24 24"
@@ -121,7 +142,7 @@ export function VoteEditPage() {
         </button>
 
         <div className="flex-1">
-          <div className="text-[11px] text-white/40 font-mono">{STEP_LABELS[step - 1]}</div>
+          <div className="text-[11px] text-white/40 font-mono">{copy.stepLabels[step - 1]}</div>
         </div>
 
         <StepIndicator current={step} total={2} />
@@ -169,11 +190,12 @@ export function VoteEditPage() {
           {isSubmitting ? (
             <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
           ) : step === 2 ? (
-            '수정 완료'
+            copy.submitButton
           ) : (
             <>
-              다음 단계
+              {copy.nextStep}
               <svg
+                aria-hidden="true"
                 width="16"
                 height="16"
                 viewBox="0 0 24 24"
