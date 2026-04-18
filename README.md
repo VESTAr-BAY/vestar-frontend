@@ -11,7 +11,9 @@
 Mobile-first frontend for VESTAr, an onchain K-pop voting platform built for vote creation, participation, and public verification.
 
 <p align="center">
-  <a href="https://boisterous-sfogliatella-3e55f2.netlify.app/vote/">Live Demo</a>
+  <a href="https://www.youtube.com/watch?v=QpLsSmcpIjw">Demo Video</a>
+  ·
+  <a href="https://regal-weather-603.notion.site/Project-Description-3466dc69e5dc8015b7acf9ae8784a01c?pvs=73">Project Description</a>
   ·
   <a href="https://github.com/VESTAr-BAY/vestar-backend">Backend</a>
   ·
